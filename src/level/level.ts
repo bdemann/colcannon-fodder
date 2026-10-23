@@ -39,7 +39,7 @@ const restaurant: RestaurantDefinition = {
 };
 
 /**
- * The jam level: the restaurant sits in the middle of the field and one straight path runs in from
+ * The jam level: the restaurant sits in the middle of the field and one winding path runs in from
  * the left edge. Co-op later adds a second path from the right edge owned by slot 1.
  */
 export const defaultLevel: LevelDefinition = {
@@ -50,6 +50,22 @@ export const defaultLevel: LevelDefinition = {
             waypoints: [
                 {
                     x: 0,
+                    y: 400,
+                },
+                {
+                    x: 420,
+                    y: 400,
+                },
+                {
+                    x: 420,
+                    y: 820,
+                },
+                {
+                    x: 700,
+                    y: 820,
+                },
+                {
+                    x: 700,
                     y: restaurant.y,
                 },
                 {
