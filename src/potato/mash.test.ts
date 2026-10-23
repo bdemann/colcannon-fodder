@@ -1,7 +1,8 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
+import {mashConfig} from '../config/game-config.js';
 import {type PotatoProcessing} from '../run/run-state.js';
-import {TowerType} from '../tower/tower-type.js';
+import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {applyTowerHit, getHitDamage, getMashProgress} from './mash.js';
 
 function fresh(overrides: Partial<PotatoProcessing> = {}): PotatoProcessing {
@@ -22,29 +23,35 @@ function hitAll(towers: ReadonlyArray<TowerType>): PotatoProcessing {
     return processing;
 }
 
+/** Base damage per tower and the multipliers, read from config so balancing never breaks tests. */
+const knife = towerTypes[TowerType.Knife].damage;
+const boiler = towerTypes[TowerType.Boiler].damage;
+const masher = towerTypes[TowerType.Masher].damage;
+const {cutMultiplier, softMasherMultiplier} = mashConfig;
+
 describe(getHitDamage.name, () => {
     it('uses each tower base damage', () => {
-        assert.strictEquals(getHitDamage(fresh(), TowerType.Knife), 10);
-        assert.strictEquals(getHitDamage(fresh(), TowerType.Boiler), 15);
-        assert.strictEquals(getHitDamage(fresh(), TowerType.Masher), 30);
+        assert.strictEquals(getHitDamage(fresh(), TowerType.Knife), knife);
+        assert.strictEquals(getHitDamage(fresh(), TowerType.Boiler), boiler);
+        assert.strictEquals(getHitDamage(fresh(), TowerType.Masher), masher);
     });
 
     it('applies the cut multiplier to every tower', () => {
         const cut = fresh({
             cut: true,
         });
-        assert.strictEquals(getHitDamage(cut, TowerType.Knife), 15);
-        assert.strictEquals(getHitDamage(cut, TowerType.Boiler), 22.5);
-        assert.strictEquals(getHitDamage(cut, TowerType.Masher), 45);
+        assert.strictEquals(getHitDamage(cut, TowerType.Knife), knife * cutMultiplier);
+        assert.strictEquals(getHitDamage(cut, TowerType.Boiler), boiler * cutMultiplier);
+        assert.strictEquals(getHitDamage(cut, TowerType.Masher), masher * cutMultiplier);
     });
 
     it('soft only boosts the masher', () => {
         const soft = fresh({
             cooked: true,
         });
-        assert.strictEquals(getHitDamage(soft, TowerType.Knife), 10);
-        assert.strictEquals(getHitDamage(soft, TowerType.Boiler), 15);
-        assert.strictEquals(getHitDamage(soft, TowerType.Masher), 60);
+        assert.strictEquals(getHitDamage(soft, TowerType.Knife), knife);
+        assert.strictEquals(getHitDamage(soft, TowerType.Boiler), boiler);
+        assert.strictEquals(getHitDamage(soft, TowerType.Masher), masher * softMasherMultiplier);
     });
 
     it('stacks cut and soft for the masher', () => {
@@ -56,7 +63,7 @@ describe(getHitDamage.name, () => {
                 }),
                 TowerType.Masher,
             ),
-            90,
+            masher * cutMultiplier * softMasherMultiplier,
         );
     });
 });
@@ -65,10 +72,10 @@ describe(applyTowerHit.name, () => {
     it('applies effects after damage', () => {
         const processing = fresh();
         applyTowerHit(processing, TowerType.Knife);
-        assert.strictEquals(getMashHp(processing), 90);
+        assert.strictEquals(getMashHp(processing), 100 - knife);
         assert.isTrue(processing.cut);
         applyTowerHit(processing, TowerType.Boiler);
-        assert.strictEquals(getMashHp(processing), 67.5);
+        assert.strictEquals(getMashHp(processing), 100 - knife - boiler * cutMultiplier);
         assert.isTrue(processing.cooked);
     });
 
@@ -87,70 +94,36 @@ describe(applyTowerHit.name, () => {
         assert.strictEquals(processing.mashHp, 0);
     });
 
-    it('fully mashes with Knife, Pot, Masher (122.5 damage)', () => {
-        const processing = hitAll([
+    it('rewards prepping before mashing', () => {
+        const prepped = hitAll([
             TowerType.Knife,
             TowerType.Boiler,
             TowerType.Masher,
         ]);
-        assert.strictEquals(processing.mashHp, 0);
+        const reversed = hitAll([
+            TowerType.Masher,
+            TowerType.Boiler,
+            TowerType.Knife,
+        ]);
+        assert.isBelow(prepped.mashHp, reversed.mashHp);
         assert.strictEquals(
-            getHitDamage(fresh(), TowerType.Knife) +
-                getHitDamage(
-                    fresh({
-                        cut: true,
-                    }),
-                    TowerType.Boiler,
-                ) +
-                getHitDamage(
-                    fresh({
-                        cut: true,
-                        cooked: true,
-                    }),
-                    TowerType.Masher,
-                ),
-            122.5,
+            prepped.mashHp,
+            Math.max(
+                0,
+                100 -
+                    knife -
+                    boiler * cutMultiplier -
+                    masher * cutMultiplier * softMasherMultiplier,
+            ),
         );
+        assert.strictEquals(reversed.mashHp, 100 - masher - boiler - knife);
     });
 
-    it('fully mashes with Pot, Knife, Masher (115 damage)', () => {
-        const processing = hitAll([
-            TowerType.Boiler,
-            TowerType.Knife,
-            TowerType.Masher,
-        ]);
-        assert.strictEquals(processing.mashHp, 0);
-        assert.strictEquals(
-            getHitDamage(fresh(), TowerType.Boiler) +
-                getHitDamage(
-                    fresh({
-                        cooked: true,
-                    }),
-                    TowerType.Knife,
-                ) +
-                getHitDamage(
-                    fresh({
-                        cut: true,
-                        cooked: true,
-                    }),
-                    TowerType.Masher,
-                ),
-            115,
-        );
-    });
-
-    it('leaves 45 HP for Masher, Pot, Knife', () => {
-        const processing = hitAll([
-            TowerType.Masher,
-            TowerType.Boiler,
-            TowerType.Knife,
-        ]);
-        assert.strictEquals(processing.mashHp, 45);
-    });
-
-    it('four masher hits fully mash, three do not', () => {
-        assert.strictEquals(hitAll(new Array(4).fill(TowerType.Masher)).mashHp, 0);
-        assert.strictEquals(hitAll(new Array(3).fill(TowerType.Masher)).mashHp, 10);
+    it('a lone masher needs several hits', () => {
+        const hitsNeeded = Math.ceil(100 / masher);
+        assert.isAbove(hitsNeeded, 1);
+        assert.strictEquals(hitAll(new Array(hitsNeeded).fill(TowerType.Masher)).mashHp, 0);
+        assert.isAbove(hitAll(new Array(hitsNeeded - 1).fill(TowerType.Masher)).mashHp, 0);
     });
 });
 

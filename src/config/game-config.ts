@@ -8,17 +8,17 @@
 export const potatoSizeConfig = {
     small: {
         radius: 16,
-        mashHp: 60,
+        mashHp: 120,
         value: 0.6,
     },
     medium: {
         radius: 22,
-        mashHp: 100,
+        mashHp: 200,
         value: 1,
     },
     large: {
         radius: 30,
-        mashHp: 170,
+        mashHp: 340,
         value: 1.8,
     },
 } as const;
@@ -122,20 +122,23 @@ export const towerConfig = {
 
 /** Per-type tower tunables. Keyed by `TowerType` values from `src/tower/tower-type.ts`. */
 export const towerTypeConfig = {
+    /** Light and fast: its job is to Cut many potatoes so later hits land harder. */
     knife: {
-        damage: 10,
+        damage: 4,
         rangePx: 140,
-        cooldownMs: 400,
+        cooldownMs: 250,
     },
+    /** Medium: softens potatoes so Mashers hit twice as hard. */
     boiler: {
-        damage: 15,
+        damage: 6,
         rangePx: 140,
-        cooldownMs: 400,
+        cooldownMs: 600,
     },
+    /** Slow and heavy: the finisher, one potato at a time. */
     masher: {
-        damage: 30,
+        damage: 40,
         rangePx: 140,
-        cooldownMs: 400,
+        cooldownMs: 1000,
     },
 } as const;
 
