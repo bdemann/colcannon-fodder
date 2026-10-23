@@ -31,6 +31,8 @@ export class PotatoEntity extends defineEntity({
             maxMashHp: 1,
             /** True once served, so it is never served twice. */
             served: false,
+            /** True while a seagull holds it: it stops moving, can't be served, towers skip it. */
+            carriedBySeagull: false,
             /** Unique per run (from `runState.nextPotatoId`), so commands can name this potato. */
             potatoId: 0,
             /** Hand-applied toppings. Keys match `Topping` values. */
@@ -115,7 +117,9 @@ export class PotatoEntity extends defineEntity({
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
-        if (this.params.served) {
+        // A carried potato stays put: the gull sets x/y, and `distancePx` doesn't change, so a
+        // dropped potato snaps back to its belt spot.
+        if (this.params.served || this.params.carriedBySeagull) {
             return;
         }
 

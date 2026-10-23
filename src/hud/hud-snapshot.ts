@@ -41,6 +41,10 @@ export type HudSnapshot = {
               progress: number;
           }
         | undefined;
+    /** Set while the latest seagull steal is recent enough to show; `id` changes for each one. */
+    stealPopup: {satisfactionDelta: number; id: number} | undefined;
+    /** Potatoes seagulls got away with this run. */
+    potatoesStolen: number;
     selectedTowerType: TowerType | undefined;
     selectedTopping: Topping | undefined;
     /** Open orders, oldest first. Times are coarse so the HUD re-renders only a few times a second. */
@@ -63,6 +67,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const runState = state.runState ?? createInitialRunState();
     const lastServing = runState.lastServing;
     const lastOrderEvent = runState.lastOrderEvent;
+    const lastSteal = runState.lastSteal;
 
     return {
         status: runState.status,
@@ -91,6 +96,14 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       progress: lastServing.progress,
                   }
                 : undefined,
+        stealPopup:
+            lastSteal && runState.elapsedMs - lastSteal.atMs < hudConfig.servingPopupMs
+                ? {
+                      satisfactionDelta: lastSteal.satisfactionDelta,
+                      id: lastSteal.atMs,
+                  }
+                : undefined,
+        potatoesStolen: runState.potatoesStolen,
         selectedTowerType: state.ui?.selectedTowerType,
         selectedTopping: state.ui?.selectedTopping,
         orders: runState.orders.map((order) => {

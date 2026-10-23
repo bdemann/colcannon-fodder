@@ -4,6 +4,7 @@ import {LevelEntity} from '../level/level.entity.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 
 /**
@@ -17,4 +18,5 @@ export const gameEntities: Entity2dConstructor[] = [
     PotatoSpawnerEntity,
     OrderBoardEntity,
     TowerEntity,
+    SeagullEntity,
 ];

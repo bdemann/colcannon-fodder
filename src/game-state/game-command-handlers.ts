@@ -124,7 +124,10 @@ export const gameCommandHandlers: {
 
         for (const potato of state.entityStore.getEntities(PotatoEntity)) {
             if (potato.params.potatoId === packet.potatoId) {
-                if (canApplyTopping(potato.params, packet.topping)) {
+                if (
+                    !potato.params.carriedBySeagull &&
+                    canApplyTopping(potato.params, packet.topping)
+                ) {
                     potato.params[packet.topping] = true;
                 }
                 return;

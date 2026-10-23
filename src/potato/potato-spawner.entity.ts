@@ -1,9 +1,11 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
-import {potatoSizeConfig} from '../config/game-config.js';
+import {potatoSizeConfig, seagullConfig, waveConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {createNoToppings} from '../order/topping.js';
-import {advanceWaves} from '../run/waves.js';
+import {advanceWaves, getSeagullIntervalMs} from '../run/waves.js';
+import {pickSeagullEntry} from '../seagull/seagull-logic.js';
+import {SeagullEntity, seagullPhases} from '../seagull/seagull.entity.js';
 import {pickPotatoSize} from './potato-size.js';
 import {PotatoEntity} from './potato.entity.js';
 
@@ -44,6 +46,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     mashHp,
                     maxMashHp: mashHp,
                     served: false,
+                    carriedBySeagull: false,
                     potatoId: runState.nextPotatoId,
                     ...createNoToppings(),
                 });
@@ -51,5 +54,42 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 runState.potatoesSpawned++;
             }
         }
+
+        await this.spawnSeagulls(msSinceLastExecute);
+    }
+
+    /** Releases the current wave's gulls, spread evenly through the wave. */
+    protected async spawnSeagulls(msSinceLastExecute: number) {
+        const {runState} = this.state;
+        const wave = waveConfig.waves[runState.waveIndex];
+        if (runState.wavePhase !== 'spawning' || !wave) {
+            return;
+        }
+
+        runState.msUntilNextSeagull -= msSinceLastExecute;
+        if (
+            runState.msUntilNextSeagull > 0 ||
+            runState.seagullsSpawnedInWave >= wave.seagullCount
+        ) {
+            return;
+        }
+
+        const entry = pickSeagullEntry({
+            rollEdge: this.state.seededRandom.next(),
+            rollAlong: this.state.seededRandom.next(),
+        });
+        await this.addEntity(SeagullEntity, {
+            x: entry.x,
+            y: entry.y,
+            flying: this.state.seededRandom.next() < seagullConfig.flyChance,
+            hp: seagullConfig.hp,
+            phase: seagullPhases.approach,
+            targetPotatoId: 0,
+            carryingPotatoId: 0,
+            escapeX: 0,
+            escapeY: 0,
+        });
+        runState.seagullsSpawnedInWave++;
+        runState.msUntilNextSeagull = getSeagullIntervalMs(wave);
     }
 }

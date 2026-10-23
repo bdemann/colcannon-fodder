@@ -2,6 +2,7 @@ import {
     economyConfig,
     orderConfig,
     satisfactionConfig,
+    seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
 import {type PotatoToppings} from '../order/topping.js';
@@ -69,6 +70,38 @@ function fillOrder(
     runState.satisfaction = newSatisfaction;
 }
 
+/** Ends the run if satisfaction ran out (lost) or every potato is dealt with (won). */
+function checkRunEnd(runState: RunState): RunStatus {
+    if (runState.satisfaction <= 0) {
+        runState.status = RunStatus.Lost;
+    } else if (runState.potatoesServed + runState.potatoesStolen >= runState.potatoesPerRun) {
+        runState.status = RunStatus.Won;
+    }
+
+    return runState.status;
+}
+
+/**
+ * A seagull escaped with a potato: counts it, applies the (clamped) satisfaction penalty, records
+ * `lastSteal` and runs the lose and win checks. Call exactly once per stolen potato.
+ */
+export function stealPotato(runState: RunState): void {
+    if (runState.status !== RunStatus.Playing) {
+        return;
+    }
+    runState.potatoesStolen += 1;
+    const newSatisfaction = Math.min(
+        satisfactionConfig.max,
+        Math.max(0, runState.satisfaction + seagullConfig.stolenSatisfaction),
+    );
+    runState.lastSteal = {
+        atMs: runState.elapsedMs,
+        satisfactionDelta: newSatisfaction - runState.satisfaction,
+    };
+    runState.satisfaction = newSatisfaction;
+    checkRunEnd(runState);
+}
+
 /**
  * Serves one potato at the restaurant: updates `runState` in place with the result's score,
  * satisfaction, counts and `lastServing`, and ends the run when it is won or lost. Simulation code
@@ -118,13 +151,9 @@ export function servePotato(
         progress: getMashProgress(serving.processing),
     };
 
-    if (runState.satisfaction <= 0) {
-        runState.status = RunStatus.Lost;
-    } else if (runState.potatoesServed >= runState.potatoesPerRun) {
-        runState.status = RunStatus.Won;
-    }
+    const status = checkRunEnd(runState);
 
-    if (runState.status === RunStatus.Playing && isPerfect) {
+    if (isPerfect && status === RunStatus.Playing) {
         fillOrder(runState, serving);
     }
 

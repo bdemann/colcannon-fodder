@@ -9,8 +9,14 @@ import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
+import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {shouldShowTowerRange} from './tower-placement.js';
-import {chooseAreaTargetIndexes, chooseTargetIndex} from './tower-targeting.js';
+import {
+    chooseAreaTargetIndexes,
+    chooseGullTargetIndex,
+    chooseTargetIndex,
+    getGullsInRange,
+} from './tower-targeting.js';
 import {TowerType, towerTypes} from './tower-type.js';
 
 const processSfx: Record<TowerType, Sfx> = {
@@ -118,8 +124,39 @@ export class TowerEntity extends defineEntity({
         }
 
         const definition = towerTypes[this.params.towerType];
+        const gulls = [...this.state.entityStore.getEntities(SeagullEntity)].filter(
+            (gull) => gull.params.hp > 0,
+        );
+        const gullCandidates = gulls.map((gull) => {
+            return {
+                x: gull.params.x,
+                y: gull.params.y,
+                carrying: gull.params.carryingPotatoId !== 0,
+            };
+        });
+        const towerCircle = {
+            x: this.params.x,
+            y: this.params.y,
+            rangePx: definition.rangePx,
+        };
+        const gullIndexes = definition.areaOfEffect
+            ? getGullsInRange(towerCircle, gullCandidates)
+            : [chooseGullTargetIndex(towerCircle, gullCandidates)].filter((index) => index >= 0);
+        const hitGulls = gullIndexes.flatMap((index) => gulls[index] ?? []);
+
+        if (!definition.areaOfEffect && hitGulls[0]) {
+            // Gulls come first: knocking one out beats processing a potato.
+            const gull = hitGulls[0];
+            this.params.lastTargetX = gull.params.x;
+            this.params.lastTargetY = gull.params.y;
+            gull.takeHit(definition.damage);
+            this.params.cooldownRemainingMs = definition.cooldownMs;
+            this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
+            return;
+        }
+
         const potatoes = [...this.state.entityStore.getEntities(PotatoEntity)].filter(
-            (potato) => !potato.params.served,
+            (potato) => !potato.params.served && !potato.params.carriedBySeagull,
         );
         const potatoCandidates = potatoes.map((potato) => {
             return {
@@ -139,8 +176,11 @@ export class TowerEntity extends defineEntity({
                 },
                 potatoCandidates,
             );
-            if (targetIndexes.length === 0) {
+            if (targetIndexes.length === 0 && hitGulls.length === 0) {
                 return;
+            }
+            for (const gull of hitGulls) {
+                gull.takeHit(definition.damage);
             }
             for (const targetIndex of targetIndexes) {
                 const hitPotato = potatoes[targetIndex];
