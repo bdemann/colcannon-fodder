@@ -1,11 +1,15 @@
-import {type PotatoProcessing, type RunState, ServingResult} from './run-state.js';
+import {runConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
 /** Which result a potato earns from its processing. See the table in `docs/spec.md` section 4. */
 export function evaluatePotato(processing: Readonly<PotatoProcessing>): ServingResult {
-    /** Stub. Implemented in the "Restaurant judges every potato" issue. */
-    return processing.cut && processing.cooked && processing.mashed
-        ? ServingResult.Perfect
-        : ServingResult.Raw;
+    if (processing.cut && processing.cooked && processing.mashed) {
+        return ServingResult.Perfect;
+    } else if (!processing.cut && !processing.cooked && !processing.mashed) {
+        return ServingResult.Raw;
+    } else {
+        return ServingResult.Incomplete;
+    }
 }
 
 /**
@@ -21,9 +25,30 @@ export function servePotato(
         ownerSlot: number;
     }>,
 ): ServingResult {
-    /** Stub: only counts the potato. Implemented in the "Restaurant judges every potato" issue. */
     const result = evaluatePotato(serving.processing);
-    runState.potatoesServed++;
+    if (runState.status !== RunStatus.Playing) {
+        return result;
+    }
+
+    const config = servingConfig[result];
+    runState.potatoesServed += 1;
+    runState.servingCounts[result] += 1;
+    runState.scoreBySlot[serving.ownerSlot] =
+        (runState.scoreBySlot[serving.ownerSlot] ?? 0) + config.score;
+    runState.satisfaction = Math.min(
+        satisfactionConfig.max,
+        Math.max(0, runState.satisfaction + config.satisfaction),
+    );
+    runState.lastServing = {
+        result,
+        servedAtMs: runState.elapsedMs,
+    };
+
+    if (runState.satisfaction <= 0) {
+        runState.status = RunStatus.Lost;
+    } else if (runState.potatoesServed >= runConfig.potatoesPerRun) {
+        runState.status = RunStatus.Won;
+    }
 
     return result;
 }
