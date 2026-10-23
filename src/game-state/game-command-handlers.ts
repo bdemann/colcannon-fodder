@@ -31,18 +31,28 @@ export function getCommandSlot(): number {
 export const gameCommandHandlers: {
     [Type in GameCommandType]: (params: GameCommandHandlerParams<Type>) => MaybePromise<void>;
 } = {
-    async [GameCommandType.StartRun]({state}) {
+    async [GameCommandType.StartRun]({detail, state}) {
         if (!state.entityStore) {
             throw new Error('Cannot start run: no entity store exists.');
         }
 
         state.entityStore.destroyAllEntities();
         state.runState = createInitialRunState();
+
+        if (detail.packet.ready) {
+            state.runState.status = RunStatus.Ready;
+        }
+
         await state.entityStore.addEntity(LevelEntity);
         state.runState.potatoesPerRun = getPotatoesPerRun(state.level?.paths.length ?? 0);
         await state.entityStore.addEntity(PotatoSpawnerEntity, {
             msUntilNextSpawn: 0,
         });
+    },
+    [GameCommandType.BeginRun]({state}) {
+        if (state.runState?.status === RunStatus.Ready) {
+            state.runState.status = RunStatus.Playing;
+        }
     },
     async [GameCommandType.PlaceTower]({detail, state}) {
         const {packet} = detail;

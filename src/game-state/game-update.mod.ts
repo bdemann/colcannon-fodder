@@ -30,6 +30,7 @@ export const gameUpdateMod = defineAnthaMod<
         state.multiplayerP2pLockStep.multiplayerController.startSingleplayer();
         sendGameCommand(state, {
             type: GameCommandType.StartRun,
+            ready: true,
         });
     },
 });

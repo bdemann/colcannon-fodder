@@ -3,6 +3,7 @@ import {type HudActions} from './hud-actions.js';
 import {HudRunOver} from './hud-run-over.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
+import {HudTitle} from './hud-title.element.js';
 import {HudTowerToolbar} from './hud-tower-toolbar.element.js';
 
 /**
@@ -41,6 +42,10 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudRunOver}>
+            <${HudTitle.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudTitle}>
         `;
     },
 });

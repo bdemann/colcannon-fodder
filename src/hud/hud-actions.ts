@@ -11,6 +11,8 @@ export type HudActions = {
     selectTowerType(towerType: TowerType | undefined): void;
     /** Starts a fresh run. */
     restartRun(): void;
+    /** Leaves the title screen and starts the run. */
+    beginRun(): void;
 };
 
 const actionsByState = new WeakMap<object, HudActions>();
@@ -27,6 +29,11 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             if (state.ui) {
                 state.ui.selectedTowerType = towerType;
             }
+        },
+        beginRun() {
+            sendGameCommand(state, {
+                type: GameCommandType.BeginRun,
+            });
         },
         restartRun() {
             sendGameCommand(state, {

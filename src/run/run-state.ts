@@ -1,6 +1,8 @@
 import {getPotatoesPerRun, satisfactionConfig, waveConfig} from '../config/game-config.js';
 
 export enum RunStatus {
+    /** Title screen: the run is set up but frozen until `BeginRun`. */
+    Ready = 'ready',
     Playing = 'playing',
     Won = 'won',
     Lost = 'lost',

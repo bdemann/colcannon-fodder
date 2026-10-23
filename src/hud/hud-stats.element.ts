@@ -1,6 +1,6 @@
 import {css, defineElement, html, keyed, nothing} from 'element-vir';
 import {servingConfig} from '../config/game-config.js';
-import {ServingResult} from '../run/run-state.js';
+import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 
 const popupContent: Record<ServingResult, {text: string; color: string}> = {
@@ -143,7 +143,7 @@ export const HudStats = defineElement<{
             <div class="label">
                 Potatoes served ${snapshot.potatoesServed} / ${snapshot.potatoesPerRun}
             </div>
-            ${snapshot.wavePhase === 'break'
+            ${snapshot.wavePhase === 'break' && snapshot.status !== RunStatus.Ready
                 ? html`
                       <div class="banner">
                           ${snapshot.waveNumber === 1
