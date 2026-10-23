@@ -1,6 +1,7 @@
 import {defineAnthaMod} from '@antha/engine';
 import {html} from 'element-vir';
 import {type FullGameState} from '../game-state/game-state.js';
+import {getHudActions} from './hud-actions.js';
 import {createHudSnapshot} from './hud-snapshot.js';
 import {GameHud} from './hud.element.js';
 
@@ -11,6 +12,7 @@ export const hudMod = defineAnthaMod<FullGameState>({
         return html`
             <${GameHud.assign({
                 snapshot: createHudSnapshot(state),
+                actions: getHudActions(state),
             })}></${GameHud}>
         `;
     },

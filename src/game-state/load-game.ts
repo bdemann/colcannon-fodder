@@ -68,8 +68,8 @@ export async function bootstrapGame({
     state.ui = {
         selectedTowerType: undefined,
         pointerWorld: undefined,
-        pendingClicks: [],
-        pendingKeys: [],
+        clicks: [],
+        keys: [],
     };
 
     return {

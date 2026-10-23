@@ -1,4 +1,3 @@
-import {type Coords} from '@augment-vir/common';
 import {type FullGameState} from '../game-state/game-state.js';
 import {createInitialRunState, type RunState} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
@@ -12,17 +11,11 @@ import {type TowerType} from '../tower/tower-type.js';
 export type HudSnapshot = {
     runState: RunState;
     selectedTowerType: TowerType | undefined;
-    pointerWorld: Coords | undefined;
 };
 
 export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     return {
         runState: structuredClone(state.runState ?? createInitialRunState()),
         selectedTowerType: state.ui?.selectedTowerType,
-        pointerWorld: state.ui?.pointerWorld
-            ? {
-                  ...state.ui.pointerWorld,
-              }
-            : undefined,
     };
 }

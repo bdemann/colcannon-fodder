@@ -8,6 +8,11 @@ import {type TowerType} from '../tower/tower-type.js';
 import {type GameCommand} from './game-command.js';
 import {type updateEntitiesMod} from './game-entity.mod.js';
 
+/** A canvas click in game-world coordinates. */
+export type UiClick = Coords & {
+    button: 'left' | 'right';
+};
+
 /**
  * Local, per-browser UI state. Never read this from simulation code (command handlers or entity
  * `update` methods): in co-op each peer has its own UI state, so reading it would desync the game.
@@ -17,10 +22,13 @@ export type UiState = {
     selectedTowerType: TowerType | undefined;
     /** Mouse position in game-world coordinates, or `undefined` when outside the canvas. */
     pointerWorld: Coords | undefined;
-    /** Left clicks on the canvas, in game-world coordinates, not yet handled. Consumers clear it. */
-    pendingClicks: Coords[];
-    /** `KeyboardEvent.key` values pressed since the last tick, not yet handled. Consumers clear it. */
-    pendingKeys: string[];
+    /** Canvas clicks since the previous tick. Replaced every tick by `inputMod`; read, don't clear. */
+    clicks: UiClick[];
+    /**
+     * `KeyboardEvent.key` values pressed since the previous tick. Replaced every tick by
+     * `inputMod`.
+     */
+    keys: string[];
 };
 
 /** Holds the game-specific data shared by all engine mods. */

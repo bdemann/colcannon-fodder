@@ -1,9 +1,9 @@
 import {defineAnthaMod} from '@antha/engine';
 import {calculateVirtualViewportPoint} from '@antha/graphics-2d';
-import {type FullGameState} from '../game-state/game-state.js';
+import {type FullGameState, type UiClick} from '../game-state/game-state.js';
 
 /** Converts a DOM pointer event into game-world coordinates, or `undefined` if outside the world. */
-function toWorldPoint(state: Partial<FullGameState>, event: PointerEvent) {
+function toWorldPoint(state: Partial<FullGameState>, event: MouseEvent) {
     const canvas = state.pixi?.canvas;
 
     if (!canvas || !state.virtualViewport) {
@@ -20,10 +20,21 @@ function toWorldPoint(state: Partial<FullGameState>, event: PointerEvent) {
     });
 }
 
+/** Input that arrived between ticks, waiting to be published to `state.ui`. */
+const buffered: {
+    clicks: UiClick[];
+    keys: string[];
+} = {
+    clicks: [],
+    keys: [],
+};
+
 /**
- * Feeds mouse and keyboard input into `state.ui`. Listeners attach once, when the canvas exists.
- * Consumers read `state.ui.pointerWorld` and drain `state.ui.pendingClicks` /
- * `state.ui.pendingKeys` (set them back to `[]` after handling).
+ * Feeds mouse and keyboard input into `state.ui`. Must be the first game mod in the mod list.
+ *
+ * Each tick it publishes everything that happened since the previous tick to `state.ui.clicks` and
+ * `state.ui.keys`, replacing last tick's values. Every later mod in the same tick can read them;
+ * nobody needs to clear them.
  */
 export const inputMod = defineAnthaMod<
     FullGameState & {
@@ -32,9 +43,18 @@ export const inputMod = defineAnthaMod<
 >({
     modName: 'input',
     execute({state}) {
+        if (!state.ui) {
+            return;
+        }
+
+        state.ui.clicks = buffered.clicks;
+        state.ui.keys = buffered.keys;
+        buffered.clicks = [];
+        buffered.keys = [];
+
         const canvas = state.pixi?.canvas;
 
-        if (state.inputListenersAttached || !canvas || !state.ui) {
+        if (state.inputListenersAttached || !canvas) {
             return;
         }
 
@@ -48,19 +68,26 @@ export const inputMod = defineAnthaMod<
             ui.pointerWorld = undefined;
         });
         canvas.addEventListener('pointerdown', (event) => {
-            if (event.button !== 0) {
+            if (event.button !== 0 && event.button !== 2) {
                 return;
             }
 
             const point = toWorldPoint(state, event);
 
             if (point) {
-                ui.pendingClicks.push(point);
+                buffered.clicks.push({
+                    ...point,
+                    button: event.button === 0 ? 'left' : 'right',
+                });
             }
+        });
+        canvas.addEventListener('contextmenu', (event) => {
+            /** Right click is a game control (deselect), not the browser menu. */
+            event.preventDefault();
         });
         globalThis.addEventListener('keydown', (event) => {
             if (!event.repeat) {
-                ui.pendingKeys.push(event.key);
+                buffered.keys.push(event.key);
             }
         });
     },

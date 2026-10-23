@@ -1,12 +1,21 @@
 import {css, defineElement, html} from 'element-vir';
+import {type HudActions} from './hud-actions.js';
+import {HudRunOver} from './hud-run-over.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {HudStats} from './hud-stats.element.js';
+import {HudTowerToolbar} from './hud-tower-toolbar.element.js';
 
 /**
- * The HTML overlay drawn on top of the canvas. The host ignores pointer events so clicks reach the
- * canvas; any interactive child must set `pointer-events: auto`.
+ * The HTML overlay drawn on top of the canvas. Only lays out its child panels; each panel lives in
+ * its own file. The host ignores pointer events so clicks reach the canvas; any interactive child
+ * must set `pointer-events: auto`.
+ *
+ * The overlay is laid out in a 1920x1080 coordinate space that the engine scales to fit the window,
+ * so CSS pixel sizes here match game-world pixels.
  */
 export const GameHud = defineElement<{
     snapshot: HudSnapshot;
+    actions: HudActions;
 }>()({
     tagName: 'game-hud',
     styles: css`
@@ -18,24 +27,20 @@ export const GameHud = defineElement<{
             pointer-events: none;
             position: absolute;
         }
-
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            left: 16px;
-            position: absolute;
-            text-shadow: 0 2px 4px black;
-            top: 12px;
-        }
     `,
     render({inputs}) {
-        const pointer = inputs.snapshot.pointerWorld;
-
         return html`
-            <div class="title">
-                Colcannon Fodder
-                ${pointer ? `(${Math.round(pointer.x)}, ${Math.round(pointer.y)})` : ''}
-            </div>
+            <${HudStats.assign({
+                snapshot: inputs.snapshot,
+            })}></${HudStats}>
+            <${HudTowerToolbar.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudTowerToolbar}>
+            <${HudRunOver.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudRunOver}>
         `;
     },
 });

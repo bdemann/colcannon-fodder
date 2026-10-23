@@ -38,6 +38,7 @@ src/
   level/level.ts                  level data (paths, restaurant) + path math helpers
   level/level.entity.ts           draws grass, paths, spawn markers, restaurant
   run/run-state.ts                RunState (score, satisfaction, status) + ServingResult, PotatoProcessing
+  run/serving.ts                  evaluatePotato() + servePotato(): the restaurant's rules
   tower/tower-type.ts             TowerType enum + per-type label/color/hotkey/processes/range/cooldown
   game-state/game-state.ts        GameState + UiState + FullGameState types
   game-state/game-command.ts      GameCommand union + sendGameCommand()
@@ -139,24 +140,32 @@ World is 1920x1080, origin top-left. Draw order: later-added entities draw on to
 
 ### HUD
 
-`hud.mod.ts` builds a `HudSnapshot` (plain values, `hud/hud-snapshot.ts`) every tick and renders
-`GameHud` (`hud/hud.element.ts`, element-vir). The HUD only re-renders when a snapshot value
-changes, so **add any value the HUD shows to `HudSnapshot`** instead of passing state objects
-in. The HUD host has `pointer-events: none` so canvas clicks work; give buttons
-`pointer-events: auto`. HUD buttons send commands via `sendGameCommand` (pass the state in through
-a callback property, or dispatch an element event that `hudMod` handles: look at existing code
-first).
+`hud.mod.ts` renders `GameHud` (`hud/hud.element.ts`) every tick with two inputs:
+
+-   `snapshot`: a `HudSnapshot` (`hud/hud-snapshot.ts`) of plain values, rebuilt every tick. The
+    HUD only re-renders when a value in it changes, so **add any value the HUD shows to
+    `HudSnapshot`** instead of passing state objects in. Don't put fast-changing values in it
+    (like the mouse position) unless the HUD really displays them.
+-   `actions`: `HudActions` (`hud/hud-actions.ts`), stable callbacks (select a tower, restart).
+    Add an action there when a HUD button needs to do something new. Actions may write
+    `state.ui` or call `sendGameCommand`, nothing else.
+
+`GameHud` only lays out panels; each panel is its own element file (`hud-stats`,
+`hud-tower-toolbar`, `hud-run-over`). The HUD host has `pointer-events: none` so canvas clicks
+work; give buttons and panels you can click `pointer-events: auto`. The overlay is scaled with the
+game, so **HUD CSS pixels are world pixels** (1920x1080): use large sizes, around 28-40px text.
 
 ### Input
 
-`inputMod` fills `state.ui`:
+`inputMod` is the first game mod each tick. It fills `state.ui`:
 
 -   `ui.pointerWorld`: mouse position in world coordinates, `undefined` when off the canvas.
--   `ui.pendingClicks`: left clicks (world coords) not yet handled.
--   `ui.pendingKeys`: `KeyboardEvent.key` values pressed since last handled.
+-   `ui.clicks`: canvas clicks since the previous tick, `{x, y, button: 'left' | 'right'}` in
+    world coordinates. Right click does not open the browser menu.
+-   `ui.keys`: `KeyboardEvent.key` values pressed since the previous tick (`'1'`, `'Escape'`, `'r'`).
 
-A consumer reads these in its own mod's `execute`, acts, and resets the array to `[]`. Only one
-mod should consume each kind of input; if two features need clicks, one mod dispatches them.
+These are replaced every tick, so any mod later in the tick can read them; nobody clears them.
+Clicks on HUD buttons are DOM clicks and never show up in `ui.clicks`.
 
 ### Mods
 
