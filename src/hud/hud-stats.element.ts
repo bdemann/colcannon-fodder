@@ -52,6 +52,24 @@ export const HudStats = defineElement<{
             font-weight: bold;
         }
 
+        .wave {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        /* The host is at (72, 16), so these offsets put the banner's center at world (960, 200). */
+        .banner {
+            color: #ffffff;
+            font-size: 56px;
+            font-weight: bold;
+            left: 888px;
+            position: absolute;
+            text-shadow: 0 3px 6px black;
+            top: 184px;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+
         .label {
             font-size: 26px;
         }
@@ -121,9 +139,20 @@ export const HudStats = defineElement<{
                 </div>
                 <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
             </div>
+            <div class="wave">Wave ${snapshot.waveNumber} / ${snapshot.waveCount}</div>
             <div class="label">
                 Potatoes served ${snapshot.potatoesServed} / ${snapshot.potatoesPerRun}
             </div>
+            ${snapshot.wavePhase === 'break'
+                ? html`
+                      <div class="banner">
+                          ${snapshot.waveNumber === 1
+                              ? 'Get ready! Wave 1 in'
+                              : `Wave ${snapshot.waveNumber} incoming in`}
+                          ${snapshot.breakSecondsLeft}...
+                      </div>
+                  `
+                : nothing}
             ${popup && popupInfo
                 ? keyed(
                       popup.id,

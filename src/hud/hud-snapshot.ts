@@ -1,4 +1,4 @@
-import {hudConfig, runConfig, satisfactionConfig} from '../config/game-config.js';
+import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
@@ -17,6 +17,12 @@ export type HudSnapshot = {
     totalScore: number;
     potatoesServed: number;
     potatoesPerRun: number;
+    /** 1-based number of the current or upcoming wave. */
+    waveNumber: number;
+    waveCount: number;
+    wavePhase: 'break' | 'spawning' | 'done';
+    /** Whole seconds left in the break (0 outside a break), so the HUD updates once a second. */
+    breakSecondsLeft: number;
     servingCounts: Record<ServingResult, number>;
     /** Set while the latest serving is recent enough to show; `id` changes for each serving. */
     servingPopup: {result: ServingResult; id: number} | undefined;
@@ -33,7 +39,12 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         maxSatisfaction: satisfactionConfig.max,
         totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
         potatoesServed: runState.potatoesServed,
-        potatoesPerRun: runConfig.potatoesPerRun,
+        potatoesPerRun: runState.potatoesPerRun,
+        waveNumber: runState.waveIndex + 1,
+        waveCount: waveConfig.waves.length,
+        wavePhase: runState.wavePhase,
+        breakSecondsLeft:
+            runState.wavePhase === 'break' ? Math.ceil(runState.breakRemainingMs / 1000) : 0,
         servingCounts: {
             ...runState.servingCounts,
         },

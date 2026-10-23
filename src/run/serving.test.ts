@@ -1,6 +1,6 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {runConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {satisfactionConfig, servingConfig} from '../config/game-config.js';
 import {
     createInitialRunState,
     type PotatoProcessing,
@@ -150,7 +150,7 @@ describe(servePotato.name, () => {
 
     it('wins the run after serving every potato', () => {
         const runState = createInitialRunState();
-        for (let i = 0; i < runConfig.potatoesPerRun - 1; i++) {
+        for (let i = 0; i < runState.potatoesPerRun - 1; i++) {
             servePotato(runState, {
                 processing: perfect,
                 ownerSlot: 0,
@@ -162,12 +162,12 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
         });
         assert.strictEquals(runState.status, RunStatus.Won);
-        assert.strictEquals(runState.potatoesServed, runConfig.potatoesPerRun);
+        assert.strictEquals(runState.potatoesServed, runState.potatoesPerRun);
     });
 
     it('counts losing on the last potato as a loss', () => {
         const runState = createInitialRunState();
-        runState.potatoesServed = runConfig.potatoesPerRun - 1;
+        runState.potatoesServed = runState.potatoesPerRun - 1;
         runState.satisfaction = 1;
         servePotato(runState, {
             processing: raw,

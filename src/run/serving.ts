@@ -1,4 +1,4 @@
-import {runConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {satisfactionConfig, servingConfig} from '../config/game-config.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
 /** Which result a potato earns from its processing. See the table in `docs/spec.md` section 4. */
@@ -46,7 +46,7 @@ export function servePotato(
 
     if (runState.satisfaction <= 0) {
         runState.status = RunStatus.Lost;
-    } else if (runState.potatoesServed >= runConfig.potatoesPerRun) {
+    } else if (runState.potatoesServed >= runState.potatoesPerRun) {
         runState.status = RunStatus.Won;
     }
 
