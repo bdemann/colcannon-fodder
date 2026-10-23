@@ -7,6 +7,7 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {potatoSizeConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
+import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {getMashProgress} from './mash.js';
@@ -118,6 +119,7 @@ export class PotatoEntity extends defineEntity({
                 processing: this.getProcessing(),
                 ownerSlot: path.ownerSlot,
                 value: potatoSizeConfig[this.params.size].value,
+                toppings: getPotatoToppings(this.params),
             });
             this.destroy();
             return;

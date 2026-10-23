@@ -1,6 +1,6 @@
 import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {waveConfig} from '../config/game-config.js';
+import {orderConfig, waveConfig} from '../config/game-config.js';
 import {createInitialRunState, type RunState} from './run-state.js';
 import {advanceWaves} from './waves.js';
 
@@ -35,6 +35,20 @@ describe(advanceWaves.name, () => {
         assert.strictEquals(getPhase(runState), 'spawning');
         assert.strictEquals(runState.spawnedInWave, 0);
         assert.strictEquals(timer.msUntilNextSpawn, 0);
+    });
+
+    it('delays the first order of a wave when it starts spawning', () => {
+        const runState = createInitialRunState();
+        runState.msUntilNextOrder = 1;
+        runState.breakRemainingMs = 10;
+        advanceWaves(
+            runState,
+            {
+                msUntilNextSpawn: 0,
+            },
+            10,
+        );
+        assert.strictEquals(runState.msUntilNextOrder, orderConfig.firstOrderDelayMs);
     });
 
     it('sets the belt speed from the wave when it starts spawning', () => {

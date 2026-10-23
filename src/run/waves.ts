@@ -1,4 +1,4 @@
-import {waveConfig} from '../config/game-config.js';
+import {orderConfig, waveConfig} from '../config/game-config.js';
 import {type PotatoSizeWeights} from '../potato/potato-size.js';
 import {type RunState} from './run-state.js';
 
@@ -29,6 +29,7 @@ export function advanceWaves(
                 runState.beltSpeedPxPerMs = startingWave.speedPxPerMs;
             }
             timer.msUntilNextSpawn = 0;
+            runState.msUntilNextOrder = orderConfig.firstOrderDelayMs;
         }
         return spawns;
     } else if (runState.wavePhase === 'done') {

@@ -1,4 +1,11 @@
-import {economyConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {
+    economyConfig,
+    orderConfig,
+    satisfactionConfig,
+    servingConfig,
+} from '../config/game-config.js';
+import {type PotatoToppings} from '../order/topping.js';
+import {matchDish} from '../order/toppings.js';
 import {getMashProgress} from '../potato/mash.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
@@ -30,6 +37,38 @@ export function getSatisfactionDelta(
     return servingConfig[result].satisfaction;
 }
 
+/** Fills the oldest open order matching the potato's toppings, if any, with the bonus rewards. */
+function fillOrder(
+    runState: RunState,
+    serving: Readonly<{ownerSlot: number; value: number; toppings: PotatoToppings}>,
+) {
+    const dish = matchDish(serving.toppings);
+    const index = runState.orders.findIndex((order) => order.dish === dish);
+    const order = runState.orders[index];
+    if (!dish || !order) {
+        return;
+    }
+
+    runState.orders.splice(index, 1);
+    const score = Math.round(orderConfig.fulfilled.score * serving.value);
+    const coins = Math.round(orderConfig.fulfilled.coins * serving.value);
+    runState.scoreBySlot[serving.ownerSlot] =
+        (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
+    runState.coins += coins;
+    const newSatisfaction = Math.min(
+        satisfactionConfig.max,
+        Math.max(0, runState.satisfaction + orderConfig.fulfilled.satisfaction),
+    );
+    runState.lastOrderEvent = {
+        kind: 'fulfilled',
+        dish,
+        atMs: runState.elapsedMs,
+        scoreDelta: score,
+        satisfactionDelta: newSatisfaction - runState.satisfaction,
+    };
+    runState.satisfaction = newSatisfaction;
+}
+
 /**
  * Serves one potato at the restaurant: updates `runState` in place with the result's score,
  * satisfaction, counts and `lastServing`, and ends the run when it is won or lost. Simulation code
@@ -43,6 +82,8 @@ export function servePotato(
         ownerSlot: number;
         /** The potato size's `value`. Multiplies the score and coins of a perfect serving only. */
         value: number;
+        /** Hand-applied toppings. A perfect potato matching an open order fills it. */
+        toppings: PotatoToppings;
     }>,
 ): ServingResult {
     const result = evaluatePotato(serving.processing);
@@ -80,6 +121,10 @@ export function servePotato(
         runState.status = RunStatus.Lost;
     } else if (runState.potatoesServed >= runState.potatoesPerRun) {
         runState.status = RunStatus.Won;
+    }
+
+    if (runState.status === RunStatus.Playing && isPerfect) {
+        fillOrder(runState, serving);
     }
 
     return result;
