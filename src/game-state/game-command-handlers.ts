@@ -3,7 +3,10 @@ import {type MaybePromise} from '@augment-vir/common';
 import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
+import {OrderBoardEntity} from '../order/order-board.entity.js';
+import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
+import {PotatoEntity} from '../potato/potato.entity.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -50,6 +53,7 @@ export const gameCommandHandlers: {
         await state.entityStore.addEntity(PotatoSpawnerEntity, {
             msUntilNextSpawn: 0,
         });
+        await state.entityStore.addEntity(OrderBoardEntity, {});
     },
     [GameCommandType.BeginRun]({state}) {
         if (state.runState?.status === RunStatus.Ready) {
@@ -97,8 +101,20 @@ export const gameCommandHandlers: {
             lastTargetY: 0,
         });
     },
-    [GameCommandType.ApplyTopping]({detail}) {
-        /** Implemented in the "orders and toppings: rules" issue. */
-        console.info('ApplyTopping command received', detail.packet);
+    [GameCommandType.ApplyTopping]({detail, state}) {
+        const {packet} = detail;
+
+        if (!state.entityStore || state.runState?.status !== RunStatus.Playing) {
+            return;
+        }
+
+        for (const potato of state.entityStore.getEntities(PotatoEntity)) {
+            if (potato.params.potatoId === packet.potatoId) {
+                if (canApplyTopping(potato.params, packet.topping)) {
+                    potato.params[packet.topping] = true;
+                }
+                return;
+            }
+        }
     },
 };
