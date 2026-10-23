@@ -1,6 +1,10 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {chooseTargetIndex, type TargetCandidate} from './tower-targeting.js';
+import {
+    chooseAreaTargetIndexes,
+    chooseTargetIndex,
+    type TargetCandidate,
+} from './tower-targeting.js';
 
 const tower = {
     x: 0,
@@ -178,6 +182,69 @@ describe(chooseTargetIndex.name, () => {
                 }),
             ]),
             0,
+        );
+    });
+});
+
+describe(chooseAreaTargetIndexes.name, () => {
+    it('returns nothing for an empty list', () => {
+        assert.deepEquals(chooseAreaTargetIndexes(tower, []), []);
+    });
+
+    it('ignores potatoes out of range', () => {
+        assert.deepEquals(
+            chooseAreaTargetIndexes(tower, [
+                candidate({
+                    x: 101,
+                    distancePx: 5,
+                }),
+            ]),
+            [],
+        );
+    });
+
+    it('excludes fully mashed potatoes', () => {
+        assert.deepEquals(
+            chooseAreaTargetIndexes(tower, [
+                candidate({
+                    x: 10,
+                    distancePx: 5,
+                    mashHp: 0,
+                }),
+                candidate({
+                    x: 20,
+                    distancePx: 5,
+                }),
+            ]),
+            [1],
+        );
+    });
+
+    it('returns every hit in candidate order', () => {
+        assert.deepEquals(
+            chooseAreaTargetIndexes(tower, [
+                candidate({
+                    x: 50,
+                    distancePx: 1,
+                }),
+                candidate({
+                    x: 500,
+                    distancePx: 9,
+                }),
+                candidate({
+                    x: 100,
+                    distancePx: 5,
+                }),
+                candidate({
+                    x: 10,
+                    distancePx: 3,
+                }),
+            ]),
+            [
+                0,
+                2,
+                3,
+            ],
         );
     });
 });

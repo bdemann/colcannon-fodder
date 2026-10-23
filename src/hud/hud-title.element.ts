@@ -12,7 +12,7 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
     },
     {
         towerType: TowerType.Boiler,
-        verb: 'soften',
+        verb: 'splash & soften',
     },
     {
         towerType: TowerType.Masher,
@@ -21,7 +21,7 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
 ];
 
 const rules = [
-    'Every tower mashes. Knives cut so every hit lands harder; pots soften so mashers hit twice as hard.',
+    'Every tower mashes. Knives cut so every hit lands harder; pots soften everything in range so mashers hit twice as hard.',
     'Fully mashed potatoes make customers happy. Raw ones make them furious.',
     'Keep satisfaction above zero through every wave to become the Mash Champ.',
 ];

@@ -95,7 +95,7 @@ export const HudTowerToolbar = defineElement<{
         const selected = inputs.snapshot.selectedTowerType;
         const hint = selected
             ? `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
-            : 'Every tower mashes · Knife: +50% damage · Pot: 2x Masher damage';
+            : 'Knife: fast, cuts (+50% damage) · Pot: splashes everything in range · Masher: heavy finisher';
 
         return html`
             <div class="hint">${hint}</div>
