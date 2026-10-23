@@ -4,6 +4,7 @@ module.exports = {
     ...baseConfig,
     ignorePaths: [
         ...baseConfig.ignorePaths,
+        '.claude/worktrees/**',
     ],
     words: [
         ...baseConfig.words,

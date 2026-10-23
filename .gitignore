@@ -10,4 +10,4 @@ dist/
 generated-config-*
 graphics/
 node_modules/
-tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo.claude/worktrees/

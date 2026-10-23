@@ -8,7 +8,8 @@ export default [
     ...defineEslintConfig(__dirname),
     {
         ignores: [
-            /** Add file globs that should be ignored. */
+            /** Agent worktrees: each has its own copy of the repo. */
+            '.claude/worktrees/**',
         ],
     },
     {
