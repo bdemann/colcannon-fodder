@@ -27,7 +27,9 @@ export type HudSnapshot = {
     breakSecondsLeft: number;
     servingCounts: Record<ServingResult, number>;
     /** Set while the latest serving is recent enough to show; `id` changes for each serving. */
-    servingPopup: {result: ServingResult; id: number} | undefined;
+    servingPopup:
+        | {result: ServingResult; id: number; scoreDelta: number; satisfactionDelta: number}
+        | undefined;
     selectedTowerType: TowerType | undefined;
     /** Whether sound effects are muted. */
     muted: boolean;
@@ -58,6 +60,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                 ? {
                       result: lastServing.result,
                       id: runState.potatoesServed,
+                      scoreDelta: lastServing.scoreDelta,
+                      satisfactionDelta: lastServing.satisfactionDelta,
                   }
                 : undefined,
         selectedTowerType: state.ui?.selectedTowerType,

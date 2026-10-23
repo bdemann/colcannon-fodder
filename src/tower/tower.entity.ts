@@ -6,16 +6,17 @@ import {Container, Text} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
+import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
-import {RunStatus, type PotatoProcessing} from '../run/run-state.js';
+import {RunStatus} from '../run/run-state.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {chooseTargetIndex} from './tower-targeting.js';
 import {TowerType, towerTypes} from './tower-type.js';
 
-const processSfx: Record<keyof PotatoProcessing, Sfx> = {
-    cut: Sfx.Chop,
-    cooked: Sfx.Boil,
-    mashed: Sfx.Squish,
+const processSfx: Record<TowerType, Sfx> = {
+    [TowerType.Knife]: Sfx.Chop,
+    [TowerType.Boiler]: Sfx.Boil,
+    [TowerType.Masher]: Sfx.Squish,
 };
 
 /** A built tower. Placed by the `PlaceTower` command; processes potatoes in range. */
@@ -120,18 +121,14 @@ export class TowerEntity extends defineEntity({
                 x: this.params.x,
                 y: this.params.y,
                 rangePx: definition.rangePx,
-                processes: definition.processes,
+                appliesEffect: definition.appliesEffect,
             },
             potatoes.map((potato) => {
                 return {
                     x: potato.params.x,
                     y: potato.params.y,
                     distancePx: potato.params.distancePx,
-                    processing: {
-                        cut: potato.params.cut,
-                        cooked: potato.params.cooked,
-                        mashed: potato.params.mashed,
-                    },
+                    processing: potato.getProcessing(),
                 };
             }),
         );
@@ -140,7 +137,11 @@ export class TowerEntity extends defineEntity({
             return;
         }
 
-        target.params[definition.processes] = true;
+        const processing = target.getProcessing();
+        applyTowerHit(processing, this.params.towerType);
+        target.params.cut = processing.cut;
+        target.params.cooked = processing.cooked;
+        target.params.mashHp = processing.mashHp;
         this.params.cooldownRemainingMs = definition.cooldownMs;
         this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
         this.params.lastTargetX = target.params.x;
@@ -170,7 +171,7 @@ export class TowerEntity extends defineEntity({
             lastProcessedAtMs >= 0 &&
             this.state.runState.status === RunStatus.Playing
         ) {
-            playSfx(processSfx[towerTypes[towerType].processes]);
+            playSfx(processSfx[towerType]);
         }
         this.lastSeenProcessedAtMs = lastProcessedAtMs;
 

@@ -15,19 +15,21 @@ export enum RunStatus {
 
 /** What the customers thought of one potato. See `docs/spec.md` section 4. */
 export enum ServingResult {
-    /** Cut, cooked, and mashed. */
+    /** Fully mashed. */
     Perfect = 'perfect',
-    /** Some processing, but not all three. */
+    /** Touched, but not fully mashed. */
     Incomplete = 'incomplete',
-    /** No processing at all. */
+    /** Untouched. */
     Raw = 'raw',
 }
 
-/** The processing flags every potato carries. All start `false`. */
+/** A potato's processing: two status effects plus the mash meter. */
 export type PotatoProcessing = {
     cut: boolean;
     cooked: boolean;
-    mashed: boolean;
+    /** Mash left to do. 0 = fully mashed. */
+    mashHp: number;
+    maxMashHp: number;
 };
 
 /** The most recent serving, kept so the HUD can show a short result popup. */
@@ -35,6 +37,9 @@ export type LastServing = {
     result: ServingResult;
     /** `runState.elapsedMs` when it was served. */
     servedAtMs: number;
+    /** What this serving actually changed. */
+    scoreDelta: number;
+    satisfactionDelta: number;
 };
 
 /**

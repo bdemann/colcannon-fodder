@@ -7,7 +7,9 @@ import {defineShape, intersectShape} from 'object-shape-tester';
 import {potatoConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
+import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
+import {getMashProgress} from './mash.js';
 import {drawPotato} from './potato-view.js';
 
 /** A potato walking along a path toward the restaurant. Served (and removed) when it arrives. */
@@ -22,7 +24,8 @@ export class PotatoEntity extends defineEntity({
             speedPxPerMs: 0,
             cut: false,
             cooked: false,
-            mashed: false,
+            mashHp: 0,
+            maxMashHp: 1,
             /** True once served, so it is never served twice. */
             served: false,
         }),
@@ -38,11 +41,10 @@ export class PotatoEntity extends defineEntity({
         },
     },
 }) {
-    /** Which look is currently drawn, so we only redraw when a flag changes. */
+    /** Which look is currently drawn, so we only redraw when it changes. */
     protected drawnKey = '';
 
     public override createView(): ViewCreation2d {
-        const {cut, cooked, mashed} = this.params;
         this.drawnKey = this.getLookKey();
 
         return {
@@ -53,16 +55,24 @@ export class PotatoEntity extends defineEntity({
                 },
                 potatoConfig.radius,
             ),
-            view: drawPotato(new Graphics(), {
-                cut,
-                cooked,
-                mashed,
-            }),
+            view: drawPotato(new Graphics(), this.getProcessing()),
+        };
+    }
+
+    /** The processing state held in the params. */
+    public getProcessing(): PotatoProcessing {
+        const {cut, cooked, mashHp, maxMashHp} = this.params;
+        return {
+            cut,
+            cooked,
+            mashHp,
+            maxMashHp,
         };
     }
 
     protected getLookKey(): string {
-        return `${this.params.cut}${this.params.cooked}${this.params.mashed}`;
+        const progress = getMashProgress(this.getProcessing());
+        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}`;
     }
 
     protected redrawIfChanged() {
@@ -71,11 +81,7 @@ export class PotatoEntity extends defineEntity({
             return;
         }
         this.drawnKey = key;
-        drawPotato(assertWrap.instanceOf(this.view, Graphics), {
-            cut: this.params.cut,
-            cooked: this.params.cooked,
-            mashed: this.params.mashed,
-        });
+        drawPotato(assertWrap.instanceOf(this.view, Graphics), this.getProcessing());
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -93,11 +99,7 @@ export class PotatoEntity extends defineEntity({
         if (this.params.distancePx >= getPathLength(path)) {
             this.params.served = true;
             servePotato(this.state.runState, {
-                processing: {
-                    cut: this.params.cut,
-                    cooked: this.params.cooked,
-                    mashed: this.params.mashed,
-                },
+                processing: this.getProcessing(),
                 ownerSlot: path.ownerSlot,
             });
             this.destroy();

@@ -1,15 +1,33 @@
 import {economyConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {getMashProgress} from '../potato/mash.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
-/** Which result a potato earns from its processing. See the table in `docs/spec.md` section 4. */
+/** Which result a potato earns: fully mashed is Perfect, untouched is Raw, anything else Incomplete. */
 export function evaluatePotato(processing: Readonly<PotatoProcessing>): ServingResult {
-    if (processing.cut && processing.cooked && processing.mashed) {
+    if (processing.mashHp <= 0) {
         return ServingResult.Perfect;
-    } else if (!processing.cut && !processing.cooked && !processing.mashed) {
+    } else if (!processing.cut && !processing.cooked && processing.mashHp >= processing.maxMashHp) {
         return ServingResult.Raw;
     } else {
         return ServingResult.Incomplete;
     }
+}
+
+/**
+ * How much satisfaction one serving changes. Incomplete scales with mash progress: barely touched
+ * costs nearly a raw penalty, almost mashed costs the small incomplete penalty.
+ */
+export function getSatisfactionDelta(
+    result: ServingResult,
+    processing: Readonly<PotatoProcessing>,
+): number {
+    if (result === ServingResult.Incomplete) {
+        return Math.min(
+            servingConfig.incomplete.satisfaction,
+            Math.round(servingConfig.raw.satisfaction * (1 - getMashProgress(processing))),
+        );
+    }
+    return servingConfig[result].satisfaction;
 }
 
 /**
@@ -31,18 +49,23 @@ export function servePotato(
     }
 
     const config = servingConfig[result];
+    const satisfactionDelta = getSatisfactionDelta(result, serving.processing);
     runState.potatoesServed += 1;
     runState.servingCounts[result] += 1;
     runState.scoreBySlot[serving.ownerSlot] =
         (runState.scoreBySlot[serving.ownerSlot] ?? 0) + config.score;
     runState.coins += economyConfig.servingCoins[result];
-    runState.satisfaction = Math.min(
+    const newSatisfaction = Math.min(
         satisfactionConfig.max,
-        Math.max(0, runState.satisfaction + config.satisfaction),
+        Math.max(0, runState.satisfaction + satisfactionDelta),
     );
+    const appliedSatisfactionDelta = newSatisfaction - runState.satisfaction;
+    runState.satisfaction = newSatisfaction;
     runState.lastServing = {
         result,
         servedAtMs: runState.elapsedMs,
+        scoreDelta: config.score,
+        satisfactionDelta: appliedSatisfactionDelta,
     };
 
     if (runState.satisfaction <= 0) {

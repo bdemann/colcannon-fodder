@@ -78,17 +78,27 @@ export const towerConfig = {
 /** Per-type tower tunables. Keyed by `TowerType` values from `src/tower/tower-type.ts`. */
 export const towerTypeConfig = {
     knife: {
+        damage: 10,
         rangePx: 140,
         cooldownMs: 400,
     },
     boiler: {
+        damage: 15,
         rangePx: 140,
         cooldownMs: 400,
     },
     masher: {
+        damage: 30,
         rangePx: 140,
         cooldownMs: 400,
     },
+} as const;
+
+/** The mash meter. See issue #36. */
+export const mashConfig = {
+    potatoHp: 100,
+    cutMultiplier: 1.5,
+    softMasherMultiplier: 2,
 } as const;
 
 /** HUD timings. */

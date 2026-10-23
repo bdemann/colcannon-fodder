@@ -1,19 +1,27 @@
 import {css, defineElement, html, keyed, nothing} from 'element-vir';
-import {servingConfig} from '../config/game-config.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 
-const popupContent: Record<ServingResult, {text: string; color: string}> = {
+const popupContent: Record<
+    ServingResult,
+    {getText: (popup: NonNullable<HudSnapshot['servingPopup']>) => string; color: string}
+> = {
     [ServingResult.Perfect]: {
-        text: `Perfect mash! +${servingConfig.perfect.score}`,
+        getText(popup) {
+            return `Perfect mash! +${popup.scoreDelta}`;
+        },
         color: '#7CFC00',
     },
     [ServingResult.Incomplete]: {
-        text: `Half-done... ${servingConfig.incomplete.satisfaction}`,
+        getText(popup) {
+            return `Half-done... ${popup.satisfactionDelta}`;
+        },
         color: '#ffc107',
     },
     [ServingResult.Raw]: {
-        text: `RAW POTATO! ${servingConfig.raw.satisfaction}`,
+        getText(popup) {
+            return `RAW POTATO! ${popup.satisfactionDelta}`;
+        },
         color: '#ff5252',
     },
 };
@@ -165,7 +173,7 @@ export const HudStats = defineElement<{
                       popup.id,
                       html`
                           <div class="popup" style="color: ${popupInfo.color}">
-                              ${popupInfo.text}
+                              ${popupInfo.getText(popup)}
                           </div>
                       `,
                   )
