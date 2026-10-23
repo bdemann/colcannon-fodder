@@ -185,6 +185,18 @@ rules in pure functions (input data -> output data) so they are easy to test. En
 tested with `EntityStore2d` + `createMockPixi()` (see the engine repo for examples), but prefer
 testing the pure functions they call.
 
+## Gotchas (learned the hard way)
+
+-   **Dev server:** start it with the Bash tool's `run_in_background` option, or it dies when the
+    call ends. Several worktrees run servers at once, so use the port it prints. **Never
+    `pkill vite` / `pkill -f vite`**: that kills every agent's server and can kill your own shell.
+    Stop only your own process (the background task, or `kill <pid>`).
+-   `npm run lint` auto-fixes but leaves odd formatting; always follow it with `npm run format`.
+-   Command handlers get the command as `detail.packet` (not `detail`).
+-   element-vir re-exports lit's `keyed` and `repeat`, and `listen('click', ...)` for DOM events.
+-   Headless screenshots run the simulation slower than real time (see the sim-speed issue), so
+    compare against `runState.elapsedMs` in the dump instead of wall-clock waits.
+
 ## Code style
 
 -   Match the surrounding code. Prettier + ESLint enforce most style; run `npm run lint` then
