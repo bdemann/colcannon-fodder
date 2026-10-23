@@ -8,6 +8,7 @@ export enum Sfx {
     ServeBad = 'serve-bad',
     ServeRaw = 'serve-raw',
     Build = 'build',
+    Squawk = 'squawk',
 }
 
 /** Smallest gain an exponential ramp can reach (it cannot reach 0). */
@@ -169,6 +170,16 @@ const tonesBySfx: Record<Exclude<Sfx, Sfx.Chop>, ReadonlyArray<ToneParams>> = {
             startSec: 0,
             durationSec: 0.25,
             startGain: 0.6,
+        },
+    ],
+    [Sfx.Squawk]: [
+        {
+            type: 'square',
+            startHz: 900,
+            endHz: 600,
+            startSec: 0,
+            durationSec: 0.12,
+            startGain: 0.4,
         },
     ],
     [Sfx.Build]: [

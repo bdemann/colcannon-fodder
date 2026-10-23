@@ -68,3 +68,56 @@ export function chooseAreaTargetIndexes(
 
     return indexes;
 }
+
+/** A seagull a tower could hit. */
+export type GullCandidate = Readonly<{
+    x: number;
+    y: number;
+    carrying: boolean;
+}>;
+
+/** Indexes of every gull within range of the tower. */
+export function getGullsInRange(
+    tower: Readonly<{x: number; y: number; rangePx: number}>,
+    gulls: ReadonlyArray<GullCandidate>,
+): number[] {
+    const indexes: number[] = [];
+    gulls.forEach((gull, index) => {
+        if (Math.hypot(gull.x - tower.x, gull.y - tower.y) <= tower.rangePx) {
+            indexes.push(index);
+        }
+    });
+
+    return indexes;
+}
+
+/**
+ * Index into `gulls` of the one a single-target tower hits, or -1 for none: a gull carrying a
+ * potato first, then the nearest.
+ */
+export function chooseGullTargetIndex(
+    tower: Readonly<{x: number; y: number; rangePx: number}>,
+    gulls: ReadonlyArray<GullCandidate>,
+): number {
+    let bestIndex = -1;
+    let bestCarrying = false;
+    let bestDistancePx = Infinity;
+    for (const index of getGullsInRange(tower, gulls)) {
+        const gull = gulls[index];
+        if (!gull) {
+            continue;
+        }
+        const distancePx = Math.hypot(gull.x - tower.x, gull.y - tower.y);
+        if (
+            bestIndex < 0 ||
+            (gull.carrying && !bestCarrying) ||
+            (gull.carrying === bestCarrying && distancePx < bestDistancePx)
+        ) {
+            bestIndex = index;
+            bestCarrying = gull.carrying;
+            bestDistancePx = distancePx;
+        }
+    }
+
+    return bestIndex;
+}

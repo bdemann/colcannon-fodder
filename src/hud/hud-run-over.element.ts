@@ -98,6 +98,7 @@ export const HudRunOver = defineElement<{
                             Not fully mashed ${snapshot.servingCounts[ServingResult.Incomplete]}
                         </div>
                         <div>Raw ${snapshot.servingCounts[ServingResult.Raw]}</div>
+                        <div>Stolen by seagulls ${snapshot.potatoesStolen}</div>
                     </div>
                     <button
                         @click=${() => {

@@ -13,6 +13,7 @@ module.exports = {
         'deseret',
         'fieldrunners',
         'purée',
+        'uncarried',
         'reskin',
         'scurriers',
         'utahn',

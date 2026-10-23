@@ -2,7 +2,9 @@ import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {
     chooseAreaTargetIndexes,
+    chooseGullTargetIndex,
     chooseTargetIndex,
+    getGullsInRange,
     type TargetCandidate,
 } from './tower-targeting.js';
 
@@ -244,6 +246,85 @@ describe(chooseAreaTargetIndexes.name, () => {
                 0,
                 2,
                 3,
+            ],
+        );
+    });
+});
+
+describe(chooseGullTargetIndex.name, () => {
+    it('ignores gulls out of range', () => {
+        assert.strictEquals(
+            chooseGullTargetIndex(tower, [
+                {
+                    x: 500,
+                    y: 0,
+                    carrying: true,
+                },
+            ]),
+            -1,
+        );
+    });
+
+    it('picks the nearest gull', () => {
+        assert.strictEquals(
+            chooseGullTargetIndex(tower, [
+                {
+                    x: 80,
+                    y: 0,
+                    carrying: false,
+                },
+                {
+                    x: 30,
+                    y: 0,
+                    carrying: false,
+                },
+            ]),
+            1,
+        );
+    });
+
+    it('prefers a gull that is carrying over a nearer one', () => {
+        assert.strictEquals(
+            chooseGullTargetIndex(tower, [
+                {
+                    x: 30,
+                    y: 0,
+                    carrying: false,
+                },
+                {
+                    x: 90,
+                    y: 0,
+                    carrying: true,
+                },
+            ]),
+            1,
+        );
+    });
+});
+
+describe(getGullsInRange.name, () => {
+    it('lists every gull within range', () => {
+        assert.deepEquals(
+            getGullsInRange(tower, [
+                {
+                    x: 50,
+                    y: 0,
+                    carrying: false,
+                },
+                {
+                    x: 500,
+                    y: 0,
+                    carrying: false,
+                },
+                {
+                    x: 0,
+                    y: 99,
+                    carrying: true,
+                },
+            ]),
+            [
+                0,
+                2,
             ],
         );
     });

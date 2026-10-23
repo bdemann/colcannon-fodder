@@ -2,7 +2,7 @@ import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {createInitialRunState, type RunState} from './run-state.js';
-import {advanceWaves} from './waves.js';
+import {advanceWaves, getSeagullIntervalMs} from './waves.js';
 
 const wave1 = waveConfig.waves[0];
 const lastIndex = waveConfig.waves.length - 1;
@@ -35,6 +35,28 @@ describe(advanceWaves.name, () => {
         assert.strictEquals(getPhase(runState), 'spawning');
         assert.strictEquals(runState.spawnedInWave, 0);
         assert.strictEquals(timer.msUntilNextSpawn, 0);
+    });
+
+    it('resets the seagull schedule when a wave starts spawning', () => {
+        const runState = createInitialRunState();
+        runState.breakRemainingMs = 100;
+        runState.waveIndex = 2;
+        runState.seagullsSpawnedInWave = 2;
+        runState.msUntilNextSeagull = -50;
+        advanceWaves(
+            runState,
+            {
+                msUntilNextSpawn: 0,
+            },
+            100,
+        );
+        const wave3 = assertWrap.isDefined(waveConfig.waves[2]);
+        assert.strictEquals(runState.seagullsSpawnedInWave, 0);
+        assert.strictEquals(runState.msUntilNextSeagull, getSeagullIntervalMs(wave3));
+        assert.strictEquals(
+            getSeagullIntervalMs(wave3),
+            (wave3.potatoCount * wave3.spawnIntervalMs) / (wave3.seagullCount + 1),
+        );
     });
 
     it('delays the first order of a wave when it starts spawning', () => {

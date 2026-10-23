@@ -8,6 +8,15 @@ export type WaveSpawn = {sizeWeights: PotatoSizeWeights};
 /** The spawner's countdown to its next spawn. It lives in the spawner entity's params. */
 export type SpawnTimer = {msUntilNextSpawn: number};
 
+/** Time between a wave's gulls, so they are spread through the wave. */
+export function getSeagullIntervalMs(wave: {
+    potatoCount: number;
+    spawnIntervalMs: number;
+    seagullCount: number;
+}): number {
+    return (wave.potatoCount * wave.spawnIntervalMs) / (wave.seagullCount + 1);
+}
+
 /**
  * The wave state machine. Mutates `runState` (wave fields only) and `timer`, and returns the spawns
  * to make this frame. Pure apart from those mutations, so it is easy to unit test.
@@ -25,8 +34,10 @@ export function advanceWaves(
             runState.wavePhase = 'spawning';
             runState.spawnedInWave = 0;
             const startingWave = waveConfig.waves[runState.waveIndex];
+            runState.seagullsSpawnedInWave = 0;
             if (startingWave) {
                 runState.beltSpeedPxPerMs = startingWave.speedPxPerMs;
+                runState.msUntilNextSeagull = getSeagullIntervalMs(startingWave);
             }
             timer.msUntilNextSpawn = 0;
             runState.msUntilNextOrder = orderConfig.firstOrderDelayMs;

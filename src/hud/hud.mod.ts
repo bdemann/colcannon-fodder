@@ -23,6 +23,7 @@ let lastSeenTowerCount: number | undefined;
  * knows whether it should pause instead.
  */
 let hadSelectionLastTick = false;
+let lastSeenStealAtMs: number | undefined;
 
 /** Plays serving and build sounds. Presentation only, so it lives here and not in the simulation. */
 function playHudSounds(state: Partial<FullGameState>) {
@@ -40,6 +41,10 @@ function playHudSounds(state: Partial<FullGameState>) {
     if (playing && lastSeenTowerCount != undefined && towerCount > lastSeenTowerCount) {
         playSfx(Sfx.Build);
     }
+    if (playing && runState.lastSteal && runState.lastSteal.atMs !== lastSeenStealAtMs) {
+        playSfx(Sfx.ServeRaw);
+    }
+    lastSeenStealAtMs = runState.lastSteal?.atMs;
     lastSeenServedAtMs = lastServing?.servedAtMs;
     lastSeenTowerCount = towerCount;
 }

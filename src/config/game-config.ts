@@ -62,6 +62,7 @@ export const waveConfig = {
     waves: [
         {
             potatoCount: 8,
+            seagullCount: 0,
             spawnIntervalMs: 3500,
             speedPxPerMs: 0.07,
             sizeWeights: {
@@ -72,6 +73,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 10,
+            seagullCount: 1,
             spawnIntervalMs: 2800,
             speedPxPerMs: 0.08,
             sizeWeights: {
@@ -82,6 +84,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 14,
+            seagullCount: 2,
             spawnIntervalMs: 2200,
             speedPxPerMs: 0.09,
             sizeWeights: {
@@ -92,6 +95,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 18,
+            seagullCount: 3,
             spawnIntervalMs: 1700,
             speedPxPerMs: 0.1,
             sizeWeights: {
@@ -102,6 +106,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 24,
+            seagullCount: 4,
             spawnIntervalMs: 1300,
             speedPxPerMs: 0.11,
             sizeWeights: {
@@ -111,6 +116,21 @@ export const waveConfig = {
             },
         },
     ],
+} as const;
+
+/** Seagulls: potato thieves. Some fly, some walk. */
+export const seagullConfig = {
+    hp: 60,
+    flySpeedPxPerMs: 0.16,
+    walkSpeedPxPerMs: 0.09,
+    /** How close a gull must get to grab a potato. */
+    grabRadiusPx: 24,
+    /** Satisfaction lost when a gull escapes with a potato. */
+    stolenSatisfaction: -10,
+    /** Coins for knocking a gull out. */
+    bountyCoins: 10,
+    /** Chance a gull flies instead of walking. */
+    flyChance: 0.5,
 } as const;
 
 /** Total potatoes in a run (every path spawns one per spawn). Used for the win check. */

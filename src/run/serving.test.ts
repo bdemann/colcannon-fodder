@@ -5,6 +5,7 @@ import {
     orderConfig,
     potatoSizeConfig,
     satisfactionConfig,
+    seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
 import {Dish} from '../order/dish.js';
@@ -15,7 +16,7 @@ import {
     RunStatus,
     ServingResult,
 } from './run-state.js';
-import {evaluatePotato, getSatisfactionDelta, servePotato} from './serving.js';
+import {evaluatePotato, getSatisfactionDelta, servePotato, stealPotato} from './serving.js';
 
 const perfect: PotatoProcessing = {
     cut: true,
@@ -452,5 +453,62 @@ describe('servePotato coins', () => {
         });
 
         assert.strictEquals(runState.coins, economyConfig.startingCoins);
+    });
+});
+
+describe('win check with stolen potatoes', () => {
+    it('wins when served plus stolen reaches the total (serving last)', () => {
+        const runState = createInitialRunState();
+        runState.potatoesPerRun = 3;
+        stealPotato(runState);
+        stealPotato(runState);
+        assert.strictEquals(runState.potatoesStolen, 2);
+
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: 1,
+            toppings: createNoToppings(),
+        });
+        assert.strictEquals(runState.status, RunStatus.Won);
+    });
+
+    it('wins when the last potato is stolen', () => {
+        const runState = createInitialRunState();
+        runState.potatoesPerRun = 2;
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: 1,
+            toppings: createNoToppings(),
+        });
+        stealPotato(runState);
+        assert.strictEquals(runState.potatoesStolen, 1);
+        assert.strictEquals(runState.status, RunStatus.Won);
+    });
+});
+
+describe(stealPotato.name, () => {
+    it('costs satisfaction and records the steal', () => {
+        const runState = createInitialRunState();
+        runState.elapsedMs = 999;
+        stealPotato(runState);
+        assert.strictEquals(
+            runState.satisfaction,
+            satisfactionConfig.starting + seagullConfig.stolenSatisfaction,
+        );
+        assert.deepEquals(runState.lastSteal, {
+            atMs: 999,
+            satisfactionDelta: seagullConfig.stolenSatisfaction,
+        });
+    });
+
+    it('loses the run when satisfaction runs out, clamped at 0', () => {
+        const runState = createInitialRunState();
+        runState.satisfaction = 4;
+        stealPotato(runState);
+        assert.strictEquals(runState.satisfaction, 0);
+        assert.strictEquals(runState.lastSteal?.satisfactionDelta, -4);
+        assert.strictEquals(runState.status, RunStatus.Lost);
     });
 });

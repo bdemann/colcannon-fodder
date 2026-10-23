@@ -47,6 +47,13 @@ export type LastServing = {
     progress: number;
 };
 
+/** The most recent steal by a seagull, kept so the HUD can show a short popup. */
+export type LastSteal = {
+    /** `runState.elapsedMs` when the gull escaped. */
+    atMs: number;
+    satisfactionDelta: number;
+};
+
 /** One open customer order. */
 export type Order = {
     orderId: number;
@@ -86,7 +93,10 @@ export type RunState = {
     lastServing: LastServing | undefined;
     /** Simulation time since the run started. */
     elapsedMs: number;
-    /** Total potatoes this run will spawn; reaching it in `potatoesServed` wins. Set by `StartRun`. */
+    /**
+     * Total potatoes this run will spawn; `potatoesServed + potatoesStolen` reaching it wins. Set
+     * by `StartRun`.
+     */
     potatoesPerRun: number;
     /** 0-based index into waveConfig.waves of the current or upcoming wave. */
     waveIndex: number;
@@ -108,6 +118,12 @@ export type RunState = {
     lastOrderEvent: LastOrderEvent | undefined;
     /** Next `potatoId` the spawner hands out, so commands can name a potato. */
     nextPotatoId: number;
+    /** Potatoes seagulls escaped with. They count as dealt with for ending the run. */
+    potatoesStolen: number;
+    seagullsSpawnedInWave: number;
+    /** Countdown to the next seagull while a wave is spawning. */
+    msUntilNextSeagull: number;
+    lastSteal: LastSteal | undefined;
 };
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
@@ -142,5 +158,9 @@ export function createInitialRunState(): RunState {
         msUntilNextOrder: orderConfig.firstOrderDelayMs,
         lastOrderEvent: undefined,
         nextPotatoId: 1,
+        potatoesStolen: 0,
+        seagullsSpawnedInWave: 0,
+        msUntilNextSeagull: 0,
+        lastSteal: undefined,
     };
 }

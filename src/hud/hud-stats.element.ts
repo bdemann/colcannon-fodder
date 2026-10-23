@@ -176,6 +176,16 @@ export const HudStats = defineElement<{
                       </div>
                   `
                 : nothing}
+            ${snapshot.stealPopup
+                ? keyed(
+                      snapshot.stealPopup.id,
+                      html`
+                          <div class="popup" style="color: #ff5252">
+                              A seagull stole a potato! ${snapshot.stealPopup.satisfactionDelta}
+                          </div>
+                      `,
+                  )
+                : nothing}
             ${popup && popupInfo
                 ? keyed(
                       popup.id,
