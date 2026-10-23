@@ -1,4 +1,5 @@
 import {type Graphics} from '@antha/graphics-2d';
+import {Topping, toppingDefinitions, type PotatoToppings} from '../order/topping.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {getMashProgress} from './mash.js';
 
@@ -25,10 +26,11 @@ const potatoColors = {
     },
     meterBackground: 'rgba(0,0,0,0.6)',
     meterFill: '#7CFC00',
-    butter: {
-        fill: '#ffd84a',
-        stroke: '#e0b000',
-    },
+    highlight: '#ffffff',
+    butterStroke: '#e0b000',
+    scallionLine: toppingDefinitions[Topping.Scallions].color,
+    cabbageLeaf: toppingDefinitions[Topping.Cabbage].color,
+    gravyPool: toppingDefinitions[Topping.Gravy].color,
     sliceLine: '#5a3d1e',
     steam: '#ffffff',
 } as const;
@@ -59,14 +61,21 @@ const meter = {
 /**
  * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
  * whole potato (raw, boiled and steaming, or cut) below 50%, a mashed blob from 50%, and a blob
- * with butter when fully mashed. A meter bar floats above it while it is partly mashed. `radius` is
- * the potato's size (see `potatoSizeConfig`).
+ * with a shine when fully mashed. Hand-applied `toppings` are drawn on a fully mashed blob. A meter
+ * bar floats above it while it is partly mashed. `radius` is the potato's size (see
+ * `potatoSizeConfig`).
  */
-export function drawPotato(
-    graphics: Graphics,
-    processing: Readonly<PotatoProcessing>,
-    radius: number,
-): Graphics {
+export function drawPotato({
+    graphics,
+    processing,
+    radius,
+    toppings,
+}: Readonly<{
+    graphics: Graphics;
+    processing: Readonly<PotatoProcessing>;
+    radius: number;
+    toppings: Readonly<PotatoToppings>;
+}>): Graphics {
     const progress = getMashProgress(processing);
     graphics.clear();
 
@@ -116,15 +125,11 @@ export function drawPotato(
         }
 
         if (progress >= 1) {
-            graphics
-                .rect(-6, -radius * 0.45 - 6, 12, 12)
-                .fill({
-                    color: potatoColors.butter.fill,
-                })
-                .stroke({
-                    color: potatoColors.butter.stroke,
-                    width: 2,
-                });
+            graphics.ellipse(-radius * 0.25, -radius * 0.3, radius * 0.35, radius * 0.2).fill({
+                color: potatoColors.highlight,
+                alpha: 0.7,
+            });
+            drawToppings(graphics, radius, toppings);
         }
 
         return graphics;
@@ -174,4 +179,58 @@ export function drawPotato(
     }
 
     return graphics;
+}
+
+/** Draws the hand-applied toppings on a mashed blob. Gravy goes first so the rest sit on top. */
+function drawToppings(graphics: Graphics, radius: number, toppings: Readonly<PotatoToppings>) {
+    if (toppings[Topping.Gravy]) {
+        graphics.ellipse(0, -radius * 0.1, radius * 0.7, radius * 0.35).fill({
+            color: potatoColors.gravyPool,
+            alpha: 0.9,
+        });
+    }
+    if (toppings[Topping.Butter]) {
+        graphics
+            .rect(-6, -radius * 0.45 - 6, 12, 12)
+            .fill({
+                color: toppingDefinitions[Topping.Butter].color,
+            })
+            .stroke({
+                color: potatoColors.butterStroke,
+                width: 2,
+            });
+    }
+    if (toppings[Topping.Scallions]) {
+        for (const angle of [
+            -0.6,
+            0,
+            0.6,
+        ]) {
+            const startX = Math.sin(angle) * radius * 0.5;
+            const startY = -radius * 0.6 + (1 - Math.cos(angle)) * radius * 0.3;
+            graphics
+                .moveTo(startX, startY)
+                .lineTo(startX + Math.sin(angle) * 10, startY - Math.cos(angle) * 10)
+                .stroke({
+                    color: potatoColors.scallionLine,
+                    width: 4,
+                });
+        }
+    }
+    if (toppings[Topping.Cabbage]) {
+        for (const leaf of [
+            {
+                x: -radius * 0.4,
+                y: radius * 0.1,
+            },
+            {
+                x: radius * 0.35,
+                y: radius * 0.2,
+            },
+        ]) {
+            graphics.ellipse(leaf.x, leaf.y, 10, 6).fill({
+                color: potatoColors.cabbageLeaf,
+            });
+        }
+    }
 }

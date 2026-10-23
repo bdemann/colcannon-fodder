@@ -1,7 +1,7 @@
 import {css, defineElement, html, nothing} from 'element-vir';
 import {type HudSnapshot} from './hud-snapshot.js';
 
-/** Small top-right icon shown while sound effects are muted (toggle with the `m` key). */
+/** Small icon left of the order board shown while sound effects are muted (toggle with the `m` key). */
 export const HudMute = defineElement<{
     snapshot: HudSnapshot;
 }>()({
@@ -14,7 +14,7 @@ export const HudMute = defineElement<{
         .icon {
             font-size: 48px;
             position: absolute;
-            right: 24px;
+            right: 344px;
             top: 16px;
         }
     `,

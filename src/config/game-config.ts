@@ -153,6 +153,12 @@ export const hudConfig = {
     servingPopupMs: 1200,
 } as const;
 
+/** Hand-applied topping input. */
+export const toppingConfig = {
+    /** Extra click tolerance around a potato's radius. */
+    clickSlopPx: 14,
+} as const;
+
 /** Tower processing feedback. */
 export const towerFeedbackConfig = {
     flashMs: 150,

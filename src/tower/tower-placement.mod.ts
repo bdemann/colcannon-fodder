@@ -75,6 +75,9 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
             if (pressed) {
                 ui.selectedTowerType = ui.selectedTowerType === pressed ? undefined : pressed;
+                if (ui.selectedTowerType) {
+                    ui.selectedTopping = undefined;
+                }
             }
         }
 
@@ -88,7 +91,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         for (const click of ui.clicks) {
             if (click.button === 'right') {
                 ui.selectedTowerType = undefined;
-            } else if (ui.selectedTowerType) {
+            } else if (ui.selectedTowerType && !ui.selectedTopping) {
                 const x = Math.round(click.x);
                 const y = Math.round(click.y);
 

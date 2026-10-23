@@ -7,6 +7,7 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {potatoSizeConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
+import {type PotatoToppings} from '../order/topping.js';
 import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
@@ -64,7 +65,12 @@ export class PotatoEntity extends defineEntity({
                 },
                 this.getRadius(),
             ),
-            view: drawPotato(new Graphics(), this.getProcessing(), this.getRadius()),
+            view: drawPotato({
+                graphics: new Graphics(),
+                processing: this.getProcessing(),
+                radius: this.getRadius(),
+                toppings: this.getToppings(),
+            }),
         };
     }
 
@@ -83,9 +89,15 @@ export class PotatoEntity extends defineEntity({
         };
     }
 
+    /** The hand-applied toppings held in the params. */
+    public getToppings(): PotatoToppings {
+        return getPotatoToppings(this.params);
+    }
+
     protected getLookKey(): string {
         const progress = getMashProgress(this.getProcessing());
-        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}`;
+        const {butter, scallions, cabbage, gravy} = this.params;
+        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}${butter}${scallions}${cabbage}${gravy}`;
     }
 
     protected redrawIfChanged() {
@@ -94,11 +106,12 @@ export class PotatoEntity extends defineEntity({
             return;
         }
         this.drawnKey = key;
-        drawPotato(
-            assertWrap.instanceOf(this.view, Graphics),
-            this.getProcessing(),
-            this.getRadius(),
-        );
+        drawPotato({
+            graphics: assertWrap.instanceOf(this.view, Graphics),
+            processing: this.getProcessing(),
+            radius: this.getRadius(),
+            toppings: this.getToppings(),
+        });
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -119,7 +132,7 @@ export class PotatoEntity extends defineEntity({
                 processing: this.getProcessing(),
                 ownerSlot: path.ownerSlot,
                 value: potatoSizeConfig[this.params.size].value,
-                toppings: getPotatoToppings(this.params),
+                toppings: this.getToppings(),
             });
             this.destroy();
             return;

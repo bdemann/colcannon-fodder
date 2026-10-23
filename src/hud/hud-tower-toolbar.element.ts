@@ -1,5 +1,6 @@
 import {css, defineElement, html, listen} from 'element-vir';
 import {economyConfig} from '../config/game-config.js';
+import {toppingDefinitions} from '../order/topping.js';
 import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
@@ -93,9 +94,12 @@ export const HudTowerToolbar = defineElement<{
     `,
     render({inputs}) {
         const selected = inputs.snapshot.selectedTowerType;
-        const hint = selected
-            ? `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
-            : 'Knife: fast, cuts (+50% damage) · Pot: splashes everything in range · Masher: heavy finisher';
+        const selectedTopping = inputs.snapshot.selectedTopping;
+        const hint = selectedTopping
+            ? `Click a fully mashed potato to add ${toppingDefinitions[selectedTopping].label}. Right click or Esc to cancel.`
+            : selected
+              ? `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
+              : 'Knife: fast, cuts (+50% damage) · Pot: splashes everything in range · Masher: heavy finisher';
 
         return html`
             <div class="hint">${hint}</div>
