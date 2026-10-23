@@ -2,6 +2,7 @@ import {type Coords} from '@augment-vir/common';
 import {towerConfig} from '../config/game-config.js';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getDistanceToPath, type LevelDefinition} from '../level/level.js';
+import {type TowerType} from './tower-type.js';
 
 export type PlacementCheck =
     | {valid: true}
@@ -62,4 +63,23 @@ export function canPlaceTower({
             valid: true,
         };
     }
+}
+
+/** A built tower's range ring shows while placing, or while the pointer hovers the tower. */
+export function shouldShowTowerRange({
+    tower,
+    pointerWorld,
+    selectedTowerType,
+}: Readonly<{
+    tower: Readonly<Coords>;
+    pointerWorld: Readonly<Coords> | undefined;
+    selectedTowerType: TowerType | undefined;
+}>): boolean {
+    if (selectedTowerType != undefined) {
+        return true;
+    }
+    return (
+        !!pointerWorld &&
+        Math.hypot(pointerWorld.x - tower.x, pointerWorld.y - tower.y) <= towerConfig.radius
+    );
 }

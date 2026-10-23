@@ -8,6 +8,7 @@ import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus, type PotatoProcessing} from '../run/run-state.js';
+import {shouldShowTowerRange} from './tower-placement.js';
 import {chooseTargetIndex} from './tower-targeting.js';
 import {TowerType, towerTypes} from './tower-type.js';
 
@@ -43,6 +44,7 @@ export class TowerEntity extends defineEntity({
     },
 }) {
     /** Presentation-only handles, set in `createView`. */
+    protected rangeView: Graphics | undefined;
     protected body: Graphics | undefined;
     protected letter: Text | undefined;
     protected beam: Graphics | undefined;
@@ -53,19 +55,18 @@ export class TowerEntity extends defineEntity({
         const definition = towerTypes[this.params.towerType];
         const view = new Container();
 
-        view.addChild(
-            new Graphics()
-                .circle(0, 0, definition.rangePx)
-                .fill({
-                    color: definition.color,
-                    alpha: 0.08,
-                })
-                .stroke({
-                    color: definition.color,
-                    alpha: 0.35,
-                    width: 3,
-                }),
-        );
+        const rangeView = new Graphics()
+            .circle(0, 0, definition.rangePx)
+            .fill({
+                color: definition.color,
+                alpha: 0.08,
+            })
+            .stroke({
+                color: definition.color,
+                alpha: 0.35,
+                width: 3,
+            });
+        view.addChild(rangeView);
         const body = new Graphics()
             .circle(0, 0, towerConfig.radius)
             .fill({
@@ -91,6 +92,7 @@ export class TowerEntity extends defineEntity({
         const beam = new Graphics();
         view.addChild(beam);
 
+        this.rangeView = rangeView;
         this.body = body;
         this.letter = letter;
         this.beam = beam;
@@ -147,10 +149,16 @@ export class TowerEntity extends defineEntity({
 
     /** Flashes the tower and draws a beam to the last target. Presentation only. */
     public override render() {
-        const {body, letter, beam} = this;
-        if (!body || !letter || !beam) {
+        const {body, letter, beam, rangeView} = this;
+        if (!body || !letter || !beam || !rangeView) {
             return;
         }
+
+        rangeView.visible = shouldShowTowerRange({
+            tower: this.params,
+            pointerWorld: this.state.ui.pointerWorld,
+            selectedTowerType: this.state.ui.selectedTowerType,
+        });
 
         const {lastProcessedAtMs, lastTargetX, lastTargetY, x, y, towerType} = this.params;
         const flashing =
