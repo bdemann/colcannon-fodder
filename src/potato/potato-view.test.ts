@@ -8,12 +8,16 @@ describe(drawPotato.name, () => {
         const graphics = new Graphics();
 
         assert.strictEquals(
-            drawPotato(graphics, {
-                cut: false,
-                cooked: false,
-                mashHp: 100,
-                maxMashHp: 100,
-            }),
+            drawPotato(
+                graphics,
+                {
+                    cut: false,
+                    cooked: false,
+                    mashHp: 100,
+                    maxMashHp: 100,
+                },
+                22,
+            ),
             graphics,
         );
     });
@@ -35,12 +39,16 @@ describe(drawPotato.name, () => {
                 ]) {
                     const graphics = new Graphics();
                     assert.strictEquals(
-                        drawPotato(graphics, {
-                            cut,
-                            cooked,
-                            mashHp: 100 * (1 - progress),
-                            maxMashHp: 100,
-                        }),
+                        drawPotato(
+                            graphics,
+                            {
+                                cut,
+                                cooked,
+                                mashHp: 100 * (1 - progress),
+                                maxMashHp: 100,
+                            },
+                            22,
+                        ),
                         graphics,
                     );
                 }

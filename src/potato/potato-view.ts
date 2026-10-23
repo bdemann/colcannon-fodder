@@ -1,5 +1,4 @@
 import {type Graphics} from '@antha/graphics-2d';
-import {potatoConfig} from '../config/game-config.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {getMashProgress} from './mash.js';
 
@@ -60,10 +59,14 @@ const meter = {
 /**
  * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
  * whole potato (raw, boiled and steaming, or cut) below 50%, a mashed blob from 50%, and a blob
- * with butter when fully mashed. A meter bar floats above it while it is partly mashed.
+ * with butter when fully mashed. A meter bar floats above it while it is partly mashed. `radius` is
+ * the potato's size (see `potatoSizeConfig`).
  */
-export function drawPotato(graphics: Graphics, processing: Readonly<PotatoProcessing>): Graphics {
-    const radius = potatoConfig.radius;
+export function drawPotato(
+    graphics: Graphics,
+    processing: Readonly<PotatoProcessing>,
+    radius: number,
+): Graphics {
     const progress = getMashProgress(processing);
     graphics.clear();
 

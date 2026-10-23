@@ -1,4 +1,5 @@
 import {type Entity2dConstructor} from '@antha/entity-2d';
+import {BeltEntity} from '../level/belt.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
@@ -10,6 +11,7 @@ import {TowerEntity} from '../tower/tower.entity.js';
  */
 export const gameEntities: Entity2dConstructor[] = [
     LevelEntity,
+    BeltEntity,
     PotatoEntity,
     PotatoSpawnerEntity,
     TowerEntity,

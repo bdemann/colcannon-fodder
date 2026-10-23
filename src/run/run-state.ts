@@ -1,3 +1,4 @@
+import {assertWrap} from '@augment-vir/assert';
 import {
     economyConfig,
     getPotatoesPerRun,
@@ -73,7 +74,11 @@ export type RunState = {
     /** Time left in the current break. */
     breakRemainingMs: number;
     spawnedInWave: number;
+    /** Speed of the one conveyor belt every potato rides. Set from the wave when it starts spawning. */
+    beltSpeedPxPerMs: number;
 };
+
+const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 
 export function createInitialRunState(): RunState {
     return {
@@ -98,5 +103,6 @@ export function createInitialRunState(): RunState {
         wavePhase: 'break',
         breakRemainingMs: waveConfig.breakMs,
         spawnedInWave: 0,
+        beltSpeedPxPerMs: firstWave.speedPxPerMs,
     };
 }

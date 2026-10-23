@@ -1,8 +1,9 @@
 import {waveConfig} from '../config/game-config.js';
+import {type PotatoSizeWeights} from '../potato/potato-size.js';
 import {type RunState} from './run-state.js';
 
-/** One spawn moment: the spawner releases one potato per path with this speed. */
-export type WaveSpawn = {speedPxPerMs: number};
+/** One spawn moment: the spawner releases one potato per path, sizes picked from these weights. */
+export type WaveSpawn = {sizeWeights: PotatoSizeWeights};
 
 /** The spawner's countdown to its next spawn. It lives in the spawner entity's params. */
 export type SpawnTimer = {msUntilNextSpawn: number};
@@ -23,6 +24,10 @@ export function advanceWaves(
         if (runState.breakRemainingMs <= 0) {
             runState.wavePhase = 'spawning';
             runState.spawnedInWave = 0;
+            const startingWave = waveConfig.waves[runState.waveIndex];
+            if (startingWave) {
+                runState.beltSpeedPxPerMs = startingWave.speedPxPerMs;
+            }
             timer.msUntilNextSpawn = 0;
         }
         return spawns;
@@ -39,7 +44,7 @@ export function advanceWaves(
 
         while (timer.msUntilNextSpawn <= 0 && runState.wavePhase === 'spawning') {
             spawns.push({
-                speedPxPerMs: wave.speedPxPerMs,
+                sizeWeights: wave.sizeWeights,
             });
             runState.spawnedInWave++;
             timer.msUntilNextSpawn += wave.spawnIntervalMs;

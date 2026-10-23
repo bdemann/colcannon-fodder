@@ -1,8 +1,9 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
-import {mashConfig} from '../config/game-config.js';
+import {potatoSizeConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {advanceWaves} from '../run/waves.js';
+import {pickPotatoSize} from './potato-size.js';
 import {PotatoEntity} from './potato.entity.js';
 
 /**
@@ -28,16 +29,19 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     continue;
                 }
 
+                const size = pickPotatoSize(spawn.sizeWeights, this.state.seededRandom.next());
+                const mashHp = potatoSizeConfig[size].mashHp;
+
                 await this.addEntity(PotatoEntity, {
                     x: start.x,
                     y: start.y,
                     pathId: path.pathId,
                     distancePx: 0,
-                    speedPxPerMs: spawn.speedPxPerMs,
+                    size,
                     cut: false,
                     cooked: false,
-                    mashHp: mashConfig.potatoHp,
-                    maxMashHp: mashConfig.potatoHp,
+                    mashHp,
+                    maxMashHp: mashHp,
                     served: false,
                 });
                 runState.potatoesSpawned++;

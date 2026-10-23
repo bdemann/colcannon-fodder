@@ -41,6 +41,8 @@ export function servePotato(
         processing: Readonly<PotatoProcessing>;
         /** The `ownerSlot` of the path the potato walked. Points are credited to this slot. */
         ownerSlot: number;
+        /** The potato size's `value`. Multiplies the score and coins of a perfect serving only. */
+        value: number;
     }>,
 ): ServingResult {
     const result = evaluatePotato(serving.processing);
@@ -48,13 +50,19 @@ export function servePotato(
         return result;
     }
 
-    const config = servingConfig[result];
+    const isPerfect = result === ServingResult.Perfect;
+    const score = isPerfect
+        ? Math.round(servingConfig.perfect.score * serving.value)
+        : servingConfig[result].score;
+    const coins = isPerfect
+        ? Math.round(economyConfig.servingCoins.perfect * serving.value)
+        : economyConfig.servingCoins[result];
     const satisfactionDelta = getSatisfactionDelta(result, serving.processing);
     runState.potatoesServed += 1;
     runState.servingCounts[result] += 1;
     runState.scoreBySlot[serving.ownerSlot] =
-        (runState.scoreBySlot[serving.ownerSlot] ?? 0) + config.score;
-    runState.coins += economyConfig.servingCoins[result];
+        (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
+    runState.coins += coins;
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + satisfactionDelta),
@@ -64,7 +72,7 @@ export function servePotato(
     runState.lastServing = {
         result,
         servedAtMs: runState.elapsedMs,
-        scoreDelta: config.score,
+        scoreDelta: score,
         satisfactionDelta: appliedSatisfactionDelta,
     };
 

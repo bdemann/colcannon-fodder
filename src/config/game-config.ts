@@ -4,9 +4,29 @@
  * millisecond.
  */
 
-/** Potato size. Speed and spawn rate come from `waveConfig`. */
-export const potatoConfig = {
-    radius: 22,
+/** Per-size potato stats. `value` multiplies the perfect-serving score and coins. */
+export const potatoSizeConfig = {
+    small: {
+        radius: 16,
+        mashHp: 60,
+        value: 0.6,
+    },
+    medium: {
+        radius: 22,
+        mashHp: 100,
+        value: 1,
+    },
+    large: {
+        radius: 30,
+        mashHp: 170,
+        value: 1.8,
+    },
+} as const;
+
+/** The conveyor belt look. */
+export const beltConfig = {
+    /** Distance between the moving stripes. */
+    stripeSpacingPx: 40,
 } as const;
 
 /** Restaurant satisfaction is the "health" of a run. The run is lost when it reaches 0. */
@@ -40,26 +60,51 @@ export const waveConfig = {
             potatoCount: 8,
             spawnIntervalMs: 1800,
             speedPxPerMs: 0.1,
+            sizeWeights: {
+                small: 0.5,
+                medium: 0.5,
+                large: 0,
+            },
         },
         {
             potatoCount: 10,
             spawnIntervalMs: 1400,
             speedPxPerMs: 0.12,
+            sizeWeights: {
+                small: 0.3,
+                medium: 0.6,
+                large: 0.1,
+            },
         },
         {
             potatoCount: 14,
             spawnIntervalMs: 1100,
             speedPxPerMs: 0.14,
+            sizeWeights: {
+                small: 0.2,
+                medium: 0.6,
+                large: 0.2,
+            },
         },
         {
             potatoCount: 18,
             spawnIntervalMs: 850,
             speedPxPerMs: 0.16,
+            sizeWeights: {
+                small: 0.1,
+                medium: 0.5,
+                large: 0.4,
+            },
         },
         {
             potatoCount: 24,
             spawnIntervalMs: 650,
             speedPxPerMs: 0.18,
+            sizeWeights: {
+                small: 0,
+                medium: 0.5,
+                large: 0.5,
+            },
         },
     ],
 } as const;
@@ -96,7 +141,6 @@ export const towerTypeConfig = {
 
 /** The mash meter. See issue #36. */
 export const mashConfig = {
-    potatoHp: 100,
     cutMultiplier: 1.5,
     softMasherMultiplier: 2,
 } as const;

@@ -2,6 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {
     getDistanceToPath,
+    getPathDirectionAt,
     getPathLength,
     getPositionAlongPath,
     type PathDefinition,
@@ -56,6 +57,30 @@ describe(getPositionAlongPath.name, () => {
         assert.deepEquals(getPositionAlongPath(lPath, 999), {
             x: 100,
             y: 50,
+        });
+    });
+});
+
+describe(getPathDirectionAt.name, () => {
+    it('is the unit vector of the segment at that distance', () => {
+        assert.deepEquals(getPathDirectionAt(lPath, 40), {
+            x: 1,
+            y: 0,
+        });
+        assert.deepEquals(getPathDirectionAt(lPath, 120), {
+            x: 0,
+            y: 1,
+        });
+    });
+
+    it('uses the first and last segments outside the path', () => {
+        assert.deepEquals(getPathDirectionAt(lPath, -5), {
+            x: 1,
+            y: 0,
+        });
+        assert.deepEquals(getPathDirectionAt(lPath, 1000), {
+            x: 0,
+            y: 1,
         });
     });
 });
