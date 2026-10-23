@@ -128,6 +128,7 @@ describe(shouldShowTowerRange.name, () => {
     const tower = {
         x: 100,
         y: 100,
+        towerType: TowerType.Knife,
     };
 
     it('shows when hovering inside the radius', () => {
@@ -156,7 +157,7 @@ describe(shouldShowTowerRange.name, () => {
         );
     });
 
-    it('shows while placing', () => {
+    it('shows while placing a tower of the same type', () => {
         assert.isTrue(
             shouldShowTowerRange({
                 tower,
@@ -165,6 +166,19 @@ describe(shouldShowTowerRange.name, () => {
                     y: 600,
                 },
                 selectedTowerType: TowerType.Knife,
+            }),
+        );
+    });
+
+    it('hides while placing a different type', () => {
+        assert.isFalse(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: {
+                    x: 900,
+                    y: 600,
+                },
+                selectedTowerType: TowerType.Masher,
             }),
         );
     });

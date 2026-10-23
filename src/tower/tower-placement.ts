@@ -71,11 +71,12 @@ export function shouldShowTowerRange({
     pointerWorld,
     selectedTowerType,
 }: Readonly<{
-    tower: Readonly<Coords>;
+    tower: Readonly<Coords & {towerType: TowerType}>;
     pointerWorld: Readonly<Coords> | undefined;
     selectedTowerType: TowerType | undefined;
 }>): boolean {
-    if (selectedTowerType != undefined) {
+    /** While placing, show the coverage of towers of the same type as the one being placed. */
+    if (selectedTowerType === tower.towerType) {
         return true;
     }
     return (
