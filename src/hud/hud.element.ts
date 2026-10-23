@@ -1,10 +1,12 @@
 import {css, defineElement, html} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
 import {HudMute} from './hud-mute.element.js';
+import {HudOrders} from './hud-orders.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
 import {HudTitle} from './hud-title.element.js';
+import {HudToppingBar} from './hud-topping-bar.element.js';
 import {HudTowerToolbar} from './hud-tower-toolbar.element.js';
 
 /**
@@ -39,6 +41,13 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudTowerToolbar}>
+            <${HudToppingBar.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudToppingBar}>
+            <${HudOrders.assign({
+                snapshot: inputs.snapshot,
+            })}></${HudOrders}>
             <${HudMute.assign({
                 snapshot: inputs.snapshot,
             })}></${HudMute}>

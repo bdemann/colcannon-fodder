@@ -1,6 +1,8 @@
 import {isMuted} from '../audio/sfx.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {type Dish} from '../order/dish.js';
+import {type Topping} from '../order/topping.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -31,6 +33,19 @@ export type HudSnapshot = {
         | {result: ServingResult; id: number; scoreDelta: number; satisfactionDelta: number}
         | undefined;
     selectedTowerType: TowerType | undefined;
+    selectedTopping: Topping | undefined;
+    /** Open orders, oldest first. Times are coarse so the HUD re-renders only a few times a second. */
+    orders: Array<{orderId: number; dish: Dish; secondsLeft: number; fractionLeft: number}>;
+    /** Set while the latest order outcome is recent enough to show; `id` changes for each one. */
+    orderPopup:
+        | {
+              kind: 'fulfilled' | 'expired';
+              dish: Dish;
+              scoreDelta: number;
+              satisfactionDelta: number;
+              id: number;
+          }
+        | undefined;
     /** Whether sound effects are muted. */
     muted: boolean;
 };
@@ -38,6 +53,7 @@ export type HudSnapshot = {
 export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const runState = state.runState ?? createInitialRunState();
     const lastServing = runState.lastServing;
+    const lastOrderEvent = runState.lastOrderEvent;
 
     return {
         status: runState.status,
@@ -65,6 +81,28 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   }
                 : undefined,
         selectedTowerType: state.ui?.selectedTowerType,
+        selectedTopping: state.ui?.selectedTopping,
+        orders: runState.orders.map((order) => {
+            const totalMs = Math.max(1, order.expiresAtMs - order.createdAtMs);
+            const leftMs = Math.max(0, order.expiresAtMs - runState.elapsedMs);
+
+            return {
+                orderId: order.orderId,
+                dish: order.dish,
+                secondsLeft: Math.ceil(leftMs / 1000),
+                fractionLeft: Math.min(1, Math.round((leftMs / totalMs) * 20) / 20),
+            };
+        }),
+        orderPopup:
+            lastOrderEvent && runState.elapsedMs - lastOrderEvent.atMs < hudConfig.servingPopupMs
+                ? {
+                      kind: lastOrderEvent.kind,
+                      dish: lastOrderEvent.dish,
+                      scoreDelta: lastOrderEvent.scoreDelta,
+                      satisfactionDelta: lastOrderEvent.satisfactionDelta,
+                      id: lastOrderEvent.atMs,
+                  }
+                : undefined,
         muted: isMuted(),
     };
 }

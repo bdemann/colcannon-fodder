@@ -15,17 +15,19 @@ Play in the browser: https://bdemann.github.io/colcannon-fodder/ (after the firs
 
 Potatoes march along a path to the restaurant. Place a Knife, a Boiling Pot and a Masher beside
 the path to cut, cook, and mash every one. A perfect mash makes customers happy; raw potatoes
-make them furious. Keep satisfaction above zero through every wave to become the Mash Champ.
+make them furious. Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before
+the ticket runs out. Keep satisfaction above zero through every wave to become the Mash Champ.
 
 ## Controls
 
-| Input               | Action                              |
-| ------------------- | ----------------------------------- |
-| `1` / `2` / `3`     | Pick Knife / Boiling Pot / Masher   |
-| Click               | Build the selected tower            |
-| Right click / `Esc` | Cancel the selected tower           |
-| `Space`             | Start cooking from the title screen |
-| `R`                 | Restart after a run ends            |
+| Input                 | Action                                           |
+| --------------------- | ------------------------------------------------ |
+| `1` / `2` / `3`       | Pick Knife / Boiling Pot / Masher                |
+| `Q` / `W` / `E` / `R` | Pick Butter / Scallions / Cabbage / Gravy        |
+| Click                 | Build the selected tower, or top a mashed potato |
+| Right click / `Esc`   | Cancel the selected tower                        |
+| `Space`               | Start cooking from the title screen              |
+| `R`                   | Restart after a run ends                         |
 
 ## Run locally
 

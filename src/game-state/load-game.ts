@@ -14,6 +14,7 @@ import {gameAudio, gameAudioFilesToLoad, GameAudioKey} from '../audio/game-audio
 import {hudMod} from '../hud/hud.mod.js';
 import {inputMod} from '../input/input.mod.js';
 import {defaultLevel} from '../level/level.js';
+import {toppingInputMod} from '../order/topping-input.mod.js';
 import {createInitialRunState} from '../run/run-state.js';
 import {towerPlacementMod} from '../tower/tower-placement.mod.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
@@ -98,6 +99,7 @@ export async function bootstrapGame({
             gameLockstepMod,
             gameUpdateMod,
             towerPlacementMod,
+            toppingInputMod,
             hudMod,
             createAnthaBackgroundAudioMod(),
         ],
