@@ -47,6 +47,7 @@ export class LevelEntity extends defineEntity({
                 color: levelColors.beltRail,
                 width: path.widthPx + 14,
                 cap: 'round',
+                join: 'round',
             });
 
             ground.moveTo(first.x, first.y);
@@ -55,6 +56,7 @@ export class LevelEntity extends defineEntity({
                 color: levelColors.belt,
                 width: path.widthPx,
                 cap: 'round',
+                join: 'round',
             });
 
             ground.circle(first.x, first.y, path.widthPx * 0.6).fill({

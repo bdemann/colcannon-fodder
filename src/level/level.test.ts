@@ -1,6 +1,7 @@
-import {assert} from '@augment-vir/assert';
+import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {
+    defaultLevel,
     getDistanceToPath,
     getPathDirectionAt,
     getPathLength,
@@ -31,6 +32,12 @@ const lPath: PathDefinition = {
 describe(getPathLength.name, () => {
     it('sums every segment', () => {
         assert.strictEquals(getPathLength(lPath), 150);
+    });
+
+    it('measures the default winding path', () => {
+        const path = assertWrap.isDefined(defaultLevel.paths[0]);
+
+        assert.strictEquals(getPathLength(path), 420 + 420 + 280 + 280 + 150);
     });
 });
 
