@@ -3,11 +3,19 @@ import {position2dParamsShape, type ViewCreation2d} from '@antha/entity-2d';
 import {Graphics} from '@antha/graphics-2d';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
+import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {RunStatus, type PotatoProcessing} from '../run/run-state.js';
 import {chooseTargetIndex} from './tower-targeting.js';
 import {TowerType, towerTypes} from './tower-type.js';
+
+const processSfx: Record<keyof PotatoProcessing, Sfx> = {
+    cut: Sfx.Chop,
+    cooked: Sfx.Boil,
+    mashed: Sfx.Squish,
+};
 
 /** A built tower. Placed by the `PlaceTower` command; processes potatoes in range. */
 export class TowerEntity extends defineEntity({
@@ -38,6 +46,8 @@ export class TowerEntity extends defineEntity({
     protected body: Graphics | undefined;
     protected letter: Text | undefined;
     protected beam: Graphics | undefined;
+    /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
+    protected lastSeenProcessedAtMs: number | undefined;
 
     public override createView(): ViewCreation2d {
         const definition = towerTypes[this.params.towerType];
@@ -146,6 +156,16 @@ export class TowerEntity extends defineEntity({
         const flashing =
             lastProcessedAtMs >= 0 &&
             this.state.runState.elapsedMs - lastProcessedAtMs < towerFeedbackConfig.flashMs;
+        if (
+            this.lastSeenProcessedAtMs != undefined &&
+            lastProcessedAtMs !== this.lastSeenProcessedAtMs &&
+            lastProcessedAtMs >= 0 &&
+            this.state.runState.status === RunStatus.Playing
+        ) {
+            playSfx(processSfx[towerTypes[towerType].processes]);
+        }
+        this.lastSeenProcessedAtMs = lastProcessedAtMs;
+
         const scale = flashing ? 1.25 : 1;
 
         body.scale.set(scale);

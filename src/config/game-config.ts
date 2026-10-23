@@ -100,3 +100,9 @@ export const hudConfig = {
 export const towerFeedbackConfig = {
     flashMs: 150,
 } as const;
+
+/** Synthesized sound effects. */
+export const sfxConfig = {
+    /** Master gain for all sound effects. */
+    volume: 0.35,
+} as const;
