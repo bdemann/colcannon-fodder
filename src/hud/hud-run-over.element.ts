@@ -67,7 +67,7 @@ export const HudRunOver = defineElement<{
     render({inputs}) {
         const snapshot = inputs.snapshot;
 
-        if (snapshot.status === RunStatus.Playing) {
+        if (snapshot.status === RunStatus.Playing || snapshot.status === RunStatus.Ready) {
             return html`
                 ${nothing}
             `;

@@ -10,6 +10,8 @@ import {type FullGameState} from './game-state.js';
 export enum GameCommandType {
     /** Clears all entities and starts a fresh run. Used for the first run and for restart. */
     StartRun = 'start-run',
+    /** Leaves the title screen: `Ready` becomes `Playing`. Ignored in any other status. */
+    BeginRun = 'begin-run',
     /** Places a tower at a world position, if the position is valid. */
     PlaceTower = 'place-tower',
 }
@@ -18,6 +20,11 @@ export enum GameCommandType {
 export type GameCommand =
     | {
           type: GameCommandType.StartRun;
+          /** Start on the title screen (`Ready`) instead of playing immediately. */
+          ready?: boolean;
+      }
+    | {
+          type: GameCommandType.BeginRun;
       }
     | {
           type: GameCommandType.PlaceTower;

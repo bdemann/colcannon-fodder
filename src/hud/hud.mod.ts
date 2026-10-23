@@ -12,11 +12,15 @@ export const hudMod = defineAnthaMod<FullGameState>({
     execute({state}) {
         if (
             state.runState &&
-            state.runState.status !== RunStatus.Playing &&
+            (state.runState.status === RunStatus.Won || state.runState.status === RunStatus.Lost) &&
             state.ui &&
             (state.ui.keys.includes('r') || state.ui.keys.includes('R'))
         ) {
             getHudActions(state).restartRun();
+        }
+
+        if (state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
+            getHudActions(state).beginRun();
         }
 
         return html`
