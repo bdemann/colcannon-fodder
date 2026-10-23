@@ -59,3 +59,8 @@ export const towerTypeConfig = {
         cooldownMs: 400,
     },
 } as const;
+
+/** HUD timings. */
+export const hudConfig = {
+    servingPopupMs: 1200,
+} as const;

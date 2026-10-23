@@ -1,5 +1,6 @@
+import {hudConfig, runConfig, satisfactionConfig} from '../config/game-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
-import {createInitialRunState, type RunState} from '../run/run-state.js';
+import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 
 /**
@@ -9,13 +10,40 @@ import {type TowerType} from '../tower/tower-type.js';
  * the state object reference never changes).
  */
 export type HudSnapshot = {
-    runState: RunState;
+    status: RunStatus;
+    satisfaction: number;
+    maxSatisfaction: number;
+    /** Sum of every slot's score. */
+    totalScore: number;
+    potatoesServed: number;
+    potatoesPerRun: number;
+    servingCounts: Record<ServingResult, number>;
+    /** Set while the latest serving is recent enough to show; `id` changes for each serving. */
+    servingPopup: {result: ServingResult; id: number} | undefined;
     selectedTowerType: TowerType | undefined;
 };
 
 export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
+    const runState = state.runState ?? createInitialRunState();
+    const lastServing = runState.lastServing;
+
     return {
-        runState: structuredClone(state.runState ?? createInitialRunState()),
+        status: runState.status,
+        satisfaction: runState.satisfaction,
+        maxSatisfaction: satisfactionConfig.max,
+        totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
+        potatoesServed: runState.potatoesServed,
+        potatoesPerRun: runConfig.potatoesPerRun,
+        servingCounts: {
+            ...runState.servingCounts,
+        },
+        servingPopup:
+            lastServing && runState.elapsedMs - lastServing.servedAtMs < hudConfig.servingPopupMs
+                ? {
+                      result: lastServing.result,
+                      id: runState.potatoesServed,
+                  }
+                : undefined,
         selectedTowerType: state.ui?.selectedTowerType,
     };
 }
