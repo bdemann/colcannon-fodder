@@ -37,6 +37,20 @@ describe(advanceWaves.name, () => {
         assert.strictEquals(timer.msUntilNextSpawn, 0);
     });
 
+    it('sets the belt speed from the wave when it starts spawning', () => {
+        const runState = createInitialRunState();
+        assert.strictEquals(runState.beltSpeedPxPerMs, wave1.speedPxPerMs);
+
+        runState.waveIndex = 2;
+        runState.breakRemainingMs = 10;
+        const timer = {
+            msUntilNextSpawn: 0,
+        };
+        advanceWaves(runState, timer, 10);
+        const wave3Speed: number = assertWrap.isDefined(waveConfig.waves[2]).speedPxPerMs;
+        assert.isTrue(runState.beltSpeedPxPerMs === wave3Speed);
+    });
+
     it('spawns on the wave interval', () => {
         const runState = createInitialRunState();
         runState.wavePhase = 'spawning';
@@ -45,7 +59,7 @@ describe(advanceWaves.name, () => {
         };
         assert.deepEquals(advanceWaves(runState, timer, 16), [
             {
-                speedPxPerMs: wave1.speedPxPerMs,
+                sizeWeights: wave1.sizeWeights,
             },
         ]);
         assert.strictEquals(runState.spawnedInWave, 1);

@@ -7,9 +7,9 @@ import {gameWorldSize} from '../game-state/game-world.js';
 /** Placeholder palette for the playfield. Swapped for real art in the art pass. */
 export const levelColors = {
     grass: '#5b8c3a',
-    path: '#b08a5a',
-    pathEdge: '#8a6a42',
-    spawn: '#6b4a2a',
+    belt: '#4a4a4a',
+    beltRail: '#2b2b2b',
+    beltStripe: '#6a6a6a',
     restaurant: '#c0392b',
     restaurantRoof: '#f5e6c8',
     text: '#ffffff',
@@ -44,21 +44,21 @@ export class LevelEntity extends defineEntity({
             ground.moveTo(first.x, first.y);
             rest.forEach((point) => ground.lineTo(point.x, point.y));
             ground.stroke({
-                color: levelColors.pathEdge,
-                width: path.widthPx + 12,
+                color: levelColors.beltRail,
+                width: path.widthPx + 14,
                 cap: 'round',
             });
 
             ground.moveTo(first.x, first.y);
             rest.forEach((point) => ground.lineTo(point.x, point.y));
             ground.stroke({
-                color: levelColors.path,
+                color: levelColors.belt,
                 width: path.widthPx,
                 cap: 'round',
             });
 
             ground.circle(first.x, first.y, path.widthPx * 0.6).fill({
-                color: levelColors.spawn,
+                color: levelColors.beltRail,
             });
         });
 

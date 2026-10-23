@@ -114,6 +114,46 @@ export function getPositionAlongPath(path: Readonly<PathDefinition>, distancePx:
     };
 }
 
+/**
+ * Unit vector of the path segment at `distancePx`. Distances outside the path use the first or last
+ * segment. Zero-length segments are skipped.
+ */
+export function getPathDirectionAt(path: Readonly<PathDefinition>, distancePx: number): Coords {
+    const segments = getPathSegments(path).filter(({start, end}) => {
+        return start.x !== end.x || start.y !== end.y;
+    });
+    let remaining = Math.max(0, distancePx);
+    let chosen = segments[0];
+
+    for (const segment of segments) {
+        chosen = segment;
+        const segmentLength = Math.hypot(
+            segment.end.x - segment.start.x,
+            segment.end.y - segment.start.y,
+        );
+
+        if (remaining <= segmentLength) {
+            break;
+        }
+
+        remaining -= segmentLength;
+    }
+
+    if (!chosen) {
+        return {
+            x: 1,
+            y: 0,
+        };
+    }
+
+    const length = Math.hypot(chosen.end.x - chosen.start.x, chosen.end.y - chosen.start.y);
+
+    return {
+        x: (chosen.end.x - chosen.start.x) / length,
+        y: (chosen.end.y - chosen.start.y) / length,
+    };
+}
+
 /** Shortest distance from a point to any segment of the path's center line. */
 export function getDistanceToPath(path: Readonly<PathDefinition>, point: Readonly<Coords>): number {
     let shortest = Infinity;

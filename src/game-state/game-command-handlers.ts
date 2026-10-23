@@ -1,6 +1,7 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
 import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
+import {BeltEntity} from '../level/belt.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
@@ -44,6 +45,7 @@ export const gameCommandHandlers: {
         }
 
         await state.entityStore.addEntity(LevelEntity);
+        await state.entityStore.addEntity(BeltEntity);
         state.runState.potatoesPerRun = getPotatoesPerRun(state.level?.paths.length ?? 0);
         await state.entityStore.addEntity(PotatoSpawnerEntity, {
             msUntilNextSpawn: 0,

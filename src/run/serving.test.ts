@@ -1,6 +1,11 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {economyConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {
+    economyConfig,
+    potatoSizeConfig,
+    satisfactionConfig,
+    servingConfig,
+} from '../config/game-config.js';
 import {
     createInitialRunState,
     type PotatoProcessing,
@@ -116,6 +121,7 @@ describe(servePotato.name, () => {
         const result = servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
+            value: 1,
         });
 
         assert.strictEquals(result, ServingResult.Perfect);
@@ -137,6 +143,7 @@ describe(servePotato.name, () => {
         servePotato(runState, {
             processing: partial,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(runState.servingCounts[ServingResult.Incomplete], 1);
         // partial is 50% mashed: round(-15 * 0.5) = -7, worse than the incomplete penalty -5.
@@ -149,6 +156,7 @@ describe(servePotato.name, () => {
         servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(runState.satisfaction, satisfactionConfig.max);
     });
@@ -159,6 +167,7 @@ describe(servePotato.name, () => {
         servePotato(runState, {
             processing: raw,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(runState.satisfaction, 0);
     });
@@ -168,6 +177,7 @@ describe(servePotato.name, () => {
         servePotato(runState, {
             processing: perfect,
             ownerSlot: 1,
+            value: 1,
         });
         assert.strictEquals(runState.scoreBySlot[1], servingConfig.perfect.score);
         assert.strictEquals(runState.scoreBySlot[0], 0);
@@ -179,6 +189,7 @@ describe(servePotato.name, () => {
             servePotato(runState, {
                 processing: raw,
                 ownerSlot: 0,
+                value: 1,
             });
         }
         assert.strictEquals(runState.status, RunStatus.Lost);
@@ -187,6 +198,7 @@ describe(servePotato.name, () => {
         const result = servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(result, ServingResult.Perfect);
         assert.deepEquals(runState, before);
@@ -198,12 +210,14 @@ describe(servePotato.name, () => {
             servePotato(runState, {
                 processing: perfect,
                 ownerSlot: 0,
+                value: 1,
             });
             assert.strictEquals(runState.status, RunStatus.Playing);
         }
         servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(runState.status, RunStatus.Won);
         assert.strictEquals(runState.potatoesServed, runState.potatoesPerRun);
@@ -216,8 +230,43 @@ describe(servePotato.name, () => {
         servePotato(runState, {
             processing: raw,
             ownerSlot: 0,
+            value: 1,
         });
         assert.strictEquals(runState.status, RunStatus.Lost);
+    });
+});
+
+describe('servePotato size value', () => {
+    it('scales a perfect serving score and coins by value', () => {
+        const large = createInitialRunState();
+        servePotato(large, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: potatoSizeConfig.large.value,
+        });
+        assert.strictEquals(large.scoreBySlot[0], 180);
+        assert.strictEquals(large.lastServing?.scoreDelta, 180);
+        assert.strictEquals(large.coins, economyConfig.startingCoins + 36);
+
+        const small = createInitialRunState();
+        servePotato(small, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: potatoSizeConfig.small.value,
+        });
+        assert.strictEquals(small.scoreBySlot[0], 60);
+        assert.strictEquals(small.coins, economyConfig.startingCoins + 12);
+    });
+
+    it('does not scale raw or incomplete servings', () => {
+        const runState = createInitialRunState();
+        servePotato(runState, {
+            processing: partial,
+            ownerSlot: 0,
+            value: 1.8,
+        });
+        assert.strictEquals(runState.scoreBySlot[0], 0);
+        assert.strictEquals(runState.coins, economyConfig.startingCoins + 5);
     });
 });
 
@@ -252,6 +301,7 @@ describe('servePotato coins', () => {
             servePotato(runState, {
                 processing,
                 ownerSlot: 0,
+                value: 1,
             });
 
             assert.strictEquals(
@@ -268,6 +318,7 @@ describe('servePotato coins', () => {
         servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
+            value: 1,
         });
 
         assert.strictEquals(runState.coins, economyConfig.startingCoins);
