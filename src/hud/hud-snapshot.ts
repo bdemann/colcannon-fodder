@@ -1,3 +1,4 @@
+import {isMuted} from '../audio/sfx.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
@@ -27,6 +28,8 @@ export type HudSnapshot = {
     /** Set while the latest serving is recent enough to show; `id` changes for each serving. */
     servingPopup: {result: ServingResult; id: number} | undefined;
     selectedTowerType: TowerType | undefined;
+    /** Whether sound effects are muted. */
+    muted: boolean;
 };
 
 export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
@@ -56,5 +59,6 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   }
                 : undefined,
         selectedTowerType: state.ui?.selectedTowerType,
+        muted: isMuted(),
     };
 }
