@@ -27,8 +27,8 @@ node scripts/screenshot.js http://localhost:5173/ out.png [move:X:Y] [click:X:Y]
 term), add it to `words` in `cspell.config.cjs`.
 
 `scripts/screenshot.js` uses a 1280x720 browser viewport. World coordinates = browser
-coordinates x 1.5 (the world is 1920x1080). It prints `gameState.runState` and `gameState.ui` and
-any console errors. Use it to check visual work, and look at the PNG. In dev builds the live
+coordinates x 1.5 (the world is 1920x1080). It prints `gameState.runState`, `gameState.ui`, entity counts by key,
+and any console errors. Use it to check visual work, and look at the PNG. In dev builds the live
 state is `globalThis.gameState`, so `eval:` can force situations for testing, for example
 `"eval:gameState.runState.satisfaction=0"`. Use the dev server from your own worktree (if port
 5173 is taken, Vite picks the next free port and prints it).

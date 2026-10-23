@@ -1,6 +1,7 @@
 /**
  * Opens the running dev server in headless Chromium, performs optional actions, saves a screenshot,
- * and prints browser console errors plus a JSON dump of `gameState.runState` and `gameState.ui`.
+ * and prints browser console errors plus a JSON dump of `gameState.runState`, `gameState.ui`, and
+ * how many entities of each kind exist.
  *
  * Usage: node scripts/screenshot.js <url> <output.png> [action...]
  *
@@ -80,6 +81,15 @@ const snapshot = await page.evaluate(() => {
         ? {
               runState: state.runState,
               ui: state.ui,
+              entityCounts: [...state.entityStore.currentEntityInstances].reduce(
+                  (counts, entity) => {
+                      const key = entity.entityDefinition.entityKey;
+                      counts[key] = (counts[key] ?? 0) + 1;
+
+                      return counts;
+                  },
+                  /** @type {Record<string, number>} */ ({}),
+              ),
           }
         : 'gameState is not exposed (is this a dev build?)';
 });
