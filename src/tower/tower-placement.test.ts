@@ -1,7 +1,9 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
+import {towerConfig} from '../config/game-config.js';
 import {defaultLevel} from '../level/level.js';
-import {canPlaceTower} from './tower-placement.js';
+import {canPlaceTower, shouldShowTowerRange} from './tower-placement.js';
+import {TowerType} from './tower-type.js';
 
 function check(point: {x: number; y: number}, towers: {x: number; y: number}[] = []) {
     return canPlaceTower({
@@ -118,6 +120,72 @@ describe(canPlaceTower.name, () => {
             {
                 valid: true,
             },
+        );
+    });
+});
+
+describe(shouldShowTowerRange.name, () => {
+    const tower = {
+        x: 100,
+        y: 100,
+    };
+
+    it('shows when hovering inside the radius', () => {
+        assert.isTrue(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: {
+                    x: 100 + towerConfig.radius,
+                    y: 100,
+                },
+                selectedTowerType: undefined,
+            }),
+        );
+    });
+
+    it('hides when the pointer is just outside', () => {
+        assert.isFalse(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: {
+                    x: 100 + towerConfig.radius + 1,
+                    y: 100,
+                },
+                selectedTowerType: undefined,
+            }),
+        );
+    });
+
+    it('shows while placing', () => {
+        assert.isTrue(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: {
+                    x: 900,
+                    y: 600,
+                },
+                selectedTowerType: TowerType.Knife,
+            }),
+        );
+    });
+
+    it('hides when neither, or with no pointer', () => {
+        assert.isFalse(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: {
+                    x: 900,
+                    y: 600,
+                },
+                selectedTowerType: undefined,
+            }),
+        );
+        assert.isFalse(
+            shouldShowTowerRange({
+                tower,
+                pointerWorld: undefined,
+                selectedTowerType: undefined,
+            }),
         );
     });
 });
