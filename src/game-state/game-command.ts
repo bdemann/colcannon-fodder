@@ -1,3 +1,4 @@
+import {type Topping} from '../order/topping.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {type FullGameState} from './game-state.js';
 
@@ -14,6 +15,8 @@ export enum GameCommandType {
     BeginRun = 'begin-run',
     /** Places a tower at a world position, if the position is valid. */
     PlaceTower = 'place-tower',
+    /** Adds a topping to a fully mashed potato on the belt. */
+    ApplyTopping = 'apply-topping',
 }
 
 /** Must stay JSON compatible: it is sent over the network in co-op. */
@@ -31,6 +34,12 @@ export type GameCommand =
           towerType: TowerType;
           x: number;
           y: number;
+      }
+    | {
+          type: GameCommandType.ApplyTopping;
+          /** The target potato's `potatoId` param. */
+          potatoId: number;
+          topping: Topping;
       };
 
 /** Queues a command for the next lockstep frame. Call this from UI code, never from handlers. */

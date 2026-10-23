@@ -2,6 +2,7 @@ import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
 import {potatoSizeConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
+import {createNoToppings} from '../order/topping.js';
 import {advanceWaves} from '../run/waves.js';
 import {pickPotatoSize} from './potato-size.js';
 import {PotatoEntity} from './potato.entity.js';
@@ -43,7 +44,10 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     mashHp,
                     maxMashHp: mashHp,
                     served: false,
+                    potatoId: runState.nextPotatoId,
+                    ...createNoToppings(),
                 });
+                runState.nextPotatoId++;
                 runState.potatoesSpawned++;
             }
         }

@@ -29,6 +29,13 @@ export class PotatoEntity extends defineEntity({
             maxMashHp: 1,
             /** True once served, so it is never served twice. */
             served: false,
+            /** Unique per run (from `runState.nextPotatoId`), so commands can name this potato. */
+            potatoId: 0,
+            /** Hand-applied toppings. Keys match `Topping` values. */
+            butter: false,
+            scallions: false,
+            cabbage: false,
+            gravy: false,
         }),
     ),
     paramsMap: {

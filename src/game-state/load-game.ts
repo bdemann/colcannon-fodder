@@ -68,6 +68,7 @@ export async function bootstrapGame({
     state.seededRandom = SeededRandom.fromSeed(randomString());
     state.ui = {
         selectedTowerType: undefined,
+        selectedTopping: undefined,
         pointerWorld: undefined,
         clicks: [],
         keys: [],

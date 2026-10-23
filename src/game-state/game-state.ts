@@ -3,6 +3,7 @@ import {type AnthaModsState} from '@antha/engine';
 import {type createAnthaMultiplayerP2pLockStepMod} from '@antha/multiplayer-p2p-lock-step';
 import {type Coords, type SeededRandom} from '@augment-vir/common';
 import {type LevelDefinition} from '../level/level.js';
+import {type Topping} from '../order/topping.js';
 import {type RunState} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {type GameCommand} from './game-command.js';
@@ -20,6 +21,8 @@ export type UiClick = Coords & {
  */
 export type UiState = {
     selectedTowerType: TowerType | undefined;
+    /** The topping being applied by hand. Mutually exclusive with `selectedTowerType`. */
+    selectedTopping: Topping | undefined;
     /** Mouse position in game-world coordinates, or `undefined` when outside the canvas. */
     pointerWorld: Coords | undefined;
     /** Canvas clicks since the previous tick. Replaced every tick by `inputMod`; read, don't clear. */

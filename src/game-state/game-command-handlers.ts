@@ -97,4 +97,8 @@ export const gameCommandHandlers: {
             lastTargetY: 0,
         });
     },
+    [GameCommandType.ApplyTopping]({detail}) {
+        /** Implemented in the "orders and toppings: rules" issue. */
+        console.info('ApplyTopping command received', detail.packet);
+    },
 };

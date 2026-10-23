@@ -180,3 +180,78 @@ export const economyConfig = {
         raw: 0,
     },
 } as const;
+
+/**
+ * Customer orders (issue: orders and hand-applied toppings). `byWave` is indexed like
+ * `waveConfig.waves`; `dishes` lists the `Dish` string values that wave may order (equal odds).
+ * Learning curve comes from fewer, slower, simpler orders early.
+ */
+export const orderConfig = {
+    byWave: [
+        {
+            maxOpen: 1,
+            intervalMs: 12_000,
+            lifetimeMs: 35_000,
+            dishes: [
+                'buttered-mash',
+                'bangers-and-mash',
+            ],
+        },
+        {
+            maxOpen: 2,
+            intervalMs: 10_000,
+            lifetimeMs: 32_000,
+            dishes: [
+                'buttered-mash',
+                'bangers-and-mash',
+                'champ',
+            ],
+        },
+        {
+            maxOpen: 2,
+            intervalMs: 9000,
+            lifetimeMs: 30_000,
+            dishes: [
+                'buttered-mash',
+                'bangers-and-mash',
+                'champ',
+                'colcannon',
+            ],
+        },
+        {
+            maxOpen: 3,
+            intervalMs: 8000,
+            lifetimeMs: 28_000,
+            dishes: [
+                'buttered-mash',
+                'bangers-and-mash',
+                'champ',
+                'colcannon',
+            ],
+        },
+        {
+            maxOpen: 3,
+            intervalMs: 7000,
+            lifetimeMs: 25_000,
+            dishes: [
+                'buttered-mash',
+                'bangers-and-mash',
+                'champ',
+                'colcannon',
+            ],
+        },
+    ],
+    /** Delay from a wave starting to spawn until its first order. */
+    firstOrderDelayMs: 3000,
+    /**
+     * Filling an order, on top of the normal perfect serving. Score and coins scale by potato
+     * value.
+     */
+    fulfilled: {
+        score: 150,
+        coins: 30,
+        satisfaction: 5,
+    },
+    /** An order that runs out of time: an unhappy customer, close to a raw potato. */
+    expiredSatisfaction: -12,
+} as const;

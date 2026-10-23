@@ -2,9 +2,11 @@ import {assertWrap} from '@augment-vir/assert';
 import {
     economyConfig,
     getPotatoesPerRun,
+    orderConfig,
     satisfactionConfig,
     waveConfig,
 } from '../config/game-config.js';
+import {type Dish} from '../order/dish.js';
 
 export enum RunStatus {
     /** Title screen: the run is set up but frozen until `BeginRun`. */
@@ -43,6 +45,24 @@ export type LastServing = {
     satisfactionDelta: number;
 };
 
+/** One open customer order. */
+export type Order = {
+    orderId: number;
+    dish: Dish;
+    /** `runState.elapsedMs` when it was placed and when it expires. */
+    createdAtMs: number;
+    expiresAtMs: number;
+};
+
+/** The most recent order outcome, kept so the HUD can show a short popup. */
+export type LastOrderEvent = {
+    kind: 'fulfilled' | 'expired';
+    dish: Dish;
+    atMs: number;
+    scoreDelta: number;
+    satisfactionDelta: number;
+};
+
 /**
  * Everything about the current run that is not an entity. It is plain JSON so it can be synced to
  * peers later. Only change it inside command handlers or entity `update` calls (both run in
@@ -76,6 +96,14 @@ export type RunState = {
     spawnedInWave: number;
     /** Speed of the one conveyor belt every potato rides. Set from the wave when it starts spawning. */
     beltSpeedPxPerMs: number;
+    /** Open orders, oldest first. */
+    orders: Order[];
+    nextOrderId: number;
+    /** Countdown to the next order while a wave is spawning. */
+    msUntilNextOrder: number;
+    lastOrderEvent: LastOrderEvent | undefined;
+    /** Next `potatoId` the spawner hands out, so commands can name a potato. */
+    nextPotatoId: number;
 };
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
@@ -104,5 +132,10 @@ export function createInitialRunState(): RunState {
         breakRemainingMs: waveConfig.breakMs,
         spawnedInWave: 0,
         beltSpeedPxPerMs: firstWave.speedPxPerMs,
+        orders: [],
+        nextOrderId: 1,
+        msUntilNextOrder: orderConfig.firstOrderDelayMs,
+        lastOrderEvent: undefined,
+        nextPotatoId: 1,
     };
 }
