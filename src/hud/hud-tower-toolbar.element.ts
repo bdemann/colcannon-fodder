@@ -96,7 +96,7 @@ export const HudTowerToolbar = defineElement<{
         const selected = inputs.snapshot.selectedTowerType;
         const selectedTopping = inputs.snapshot.selectedTopping;
         const hint = selectedTopping
-            ? `Click a fully mashed potato to add ${toppingDefinitions[selectedTopping].label}. Right click or Esc to cancel.`
+            ? `Click a potato to add ${toppingDefinitions[selectedTopping].label}. Right click or Esc to cancel.`
             : selected
               ? `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
               : 'Knife: fast, cuts (+50% damage) · Pot: splashes everything in range · Masher: heavy finisher';

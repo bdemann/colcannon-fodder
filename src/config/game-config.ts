@@ -53,13 +53,17 @@ export const servingConfig = {
 
 /** The waves of one run, in order. Surviving them all wins. */
 export const waveConfig = {
-    /** Quiet time before wave 1 and between waves. */
-    breakMs: 6000,
+    /**
+     * Quiet time before wave 1 and between waves: enough to breathe, re-plan and build (playtest
+     * 3).
+     */
+    breakMs: 10_000,
+    /** Early waves are sparse and slow; later ones get closer together AND faster (playtest 3). */
     waves: [
         {
             potatoCount: 8,
-            spawnIntervalMs: 1800,
-            speedPxPerMs: 0.1,
+            spawnIntervalMs: 3500,
+            speedPxPerMs: 0.07,
             sizeWeights: {
                 small: 0.5,
                 medium: 0.5,
@@ -68,8 +72,8 @@ export const waveConfig = {
         },
         {
             potatoCount: 10,
-            spawnIntervalMs: 1400,
-            speedPxPerMs: 0.12,
+            spawnIntervalMs: 2800,
+            speedPxPerMs: 0.08,
             sizeWeights: {
                 small: 0.3,
                 medium: 0.6,
@@ -78,8 +82,8 @@ export const waveConfig = {
         },
         {
             potatoCount: 14,
-            spawnIntervalMs: 1100,
-            speedPxPerMs: 0.14,
+            spawnIntervalMs: 2200,
+            speedPxPerMs: 0.09,
             sizeWeights: {
                 small: 0.2,
                 medium: 0.6,
@@ -88,8 +92,8 @@ export const waveConfig = {
         },
         {
             potatoCount: 18,
-            spawnIntervalMs: 850,
-            speedPxPerMs: 0.16,
+            spawnIntervalMs: 1700,
+            speedPxPerMs: 0.1,
             sizeWeights: {
                 small: 0.1,
                 medium: 0.5,
@@ -98,8 +102,8 @@ export const waveConfig = {
         },
         {
             potatoCount: 24,
-            spawnIntervalMs: 650,
-            speedPxPerMs: 0.18,
+            spawnIntervalMs: 1300,
+            speedPxPerMs: 0.11,
             sizeWeights: {
                 small: 0,
                 medium: 0.5,

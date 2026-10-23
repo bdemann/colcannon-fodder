@@ -15,7 +15,7 @@ export enum GameCommandType {
     BeginRun = 'begin-run',
     /** Places a tower at a world position, if the position is valid. */
     PlaceTower = 'place-tower',
-    /** Adds a topping to a fully mashed potato on the belt. */
+    /** Adds a topping to a potato on the belt. */
     ApplyTopping = 'apply-topping',
 }
 

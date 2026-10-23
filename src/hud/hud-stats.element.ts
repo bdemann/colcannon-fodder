@@ -14,7 +14,15 @@ const popupContent: Record<
     },
     [ServingResult.Incomplete]: {
         getText(popup) {
-            return `Half-done... ${popup.satisfactionDelta}`;
+            /** Name how close it was, so an almost-done potato doesn't read as half-done. */
+            const label =
+                popup.progress >= 0.75
+                    ? 'Almost mashed'
+                    : popup.progress >= 0.4
+                      ? 'Half-mashed'
+                      : 'Barely touched';
+
+            return `${label}... ${popup.satisfactionDelta}`;
         },
         color: '#ffc107',
     },

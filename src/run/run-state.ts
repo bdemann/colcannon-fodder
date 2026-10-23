@@ -43,6 +43,8 @@ export type LastServing = {
     /** What this serving actually changed. */
     scoreDelta: number;
     satisfactionDelta: number;
+    /** Mash progress when served, 0 to 1. Lets the popup say how close it was. */
+    progress: number;
 };
 
 /** One open customer order. */

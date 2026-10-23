@@ -20,6 +20,7 @@ module.exports = {
         'desync',
         'pathing',
         'playfield',
+        'playtest',
         'tunables',
         'underprocessed',
     ],

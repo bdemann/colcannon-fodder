@@ -94,7 +94,9 @@ export const HudRunOver = defineElement<{
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
                         <div>Perfect mashes ${snapshot.servingCounts[ServingResult.Perfect]}</div>
-                        <div>Half-done ${snapshot.servingCounts[ServingResult.Incomplete]}</div>
+                        <div>
+                            Not fully mashed ${snapshot.servingCounts[ServingResult.Incomplete]}
+                        </div>
                         <div>Raw ${snapshot.servingCounts[ServingResult.Raw]}</div>
                     </div>
                     <button

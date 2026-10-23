@@ -21,10 +21,13 @@ export function matchDish(toppings: Readonly<PotatoToppings>): Dish | undefined 
     });
 }
 
-/** Whether a topping can go on this potato now: fully mashed, not served, not already on it. */
+/**
+ * Whether a topping can go on this potato now: not served and not already on it. Toppings can go on
+ * at any mash stage (playtest 3), so plating can start as soon as a potato enters the belt.
+ */
 export function canApplyTopping(
-    potato: Readonly<{mashHp: number; served: boolean} & PotatoToppings>,
+    potato: Readonly<{served: boolean} & PotatoToppings>,
     topping: Topping,
 ): boolean {
-    return potato.mashHp <= 0 && !potato.served && !potato[topping];
+    return !potato.served && !potato[topping];
 }

@@ -115,6 +115,7 @@ export function servePotato(
         servedAtMs: runState.elapsedMs,
         scoreDelta: score,
         satisfactionDelta: appliedSatisfactionDelta,
+        progress: getMashProgress(serving.processing),
     };
 
     if (runState.satisfaction <= 0) {

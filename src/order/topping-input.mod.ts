@@ -83,7 +83,7 @@ export const toppingInputMod = defineAnthaMod<FullGameState>({
                 }
             }
 
-            if (closest && closest.params.mashHp <= 0 && !closest.params.served) {
+            if (closest && !closest.params.served) {
                 sendGameCommand(state, {
                     type: GameCommandType.ApplyTopping,
                     potatoId: closest.params.potatoId,

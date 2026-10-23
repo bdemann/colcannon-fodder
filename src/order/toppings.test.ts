@@ -61,25 +61,15 @@ describe(getPotatoToppings.name, () => {
 
 describe(canApplyTopping.name, () => {
     const mashed = {
-        mashHp: 0,
         served: false,
         ...createNoToppings(),
     };
 
-    it('allows a topping on a mashed potato', () => {
+    it('allows a topping at any mash stage', () => {
         assert.isTrue(canApplyTopping(mashed, Topping.Butter));
     });
 
-    it('rejects not-yet-mashed, served, or already topped potatoes', () => {
-        assert.isFalse(
-            canApplyTopping(
-                {
-                    ...mashed,
-                    mashHp: 1,
-                },
-                Topping.Butter,
-            ),
-        );
+    it('rejects served or already topped potatoes', () => {
         assert.isFalse(
             canApplyTopping(
                 {

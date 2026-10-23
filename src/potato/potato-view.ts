@@ -61,7 +61,7 @@ const meter = {
 /**
  * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
  * whole potato (raw, boiled and steaming, or cut) below 50%, a mashed blob from 50%, and a blob
- * with a shine when fully mashed. Hand-applied `toppings` are drawn on a fully mashed blob. A meter
+ * with a shine when fully mashed. Hand-applied `toppings` are drawn on top at any stage. A meter
  * bar floats above it while it is partly mashed. `radius` is the potato's size (see
  * `potatoSizeConfig`).
  */
@@ -129,8 +129,9 @@ export function drawPotato({
                 color: potatoColors.highlight,
                 alpha: 0.7,
             });
-            drawToppings(graphics, radius, toppings);
         }
+
+        drawToppings(graphics, radius, toppings);
 
         return graphics;
     }
@@ -178,10 +179,12 @@ export function drawPotato({
         }
     }
 
+    drawToppings(graphics, radius, toppings);
+
     return graphics;
 }
 
-/** Draws the hand-applied toppings on a mashed blob. Gravy goes first so the rest sit on top. */
+/** Draws the hand-applied toppings on the potato. Gravy goes first so the rest sit on top. */
 function drawToppings(graphics: Graphics, radius: number, toppings: Readonly<PotatoToppings>) {
     if (toppings[Topping.Gravy]) {
         graphics.ellipse(0, -radius * 0.1, radius * 0.7, radius * 0.35).fill({

@@ -1,4 +1,4 @@
-/** Toppings the player puts on fully mashed potatoes by hand. */
+/** Toppings the player puts on potatoes by hand, at any mash stage. */
 export enum Topping {
     Butter = 'butter',
     Scallions = 'scallions',

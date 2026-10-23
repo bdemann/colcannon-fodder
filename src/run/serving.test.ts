@@ -138,6 +138,7 @@ describe(servePotato.name, () => {
             servedAtMs: 1234,
             scoreDelta: servingConfig.perfect.score,
             satisfactionDelta: servingConfig.perfect.satisfaction,
+            progress: 1,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);
     });
