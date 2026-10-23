@@ -52,6 +52,12 @@ export const HudStats = defineElement<{
             font-weight: bold;
         }
 
+        .coins {
+            color: #ffd700;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
         .wave {
             font-size: 30px;
             font-weight: bold;
@@ -128,6 +134,7 @@ export const HudStats = defineElement<{
         return html`
             <div class="title">Colcannon Fodder</div>
             <div class="score">Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
+            <div class="coins">🪙 ${snapshot.coins}</div>
             <div class="label">Customer satisfaction</div>
             <div class="bar-row">
                 <div class="bar">

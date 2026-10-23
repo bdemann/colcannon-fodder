@@ -1,4 +1,9 @@
-import {getPotatoesPerRun, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {
+    economyConfig,
+    getPotatoesPerRun,
+    satisfactionConfig,
+    waveConfig,
+} from '../config/game-config.js';
 
 export enum RunStatus {
     /** Title screen: the run is set up but frozen until `BeginRun`. */
@@ -40,6 +45,8 @@ export type LastServing = {
 export type RunState = {
     status: RunStatus;
     satisfaction: number;
+    /** Coins shared by the whole restaurant; spent on towers, earned by servings. */
+    coins: number;
     /** Score earned per player slot. Singleplayer only uses slot 0. */
     scoreBySlot: Record<number, number>;
     potatoesSpawned: number;
@@ -67,6 +74,7 @@ export function createInitialRunState(): RunState {
     return {
         status: RunStatus.Playing,
         satisfaction: satisfactionConfig.starting,
+        coins: economyConfig.startingCoins,
         scoreBySlot: {
             0: 0,
         },

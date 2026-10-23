@@ -1,8 +1,8 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {towerConfig} from '../config/game-config.js';
+import {economyConfig, towerConfig} from '../config/game-config.js';
 import {defaultLevel} from '../level/level.js';
-import {canPlaceTower, shouldShowTowerRange} from './tower-placement.js';
+import {canAfford, canPlaceTower, shouldShowTowerRange} from './tower-placement.js';
 import {TowerType} from './tower-type.js';
 
 function check(point: {x: number; y: number}, towers: {x: number; y: number}[] = []) {
@@ -201,5 +201,17 @@ describe(shouldShowTowerRange.name, () => {
                 selectedTowerType: undefined,
             }),
         );
+    });
+});
+
+describe(canAfford.name, () => {
+    it('allows exactly the cost', () => {
+        assert.isTrue(canAfford(economyConfig.towerCost[TowerType.Knife], TowerType.Knife));
+    });
+    it('rejects one coin short', () => {
+        assert.isFalse(canAfford(economyConfig.towerCost[TowerType.Masher] - 1, TowerType.Masher));
+    });
+    it('allows plenty of coins', () => {
+        assert.isTrue(canAfford(economyConfig.startingCoins, TowerType.Boiler));
     });
 });

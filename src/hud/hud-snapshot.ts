@@ -14,6 +14,7 @@ export type HudSnapshot = {
     status: RunStatus;
     satisfaction: number;
     maxSatisfaction: number;
+    coins: number;
     /** Sum of every slot's score. */
     totalScore: number;
     potatoesServed: number;
@@ -40,6 +41,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         status: runState.status,
         satisfaction: runState.satisfaction,
         maxSatisfaction: satisfactionConfig.max,
+        coins: runState.coins,
         totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
         potatoesServed: runState.potatoesServed,
         potatoesPerRun: runState.potatoesPerRun,

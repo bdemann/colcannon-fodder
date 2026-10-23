@@ -1,10 +1,10 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
-import {getPotatoesPerRun} from '../config/game-config.js';
+import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
 import {LevelEntity} from '../level/level.entity.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
-import {canPlaceTower} from '../tower/tower-placement.js';
+import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
@@ -69,6 +69,7 @@ export const gameCommandHandlers: {
         });
 
         if (
+            !canAfford(state.runState.coins, packet.towerType) ||
             !canPlaceTower({
                 level: state.level,
                 towers,
@@ -80,6 +81,8 @@ export const gameCommandHandlers: {
         ) {
             return;
         }
+
+        state.runState.coins -= economyConfig.towerCost[packet.towerType];
 
         await state.entityStore.addEntity(TowerEntity, {
             x: packet.x,

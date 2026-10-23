@@ -1,4 +1,4 @@
-import {satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {economyConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
 /** Which result a potato earns from its processing. See the table in `docs/spec.md` section 4. */
@@ -35,6 +35,7 @@ export function servePotato(
     runState.servingCounts[result] += 1;
     runState.scoreBySlot[serving.ownerSlot] =
         (runState.scoreBySlot[serving.ownerSlot] ?? 0) + config.score;
+    runState.coins += economyConfig.servingCoins[result];
     runState.satisfaction = Math.min(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + config.satisfaction),

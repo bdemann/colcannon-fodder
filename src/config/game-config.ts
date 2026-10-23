@@ -106,3 +106,18 @@ export const sfxConfig = {
     /** Master gain for all sound effects. */
     volume: 0.35,
 } as const;
+
+/** Coins: the only currency. Keyed by TowerType / ServingResult string values. */
+export const economyConfig = {
+    startingCoins: 150,
+    towerCost: {
+        knife: 40,
+        boiler: 60,
+        masher: 80,
+    },
+    servingCoins: {
+        perfect: 20,
+        incomplete: 5,
+        raw: 0,
+    },
+} as const;
