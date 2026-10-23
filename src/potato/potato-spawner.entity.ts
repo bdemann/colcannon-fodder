@@ -1,5 +1,6 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
+import {mashConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {advanceWaves} from '../run/waves.js';
 import {PotatoEntity} from './potato.entity.js';
@@ -35,7 +36,8 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     speedPxPerMs: spawn.speedPxPerMs,
                     cut: false,
                     cooked: false,
-                    mashed: false,
+                    mashHp: mashConfig.potatoHp,
+                    maxMashHp: mashConfig.potatoHp,
                     served: false,
                 });
                 runState.potatoesSpawned++;

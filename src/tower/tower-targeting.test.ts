@@ -6,17 +6,19 @@ const tower = {
     x: 0,
     y: 0,
     rangePx: 100,
-    processes: 'cut',
+    appliesEffect: 'cut',
 } as const;
 
 function candidate({
     x,
     distancePx,
     cut = false,
+    mashHp = 100,
 }: {
     x: number;
     distancePx: number;
     cut?: boolean;
+    mashHp?: number;
 }): TargetCandidate {
     return {
         x,
@@ -25,7 +27,8 @@ function candidate({
         processing: {
             cut,
             cooked: false,
-            mashed: false,
+            mashHp,
+            maxMashHp: 100,
         },
     };
 }
@@ -56,7 +59,24 @@ describe(chooseTargetIndex.name, () => {
         );
     });
 
-    it('ignores potatoes already processed', () => {
+    it('prefers potatoes that lack the effect', () => {
+        assert.strictEquals(
+            chooseTargetIndex(tower, [
+                candidate({
+                    x: 10,
+                    distancePx: 50,
+                    cut: true,
+                }),
+                candidate({
+                    x: 10,
+                    distancePx: 5,
+                }),
+            ]),
+            1,
+        );
+    });
+
+    it('falls back to potatoes that already have the effect', () => {
         assert.strictEquals(
             chooseTargetIndex(tower, [
                 candidate({
@@ -64,8 +84,64 @@ describe(chooseTargetIndex.name, () => {
                     distancePx: 5,
                     cut: true,
                 }),
+                candidate({
+                    x: 10,
+                    distancePx: 50,
+                    cut: true,
+                }),
+            ]),
+            1,
+        );
+    });
+
+    it('targets the furthest potato when the tower applies no effect', () => {
+        assert.strictEquals(
+            chooseTargetIndex(
+                {
+                    ...tower,
+                    appliesEffect: undefined,
+                },
+                [
+                    candidate({
+                        x: 10,
+                        distancePx: 5,
+                    }),
+                    candidate({
+                        x: 10,
+                        distancePx: 50,
+                        cut: true,
+                    }),
+                ],
+            ),
+            1,
+        );
+    });
+
+    it('never targets fully mashed potatoes', () => {
+        assert.strictEquals(
+            chooseTargetIndex(tower, [
+                candidate({
+                    x: 10,
+                    distancePx: 50,
+                    mashHp: 0,
+                }),
             ]),
             -1,
+        );
+        assert.strictEquals(
+            chooseTargetIndex(tower, [
+                candidate({
+                    x: 10,
+                    distancePx: 50,
+                    mashHp: 0,
+                }),
+                candidate({
+                    x: 10,
+                    distancePx: 5,
+                    cut: true,
+                }),
+            ]),
+            1,
         );
     });
 

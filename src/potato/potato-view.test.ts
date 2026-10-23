@@ -11,22 +11,25 @@ describe(drawPotato.name, () => {
             drawPotato(graphics, {
                 cut: false,
                 cooked: false,
-                mashed: false,
+                mashHp: 100,
+                maxMashHp: 100,
             }),
             graphics,
         );
     });
 
-    it('draws every combination of flags without throwing', () => {
-        for (const cut of [
-            false,
-            true,
+    it('draws every progress and effect combination without throwing', () => {
+        for (const progress of [
+            0,
+            0.3,
+            0.6,
+            1,
         ]) {
-            for (const cooked of [
+            for (const cut of [
                 false,
                 true,
             ]) {
-                for (const mashed of [
+                for (const cooked of [
                     false,
                     true,
                 ]) {
@@ -35,7 +38,8 @@ describe(drawPotato.name, () => {
                         drawPotato(graphics, {
                             cut,
                             cooked,
-                            mashed,
+                            mashHp: 100 * (1 - progress),
+                            maxMashHp: 100,
                         }),
                         graphics,
                     );

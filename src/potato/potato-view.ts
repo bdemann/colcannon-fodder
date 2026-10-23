@@ -1,6 +1,7 @@
 import {type Graphics} from '@antha/graphics-2d';
 import {potatoConfig} from '../config/game-config.js';
 import {type PotatoProcessing} from '../run/run-state.js';
+import {getMashProgress} from './mash.js';
 
 const potatoColors = {
     raw: {
@@ -23,6 +24,8 @@ const potatoColors = {
         fill: '#fff4c2',
         stroke: '#d8c070',
     },
+    meterBackground: 'rgba(0,0,0,0.6)',
+    meterFill: '#7CFC00',
     butter: {
         fill: '#ffd84a',
         stroke: '#e0b000',
@@ -47,20 +50,41 @@ const eyePositions = [
     },
 ] as const;
 
+const meter = {
+    width: 40,
+    height: 7,
+    /** Gap between the top of the potato and the bar. */
+    gap: 14,
+} as const;
+
 /**
- * Clears `graphics` and draws a potato centered on (0, 0). The look follows `processing`: raw,
- * boiled (pale, steaming), cut (slice lines), or a mashed blob (with butter when perfect).
+ * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
+ * whole potato (raw, boiled and steaming, or cut) below 50%, a mashed blob from 50%, and a blob
+ * with butter when fully mashed. A meter bar floats above it while it is partly mashed.
  */
 export function drawPotato(graphics: Graphics, processing: Readonly<PotatoProcessing>): Graphics {
     const radius = potatoConfig.radius;
+    const progress = getMashProgress(processing);
     graphics.clear();
 
-    if (processing.mashed) {
-        const blob = processing.cooked
-            ? processing.cut
+    if (progress > 0 && progress < 1) {
+        graphics.rect(-meter.width / 2, -radius - meter.gap, meter.width, meter.height).fill({
+            color: potatoColors.meterBackground,
+        });
+        graphics
+            .rect(-meter.width / 2, -radius - meter.gap, meter.width * progress, meter.height)
+            .fill({
+                color: potatoColors.meterFill,
+            });
+    }
+
+    if (progress >= 0.5) {
+        const blob =
+            progress >= 1
                 ? potatoColors.perfect
-                : potatoColors.mashedCooked
-            : potatoColors.glue;
+                : processing.cooked
+                  ? potatoColors.mashedCooked
+                  : potatoColors.glue;
         const circles = [
             {
                 x: -radius * 0.45,
@@ -88,7 +112,7 @@ export function drawPotato(graphics: Graphics, processing: Readonly<PotatoProces
             });
         }
 
-        if (processing.cut && processing.cooked) {
+        if (progress >= 1) {
             graphics
                 .rect(-6, -radius * 0.45 - 6, 12, 12)
                 .fill({

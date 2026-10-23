@@ -7,61 +7,104 @@ import {
     RunStatus,
     ServingResult,
 } from './run-state.js';
-import {evaluatePotato, servePotato} from './serving.js';
+import {evaluatePotato, getSatisfactionDelta, servePotato} from './serving.js';
 
 const perfect: PotatoProcessing = {
     cut: true,
     cooked: true,
-    mashed: true,
+    mashHp: 0,
+    maxMashHp: 100,
 };
 const raw: PotatoProcessing = {
     cut: false,
     cooked: false,
-    mashed: false,
+    mashHp: 100,
+    maxMashHp: 100,
 };
 const partial: PotatoProcessing = {
     cut: true,
     cooked: false,
-    mashed: false,
+    mashHp: 50,
+    maxMashHp: 100,
 };
 
 describe(evaluatePotato.name, () => {
-    for (const cut of [
-        true,
-        false,
-    ]) {
-        for (const cooked of [
+    it('is Perfect at 0 mashHp, whatever the effects', () => {
+        for (const cut of [
             true,
             false,
         ]) {
-            for (const mashed of [
+            for (const cooked of [
                 true,
                 false,
             ]) {
-                const count = [
-                    cut,
-                    cooked,
-                    mashed,
-                ].filter(Boolean).length;
-                const expected =
-                    count === 3
-                        ? ServingResult.Perfect
-                        : count === 0
-                          ? ServingResult.Raw
-                          : ServingResult.Incomplete;
-                it(`cut=${cut} cooked=${cooked} mashed=${mashed} is ${expected}`, () => {
-                    assert.strictEquals(
-                        evaluatePotato({
-                            cut,
-                            cooked,
-                            mashed,
-                        }),
-                        expected,
-                    );
-                });
+                assert.strictEquals(
+                    evaluatePotato({
+                        cut,
+                        cooked,
+                        mashHp: 0,
+                        maxMashHp: 100,
+                    }),
+                    ServingResult.Perfect,
+                );
             }
         }
+    });
+
+    it('is Raw when untouched', () => {
+        assert.strictEquals(evaluatePotato(raw), ServingResult.Raw);
+    });
+
+    it('is Incomplete with any effect or damage but mashHp left', () => {
+        assert.strictEquals(evaluatePotato(partial), ServingResult.Incomplete);
+        assert.strictEquals(
+            evaluatePotato({
+                cut: false,
+                cooked: true,
+                mashHp: 100,
+                maxMashHp: 100,
+            }),
+            ServingResult.Incomplete,
+        );
+        assert.strictEquals(
+            evaluatePotato({
+                cut: false,
+                cooked: false,
+                mashHp: 70,
+                maxMashHp: 100,
+            }),
+            ServingResult.Incomplete,
+        );
+    });
+});
+
+describe(getSatisfactionDelta.name, () => {
+    function at(progress: number): number {
+        const processing = {
+            cut: true,
+            cooked: false,
+            mashHp: 100 * (1 - progress),
+            maxMashHp: 100,
+        };
+        return getSatisfactionDelta(evaluatePotato(processing), processing);
     }
+
+    it('scales incomplete servings with progress', () => {
+        // Issue #36 says -14, but Math.round(-13.5) is -13 in JS.
+        assert.strictEquals(at(0.1), -13);
+        assert.strictEquals(at(0.9), servingConfig.incomplete.satisfaction);
+    });
+
+    it('uses the flat penalties for perfect and raw', () => {
+        assert.strictEquals(
+            getSatisfactionDelta(ServingResult.Perfect, perfect),
+            servingConfig.perfect.satisfaction,
+        );
+        assert.strictEquals(
+            getSatisfactionDelta(ServingResult.Raw, raw),
+            servingConfig.raw.satisfaction,
+        );
+    });
 });
 
 describe(servePotato.name, () => {
@@ -83,6 +126,8 @@ describe(servePotato.name, () => {
         assert.deepEquals(runState.lastServing, {
             result: ServingResult.Perfect,
             servedAtMs: 1234,
+            scoreDelta: servingConfig.perfect.score,
+            satisfactionDelta: servingConfig.perfect.satisfaction,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);
     });
@@ -94,10 +139,9 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
         });
         assert.strictEquals(runState.servingCounts[ServingResult.Incomplete], 1);
-        assert.strictEquals(
-            runState.satisfaction,
-            satisfactionConfig.starting + servingConfig.incomplete.satisfaction,
-        );
+        // partial is 50% mashed: round(-15 * 0.5) = -7, worse than the incomplete penalty -5.
+        assert.strictEquals(runState.satisfaction, satisfactionConfig.starting - 7);
+        assert.strictEquals(runState.lastServing?.satisfactionDelta, -7);
     });
 
     it('never raises satisfaction above the max', () => {

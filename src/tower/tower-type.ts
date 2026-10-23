@@ -1,5 +1,4 @@
 import {towerTypeConfig} from '../config/game-config.js';
-import {type PotatoProcessing} from '../run/run-state.js';
 
 export enum TowerType {
     Knife = 'knife',
@@ -16,8 +15,9 @@ export type TowerTypeDefinition = {
     hotkey: string;
     /** Fill color for the tower circle and its toolbar button. */
     color: string;
-    /** The potato flag this tower sets. */
-    processes: keyof PotatoProcessing;
+    /** The status effect this tower's hits apply, if any. */
+    appliesEffect: 'cut' | 'cooked' | undefined;
+    damage: number;
     rangePx: number;
     cooldownMs: number;
 };
@@ -28,7 +28,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         label: 'Knife',
         hotkey: '1',
         color: '#b8c4cc',
-        processes: 'cut',
+        appliesEffect: 'cut',
         ...towerTypeConfig.knife,
     },
     [TowerType.Boiler]: {
@@ -36,7 +36,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         label: 'Boiling Pot',
         hotkey: '2',
         color: '#3a8ee6',
-        processes: 'cooked',
+        appliesEffect: 'cooked',
         ...towerTypeConfig.boiler,
     },
     [TowerType.Masher]: {
@@ -44,7 +44,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         label: 'Masher',
         hotkey: '3',
         color: '#e6a23a',
-        processes: 'mashed',
+        appliesEffect: undefined,
         ...towerTypeConfig.masher,
     },
 };
