@@ -20,7 +20,7 @@ npm test               # unit tests (web-test-runner, headless Chromium)
 npm run lint           # auto-fix lint, then ALWAYS run `npm run format` after it
 npm run format         # prettier
 npm run test:all       # everything CI runs: compile, tests, spelling, format, deps, lint
-node scripts/screenshot.js http://localhost:5173/ out.png [move:X:Y] [click:X:Y] [key:K] [wait:MS]
+node scripts/screenshot.js http://localhost:5173/ out.png [move:X:Y] [click:X:Y] [rightclick:X:Y] [key:K] [wait:MS] [eval:JS]
 ```
 
 `npm run test:all` must pass before you open a PR. If spelling fails on a real word (a game
@@ -28,7 +28,10 @@ term), add it to `words` in `cspell.config.cjs`.
 
 `scripts/screenshot.js` uses a 1280x720 browser viewport. World coordinates = browser
 coordinates x 1.5 (the world is 1920x1080). It prints `gameState.runState` and `gameState.ui` and
-any console errors. Use it to check visual work, and look at the PNG.
+any console errors. Use it to check visual work, and look at the PNG. In dev builds the live
+state is `globalThis.gameState`, so `eval:` can force situations for testing, for example
+`"eval:gameState.runState.satisfaction=0"`. Use the dev server from your own worktree (if port
+5173 is taken, Vite picks the next free port and prints it).
 
 ## Architecture
 

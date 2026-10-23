@@ -9,8 +9,10 @@
  *
  * - `move:X:Y` moves the mouse
  * - `click:X:Y` left clicks
+ * - `rightclick:X:Y` right clicks
  * - `key:KEY` presses a key (Playwright key names, for example `1`, `Escape`, `r`)
  * - `wait:MS` waits
+ * - `eval:CODE` runs JavaScript in the page, for example `eval:gameState.runState.status='lost'`
  */
 import {chromium} from 'playwright';
 
@@ -39,20 +41,28 @@ await page.goto(url);
 await page.waitForTimeout(3000);
 
 for (const action of actions) {
+    const separatorIndex = action.indexOf(':');
+    const kind = separatorIndex < 0 ? action : action.slice(0, separatorIndex);
+    const rest = separatorIndex < 0 ? '' : action.slice(separatorIndex + 1);
     const [
-        kind,
         first,
         second,
-    ] = action.split(':');
+    ] = rest.split(':');
 
     if (kind === 'move') {
         await page.mouse.move(Number(first), Number(second));
     } else if (kind === 'click') {
         await page.mouse.click(Number(first), Number(second));
+    } else if (kind === 'rightclick') {
+        await page.mouse.click(Number(first), Number(second), {
+            button: 'right',
+        });
     } else if (kind === 'key') {
-        await page.keyboard.press(String(first));
+        await page.keyboard.press(rest);
     } else if (kind === 'wait') {
         await page.waitForTimeout(Number(first));
+    } else if (kind === 'eval') {
+        await page.evaluate(rest);
     } else {
         throw new Error(`Unknown action '${action}'.`);
     }
