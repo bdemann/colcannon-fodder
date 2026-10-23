@@ -1,4 +1,4 @@
-import {satisfactionConfig} from '../config/game-config.js';
+import {getPotatoesPerRun, satisfactionConfig, waveConfig} from '../config/game-config.js';
 
 export enum RunStatus {
     Playing = 'playing',
@@ -47,6 +47,18 @@ export type RunState = {
     lastServing: LastServing | undefined;
     /** Simulation time since the run started. */
     elapsedMs: number;
+    /** Total potatoes this run will spawn; reaching it in `potatoesServed` wins. Set by `StartRun`. */
+    potatoesPerRun: number;
+    /** 0-based index into waveConfig.waves of the current or upcoming wave. */
+    waveIndex: number;
+    /**
+     * 'break' = waiting before waveIndex starts; 'spawning' = wave is spawning; 'done' = every wave
+     * has spawned.
+     */
+    wavePhase: 'break' | 'spawning' | 'done';
+    /** Time left in the current break. */
+    breakRemainingMs: number;
+    spawnedInWave: number;
 };
 
 export function createInitialRunState(): RunState {
@@ -65,5 +77,11 @@ export function createInitialRunState(): RunState {
         },
         lastServing: undefined,
         elapsedMs: 0,
+        // Assumes one path until `StartRun` sets the real value from the level.
+        potatoesPerRun: getPotatoesPerRun(1),
+        waveIndex: 0,
+        wavePhase: 'break',
+        breakRemainingMs: waveConfig.breakMs,
+        spawnedInWave: 0,
     };
 }

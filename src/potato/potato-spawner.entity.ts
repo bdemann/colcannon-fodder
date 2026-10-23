@@ -1,12 +1,12 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
-import {potatoConfig, runConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
+import {advanceWaves} from '../run/waves.js';
 import {PotatoEntity} from './potato.entity.js';
 
 /**
- * Logic-only entity that releases one potato per path every `spawnIntervalMs` until the run's
- * potato total is reached.
+ * Logic-only entity that runs the wave state machine (`advanceWaves`) and releases one potato per
+ * path for every spawn it returns.
  */
 export class PotatoSpawnerEntity extends defineLogicEntity({
     key: 'PotatoSpawnerEntity',
@@ -17,16 +17,9 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
     public override async update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
         const {runState, level} = this.state;
 
-        if (runState.potatoesSpawned >= runConfig.potatoesPerRun) {
-            return;
-        }
+        const spawns = advanceWaves(runState, this.params, msSinceLastExecute);
 
-        this.params.msUntilNextSpawn -= msSinceLastExecute;
-
-        while (
-            this.params.msUntilNextSpawn <= 0 &&
-            runState.potatoesSpawned < runConfig.potatoesPerRun
-        ) {
+        for (const spawn of spawns) {
             for (const path of level.paths) {
                 const start = path.waypoints[0];
 
@@ -39,7 +32,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     y: start.y,
                     pathId: path.pathId,
                     distancePx: 0,
-                    speedPxPerMs: potatoConfig.speedPxPerMs,
+                    speedPxPerMs: spawn.speedPxPerMs,
                     cut: false,
                     cooked: false,
                     mashed: false,
@@ -47,8 +40,6 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 });
                 runState.potatoesSpawned++;
             }
-
-            this.params.msUntilNextSpawn += potatoConfig.spawnIntervalMs;
         }
     }
 }

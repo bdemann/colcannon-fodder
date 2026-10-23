@@ -4,11 +4,9 @@
  * millisecond.
  */
 
-/** Potato movement and spawning. */
+/** Potato size. Speed and spawn rate come from `waveConfig`. */
 export const potatoConfig = {
     radius: 22,
-    speedPxPerMs: 0.12,
-    spawnIntervalMs: 1500,
 } as const;
 
 /** Restaurant satisfaction is the "health" of a run. The run is lost when it reaches 0. */
@@ -33,10 +31,43 @@ export const servingConfig = {
     },
 } as const;
 
-/** The number of potatoes in one run. Surviving them all wins the run. Replaced by waves in #8. */
-export const runConfig = {
-    potatoesPerRun: 30,
+/** The waves of one run, in order. Surviving them all wins. */
+export const waveConfig = {
+    /** Quiet time before wave 1 and between waves. */
+    breakMs: 6000,
+    waves: [
+        {
+            potatoCount: 8,
+            spawnIntervalMs: 1800,
+            speedPxPerMs: 0.1,
+        },
+        {
+            potatoCount: 10,
+            spawnIntervalMs: 1400,
+            speedPxPerMs: 0.12,
+        },
+        {
+            potatoCount: 14,
+            spawnIntervalMs: 1100,
+            speedPxPerMs: 0.14,
+        },
+        {
+            potatoCount: 18,
+            spawnIntervalMs: 850,
+            speedPxPerMs: 0.16,
+        },
+        {
+            potatoCount: 24,
+            spawnIntervalMs: 650,
+            speedPxPerMs: 0.18,
+        },
+    ],
 } as const;
+
+/** Total potatoes in a run (every path spawns one per spawn). Used for the win check. */
+export function getPotatoesPerRun(pathCount: number): number {
+    return waveConfig.waves.reduce((sum, wave) => sum + wave.potatoCount, 0) * pathCount;
+}
 
 /** Tower placement rules shared by every tower type. */
 export const towerConfig = {
