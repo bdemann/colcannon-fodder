@@ -1,9 +1,11 @@
 import {type PotatoProcessing, type RunState, ServingResult} from './run-state.js';
 
 /** Which result a potato earns from its processing. See the table in `docs/spec.md` section 4. */
-export function evaluatePotato(_processing: Readonly<PotatoProcessing>): ServingResult {
+export function evaluatePotato(processing: Readonly<PotatoProcessing>): ServingResult {
     /** Stub. Implemented in the "Restaurant judges every potato" issue. */
-    return ServingResult.Raw;
+    return processing.cut && processing.cooked && processing.mashed
+        ? ServingResult.Perfect
+        : ServingResult.Raw;
 }
 
 /**
