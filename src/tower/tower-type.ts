@@ -17,6 +17,8 @@ export type TowerTypeDefinition = {
     color: string;
     /** The status effect this tower's hits apply, if any. */
     appliesEffect: 'cut' | 'cooked' | undefined;
+    /** Hits every potato in range at once instead of one target. */
+    areaOfEffect: boolean;
     damage: number;
     rangePx: number;
     cooldownMs: number;
@@ -29,6 +31,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         hotkey: '1',
         color: '#b8c4cc',
         appliesEffect: 'cut',
+        areaOfEffect: false,
         ...towerTypeConfig.knife,
     },
     [TowerType.Boiler]: {
@@ -37,6 +40,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         hotkey: '2',
         color: '#3a8ee6',
         appliesEffect: 'cooked',
+        areaOfEffect: true,
         ...towerTypeConfig.boiler,
     },
     [TowerType.Masher]: {
@@ -45,6 +49,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         hotkey: '3',
         color: '#e6a23a',
         appliesEffect: undefined,
+        areaOfEffect: false,
         ...towerTypeConfig.masher,
     },
 };

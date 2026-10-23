@@ -128,11 +128,11 @@ export const towerTypeConfig = {
         rangePx: 140,
         cooldownMs: 250,
     },
-    /** Medium: softens potatoes so Mashers hit twice as hard. */
+    /** Area of effect: softens every potato in range at once. */
     boiler: {
         damage: 6,
         rangePx: 140,
-        cooldownMs: 600,
+        cooldownMs: 1200,
     },
     /** Slow and heavy: the finisher, one potato at a time. */
     masher: {
@@ -156,6 +156,8 @@ export const hudConfig = {
 /** Tower processing feedback. */
 export const towerFeedbackConfig = {
     flashMs: 150,
+    /** How long the area-of-effect splash ring expands and fades. */
+    splashMs: 350,
 } as const;
 
 /** Synthesized sound effects. */

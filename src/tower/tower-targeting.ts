@@ -50,3 +50,21 @@ export function chooseTargetIndex(
 
     return bestIndex;
 }
+
+/** Indexes of every candidate an area-of-effect tower hits: all within range with mashHp > 0. */
+export function chooseAreaTargetIndexes(
+    tower: Readonly<{x: number; y: number; rangePx: number}>,
+    candidates: ReadonlyArray<TargetCandidate>,
+): number[] {
+    const indexes: number[] = [];
+    candidates.forEach((candidate, index) => {
+        if (
+            Math.hypot(candidate.x - tower.x, candidate.y - tower.y) <= tower.rangePx &&
+            candidate.processing.mashHp > 0
+        ) {
+            indexes.push(index);
+        }
+    });
+
+    return indexes;
+}

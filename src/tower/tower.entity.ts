@@ -10,7 +10,7 @@ import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {shouldShowTowerRange} from './tower-placement.js';
-import {chooseTargetIndex} from './tower-targeting.js';
+import {chooseAreaTargetIndexes, chooseTargetIndex} from './tower-targeting.js';
 import {TowerType, towerTypes} from './tower-type.js';
 
 const processSfx: Record<TowerType, Sfx> = {
@@ -49,6 +49,7 @@ export class TowerEntity extends defineEntity({
     protected body: Graphics | undefined;
     protected letter: Text | undefined;
     protected beam: Graphics | undefined;
+    protected splash: Graphics | undefined;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
     protected lastSeenProcessedAtMs: number | undefined;
 
@@ -93,10 +94,14 @@ export class TowerEntity extends defineEntity({
         const beam = new Graphics();
         view.addChild(beam);
 
+        const splash = new Graphics();
+        view.addChild(splash);
+
         this.rangeView = rangeView;
         this.body = body;
         this.letter = letter;
         this.beam = beam;
+        this.splash = splash;
 
         return {
             view,
@@ -116,6 +121,45 @@ export class TowerEntity extends defineEntity({
         const potatoes = [...this.state.entityStore.getEntities(PotatoEntity)].filter(
             (potato) => !potato.params.served,
         );
+        const potatoCandidates = potatoes.map((potato) => {
+            return {
+                x: potato.params.x,
+                y: potato.params.y,
+                distancePx: potato.params.distancePx,
+                processing: potato.getProcessing(),
+            };
+        });
+
+        if (definition.areaOfEffect) {
+            const targetIndexes = chooseAreaTargetIndexes(
+                {
+                    x: this.params.x,
+                    y: this.params.y,
+                    rangePx: definition.rangePx,
+                },
+                potatoCandidates,
+            );
+            if (targetIndexes.length === 0) {
+                return;
+            }
+            for (const targetIndex of targetIndexes) {
+                const hitPotato = potatoes[targetIndex];
+                if (!hitPotato) {
+                    continue;
+                }
+                const hitProcessing = hitPotato.getProcessing();
+                applyTowerHit(hitProcessing, this.params.towerType);
+                hitPotato.params.cut = hitProcessing.cut;
+                hitPotato.params.cooked = hitProcessing.cooked;
+                hitPotato.params.mashHp = hitProcessing.mashHp;
+            }
+            this.params.cooldownRemainingMs = definition.cooldownMs;
+            this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
+            this.params.lastTargetX = this.params.x;
+            this.params.lastTargetY = this.params.y;
+            return;
+        }
+
         const index = chooseTargetIndex(
             {
                 x: this.params.x,
@@ -123,14 +167,7 @@ export class TowerEntity extends defineEntity({
                 rangePx: definition.rangePx,
                 appliesEffect: definition.appliesEffect,
             },
-            potatoes.map((potato) => {
-                return {
-                    x: potato.params.x,
-                    y: potato.params.y,
-                    distancePx: potato.params.distancePx,
-                    processing: potato.getProcessing(),
-                };
-            }),
+            potatoCandidates,
         );
         const target = potatoes[index];
         if (!target) {
@@ -150,8 +187,8 @@ export class TowerEntity extends defineEntity({
 
     /** Flashes the tower and draws a beam to the last target. Presentation only. */
     public override render() {
-        const {body, letter, beam, rangeView} = this;
-        if (!body || !letter || !beam || !rangeView) {
+        const {body, letter, beam, splash, rangeView} = this;
+        if (!body || !letter || !beam || !splash || !rangeView) {
             return;
         }
 
@@ -180,7 +217,19 @@ export class TowerEntity extends defineEntity({
         body.scale.set(scale);
         letter.scale.set(scale);
         beam.clear();
-        if (flashing) {
+        splash.clear();
+        const definition = towerTypes[towerType];
+        const sinceMs = this.state.runState.elapsedMs - lastProcessedAtMs;
+        if (definition.areaOfEffect) {
+            if (lastProcessedAtMs >= 0 && sinceMs < towerFeedbackConfig.splashMs) {
+                const t = sinceMs / towerFeedbackConfig.splashMs;
+                splash.circle(0, 0, definition.rangePx * (0.3 + 0.7 * t)).stroke({
+                    color: definition.color,
+                    width: 10,
+                    alpha: 0.8 * (1 - t),
+                });
+            }
+        } else if (flashing) {
             beam.moveTo(0, 0)
                 .lineTo(lastTargetX - x, lastTargetY - y)
                 .stroke({
