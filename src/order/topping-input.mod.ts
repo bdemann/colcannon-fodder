@@ -36,7 +36,7 @@ export const toppingInputMod = defineAnthaMod<FullGameState>({
 
         ghost.clear();
 
-        if (state.runState.status !== RunStatus.Playing) {
+        if (state.runState.status !== RunStatus.Playing || state.runState.paused) {
             ui.selectedTopping = undefined;
             return;
         }
