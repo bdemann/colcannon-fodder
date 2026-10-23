@@ -1,6 +1,7 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
 import {LevelEntity} from '../level/level.entity.js';
+import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {createInitialRunState} from '../run/run-state.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
@@ -35,6 +36,9 @@ export const gameCommandHandlers: {
         state.entityStore.destroyAllEntities();
         state.runState = createInitialRunState();
         await state.entityStore.addEntity(LevelEntity);
+        await state.entityStore.addEntity(PotatoSpawnerEntity, {
+            msUntilNextSpawn: 0,
+        });
     },
     [GameCommandType.PlaceTower]({detail}) {
         /** Implemented in issue "Place towers beside the path". */
