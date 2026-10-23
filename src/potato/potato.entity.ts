@@ -1,6 +1,7 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {position2dParamsShape, type ViewCreation2d} from '@antha/entity-2d';
 import {Graphics} from '@antha/graphics-2d';
+import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, intersectShape} from 'object-shape-tester';
 import {potatoConfig} from '../config/game-config.js';
@@ -37,8 +38,12 @@ export class PotatoEntity extends defineEntity({
         },
     },
 }) {
+    /** Which look is currently drawn, so we only redraw when a flag changes. */
+    protected drawnKey = '';
+
     public override createView(): ViewCreation2d {
         const {cut, cooked, mashed} = this.params;
+        this.drawnKey = this.getLookKey();
 
         return {
             hitbox: new Circle(
@@ -54,6 +59,23 @@ export class PotatoEntity extends defineEntity({
                 mashed,
             }),
         };
+    }
+
+    protected getLookKey(): string {
+        return `${this.params.cut}${this.params.cooked}${this.params.mashed}`;
+    }
+
+    protected redrawIfChanged() {
+        const key = this.getLookKey();
+        if (key === this.drawnKey) {
+            return;
+        }
+        this.drawnKey = key;
+        drawPotato(assertWrap.instanceOf(this.view, Graphics), {
+            cut: this.params.cut,
+            cooked: this.params.cooked,
+            mashed: this.params.mashed,
+        });
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -79,6 +101,9 @@ export class PotatoEntity extends defineEntity({
                 ownerSlot: path.ownerSlot,
             });
             this.destroy();
+            return;
         }
+
+        this.redrawIfChanged();
     }
 }

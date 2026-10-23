@@ -64,3 +64,8 @@ export const towerTypeConfig = {
 export const hudConfig = {
     servingPopupMs: 1200,
 } as const;
+
+/** Tower processing feedback. */
+export const towerFeedbackConfig = {
+    flashMs: 150,
+} as const;

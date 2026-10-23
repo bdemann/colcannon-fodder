@@ -16,4 +16,31 @@ describe(drawPotato.name, () => {
             graphics,
         );
     });
+
+    it('draws every combination of flags without throwing', () => {
+        for (const cut of [
+            false,
+            true,
+        ]) {
+            for (const cooked of [
+                false,
+                true,
+            ]) {
+                for (const mashed of [
+                    false,
+                    true,
+                ]) {
+                    const graphics = new Graphics();
+                    assert.strictEquals(
+                        drawPotato(graphics, {
+                            cut,
+                            cooked,
+                            mashed,
+                        }),
+                        graphics,
+                    );
+                }
+            }
+        }
+    });
 });

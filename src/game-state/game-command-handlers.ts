@@ -76,6 +76,8 @@ export const gameCommandHandlers: {
             ownerSlot: getCommandSlot(),
             cooldownRemainingMs: 0,
             lastProcessedAtMs: -1,
+            lastTargetX: 0,
+            lastTargetY: 0,
         });
     },
 };
