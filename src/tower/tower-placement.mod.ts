@@ -1,15 +1,18 @@
 import {defineAnthaMod} from '@antha/engine';
 import {Graphics} from '@antha/graphics-2d';
+import {Text} from 'pixi.js';
 import {towerConfig} from '../config/game-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus} from '../run/run-state.js';
-import {canPlaceTower} from './tower-placement.js';
+import {canAfford, canPlaceTower} from './tower-placement.js';
 import {TowerType, towerTypes} from './tower-type.js';
 import {TowerEntity} from './tower.entity.js';
 
 /** The ghost tower. Owned by this mod, not an entity, because it is UI only. */
 let preview: Graphics | undefined;
+/** Explains why the ghost is red. */
+let reasonLabel: Text | undefined;
 
 /**
  * UI side of tower placement: hotkeys, selection, the ghost under the pointer, and sending the
@@ -32,7 +35,25 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             stage.addChild(preview);
         }
 
+        if (!reasonLabel || reasonLabel.destroyed) {
+            reasonLabel = new Text({
+                text: '',
+                style: {
+                    fill: '#ffffff',
+                    fontSize: 24,
+                    stroke: {
+                        color: '#000000',
+                        width: 4,
+                    },
+                },
+            });
+            reasonLabel.anchor.set(0.5, 0);
+            reasonLabel.zIndex = 1000;
+            stage.addChild(reasonLabel);
+        }
+
         preview.clear();
+        reasonLabel.visible = false;
 
         if (state.runState.status !== RunStatus.Playing) {
             ui.selectedTowerType = undefined;
@@ -72,6 +93,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                 const y = Math.round(click.y);
 
                 if (
+                    canAfford(state.runState.coins, ui.selectedTowerType) &&
                     canPlaceTower({
                         level: state.level,
                         towers,
@@ -97,14 +119,22 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
         const definition = towerTypes[ui.selectedTowerType];
         const {x, y} = ui.pointerWorld;
-        const valid = canPlaceTower({
+        const placement = canPlaceTower({
             level: state.level,
             towers,
             point: {
                 x,
                 y,
             },
-        }).valid;
+        });
+        const affordable = canAfford(state.runState.coins, ui.selectedTowerType);
+        const valid = placement.valid && affordable;
+
+        if (!placement.valid || !affordable) {
+            reasonLabel.text = placement.valid ? 'Not enough coins' : placement.reason;
+            reasonLabel.position.set(x, y + towerConfig.radius + 8);
+            reasonLabel.visible = true;
+        }
 
         preview
             .circle(x, y, definition.rangePx)

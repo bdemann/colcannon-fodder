@@ -1,6 +1,6 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {satisfactionConfig, servingConfig} from '../config/game-config.js';
+import {economyConfig, satisfactionConfig, servingConfig} from '../config/game-config.js';
 import {
     createInitialRunState,
     type PotatoProcessing,
@@ -174,5 +174,58 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
         });
         assert.strictEquals(runState.status, RunStatus.Lost);
+    });
+});
+
+describe('servePotato coins', () => {
+    const cases: ReadonlyArray<
+        [
+            ServingResult,
+            PotatoProcessing,
+        ]
+    > = [
+        [
+            ServingResult.Perfect,
+            perfect,
+        ],
+        [
+            ServingResult.Incomplete,
+            partial,
+        ],
+        [
+            ServingResult.Raw,
+            raw,
+        ],
+    ];
+
+    for (const [
+        result,
+        processing,
+    ] of cases) {
+        it(`pays ${economyConfig.servingCoins[result]} coins for ${result}`, () => {
+            const runState = createInitialRunState();
+
+            servePotato(runState, {
+                processing,
+                ownerSlot: 0,
+            });
+
+            assert.strictEquals(
+                runState.coins,
+                economyConfig.startingCoins + economyConfig.servingCoins[result],
+            );
+        });
+    }
+
+    it('pays nothing once the run is over', () => {
+        const runState = createInitialRunState();
+        runState.status = RunStatus.Lost;
+
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+        });
+
+        assert.strictEquals(runState.coins, economyConfig.startingCoins);
     });
 });

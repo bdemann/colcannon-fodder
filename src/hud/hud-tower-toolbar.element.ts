@@ -1,4 +1,6 @@
 import {css, defineElement, html, listen} from 'element-vir';
+import {economyConfig} from '../config/game-config.js';
+import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
@@ -75,6 +77,15 @@ export const HudTowerToolbar = defineElement<{
             white-space: nowrap;
         }
 
+        button.unaffordable {
+            opacity: 0.45;
+        }
+
+        .cost {
+            color: #ffd700;
+            font-size: 24px;
+        }
+
         .hotkey {
             font-size: 24px;
             opacity: 0.7;
@@ -94,7 +105,10 @@ export const HudTowerToolbar = defineElement<{
 
                     return html`
                         <button
-                            class=${towerType === selected ? 'selected' : ''}
+                            class=${[
+                                towerType === selected ? 'selected' : '',
+                                canAfford(inputs.snapshot.coins, towerType) ? '' : 'unaffordable',
+                            ].join(' ')}
                             ${listen('click', () => {
                                 inputs.actions.selectTowerType(
                                     towerType === selected ? undefined : towerType,
@@ -106,6 +120,9 @@ export const HudTowerToolbar = defineElement<{
                                 <div class="text">
                                     <span class="label">${definition.label}</span>
                                     <span class="hotkey">[${definition.hotkey}]</span>
+                                    <span class="cost">
+                                        🪙 ${economyConfig.towerCost[towerType]}
+                                    </span>
                                 </div>
                             </div>
                         </button>

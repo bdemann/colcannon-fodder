@@ -1,5 +1,5 @@
 import {type Coords} from '@augment-vir/common';
-import {towerConfig} from '../config/game-config.js';
+import {economyConfig, towerConfig} from '../config/game-config.js';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getDistanceToPath, type LevelDefinition} from '../level/level.js';
 import {type TowerType} from './tower-type.js';
@@ -63,6 +63,11 @@ export function canPlaceTower({
             valid: true,
         };
     }
+}
+
+/** Whether the restaurant has enough coins to build a tower of this type. */
+export function canAfford(coins: number, towerType: TowerType): boolean {
+    return coins >= economyConfig.towerCost[towerType];
 }
 
 /** A built tower's range ring shows while placing, or while the pointer hovers the tower. */
