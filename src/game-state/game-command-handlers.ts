@@ -63,7 +63,12 @@ export const gameCommandHandlers: {
     async [GameCommandType.PlaceTower]({detail, state}) {
         const {packet} = detail;
 
-        if (!state.entityStore || !state.level || state.runState?.status !== RunStatus.Playing) {
+        if (
+            !state.entityStore ||
+            !state.level ||
+            state.runState?.status !== RunStatus.Playing ||
+            state.runState.paused
+        ) {
             return;
         }
 
@@ -101,10 +106,19 @@ export const gameCommandHandlers: {
             lastTargetY: 0,
         });
     },
+    [GameCommandType.TogglePause]({state}) {
+        if (state.runState?.status === RunStatus.Playing) {
+            state.runState.paused = !state.runState.paused;
+        }
+    },
     [GameCommandType.ApplyTopping]({detail, state}) {
         const {packet} = detail;
 
-        if (!state.entityStore || state.runState?.status !== RunStatus.Playing) {
+        if (
+            !state.entityStore ||
+            state.runState?.status !== RunStatus.Playing ||
+            state.runState.paused
+        ) {
             return;
         }
 

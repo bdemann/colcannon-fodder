@@ -17,6 +17,12 @@ const servingSfx: Record<ServingResult, Sfx> = {
 /** Presentation-only trackers so each serving and each new tower plays one sound. */
 let lastSeenServedAtMs: number | undefined;
 let lastSeenTowerCount: number | undefined;
+/**
+ * Whether a tower or topping was selected at the end of the previous tick. The placement and
+ * topping mods run before the HUD and already clear selections on Escape, so this is how Escape
+ * knows whether it should pause instead.
+ */
+let hadSelectionLastTick = false;
 
 /** Plays serving and build sounds. Presentation only, so it lives here and not in the simulation. */
 function playHudSounds(state: Partial<FullGameState>) {
@@ -50,6 +56,16 @@ export const hudMod = defineAnthaMod<FullGameState>({
         ) {
             getHudActions(state).restartRun();
         }
+
+        if (state.runState?.status === RunStatus.Playing && state.ui) {
+            const pausePressed = state.ui.keys.some((key) => key === 'p' || key === 'P');
+            const escapePressed = state.ui.keys.includes('Escape') && !hadSelectionLastTick;
+
+            if (pausePressed || escapePressed) {
+                getHudActions(state).togglePause();
+            }
+        }
+        hadSelectionLastTick = !!(state.ui?.selectedTowerType || state.ui?.selectedTopping);
 
         if (state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
             getHudActions(state).beginRun();

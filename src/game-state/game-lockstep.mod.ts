@@ -97,8 +97,8 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
     async runFrameUpdate(frameUpdateParams) {
         const {state} = frameUpdateParams;
 
-        if (state.runState?.status !== RunStatus.Playing) {
-            /** The board freezes on game over so the player can see how it ended. */
+        /** The board freezes on game over so the player can see how it ended, and while paused. */
+        if (state.runState?.status !== RunStatus.Playing || state.runState.paused) {
             return;
         }
 

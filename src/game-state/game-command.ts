@@ -17,6 +17,8 @@ export enum GameCommandType {
     PlaceTower = 'place-tower',
     /** Adds a topping to a potato on the belt. */
     ApplyTopping = 'apply-topping',
+    /** Pauses or resumes the run. Ignored unless the run is `Playing`. */
+    TogglePause = 'toggle-pause',
 }
 
 /** Must stay JSON compatible: it is sent over the network in co-op. */
@@ -40,6 +42,9 @@ export type GameCommand =
           /** The target potato's `potatoId` param. */
           potatoId: number;
           topping: Topping;
+      }
+    | {
+          type: GameCommandType.TogglePause;
       };
 
 /** Queues a command for the next lockstep frame. Call this from UI code, never from handlers. */

@@ -55,7 +55,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         preview.clear();
         reasonLabel.visible = false;
 
-        if (state.runState.status !== RunStatus.Playing) {
+        if (state.runState.status !== RunStatus.Playing || state.runState.paused) {
             ui.selectedTowerType = undefined;
             preview.visible = false;
             return;

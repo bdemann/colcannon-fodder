@@ -72,6 +72,8 @@ export type LastOrderEvent = {
  */
 export type RunState = {
     status: RunStatus;
+    /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
+    paused: boolean;
     satisfaction: number;
     /** Coins shared by the whole restaurant; spent on towers, earned by servings. */
     coins: number;
@@ -113,6 +115,7 @@ const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 export function createInitialRunState(): RunState {
     return {
         status: RunStatus.Playing,
+        paused: false,
         satisfaction: satisfactionConfig.starting,
         coins: economyConfig.startingCoins,
         scoreBySlot: {

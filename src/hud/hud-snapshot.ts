@@ -14,6 +14,8 @@ import {type TowerType} from '../tower/tower-type.js';
  */
 export type HudSnapshot = {
     status: RunStatus;
+    /** Whether the run is paused. */
+    paused: boolean;
     satisfaction: number;
     maxSatisfaction: number;
     coins: number;
@@ -64,6 +66,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
 
     return {
         status: runState.status,
+        paused: runState.paused,
         satisfaction: runState.satisfaction,
         maxSatisfaction: satisfactionConfig.max,
         coins: runState.coins,

@@ -16,6 +16,8 @@ export type HudActions = {
     restartRun(): void;
     /** Leaves the title screen and starts the run. */
     beginRun(): void;
+    /** Pauses or resumes the run. */
+    togglePause(): void;
 };
 
 const actionsByState = new WeakMap<object, HudActions>();
@@ -43,6 +45,11 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         beginRun() {
             sendGameCommand(state, {
                 type: GameCommandType.BeginRun,
+            });
+        },
+        togglePause() {
+            sendGameCommand(state, {
+                type: GameCommandType.TogglePause,
             });
         },
         restartRun() {

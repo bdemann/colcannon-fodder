@@ -2,6 +2,7 @@ import {css, defineElement, html} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
 import {HudMute} from './hud-mute.element.js';
 import {HudOrders} from './hud-orders.element.js';
+import {HudPause} from './hud-pause.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
@@ -51,6 +52,10 @@ export const GameHud = defineElement<{
             <${HudMute.assign({
                 snapshot: inputs.snapshot,
             })}></${HudMute}>
+            <${HudPause.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudPause}>
             <${HudRunOver.assign({
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,

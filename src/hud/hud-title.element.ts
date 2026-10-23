@@ -20,12 +20,16 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
     },
 ];
 
-const rules = [
+export const rules = [
     'Every tower mashes. Knives cut so every hit lands harder; pots soften everything in range so mashers hit twice as hard.',
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Keep satisfaction above zero through every wave to become the Mash Champ.',
 ];
+
+/** Controls reminder shown on the title and pause panels. */
+export const controlsText =
+    '1 / 2 / 3 or click a button to pick a tower · Q/W/E/R pick a topping · Click to build · Right click / Esc to cancel · P / Esc pause · R to restart after a run';
 
 /** Full-screen title panel with how-to-play, shown while the run is `Ready`. */
 export const HudTitle = defineElement<{
@@ -153,10 +157,7 @@ export const HudTitle = defineElement<{
                             `;
                         })}
                     </div>
-                    <div class="controls">
-                        1 / 2 / 3 or click a button to pick a tower · Q/W/E/R pick a topping · Click
-                        to build · Right click / Esc to cancel · R to restart after a run
-                    </div>
+                    <div class="controls">${controlsText}</div>
                     <button
                         @click=${() => {
                             inputs.actions.beginRun();
