@@ -15,6 +15,7 @@ import {hudMod} from '../hud/hud.mod.js';
 import {inputMod} from '../input/input.mod.js';
 import {defaultLevel} from '../level/level.js';
 import {createInitialRunState} from '../run/run-state.js';
+import {towerPlacementMod} from '../tower/tower-placement.mod.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
 import {gameEntities} from './game-entities.js';
 import {updateEntitiesMod} from './game-entity.mod.js';
@@ -95,6 +96,7 @@ export async function bootstrapGame({
             updateEntitiesMod,
             gameLockstepMod,
             gameUpdateMod,
+            towerPlacementMod,
             hudMod,
             createAnthaBackgroundAudioMod(),
         ],

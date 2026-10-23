@@ -2,7 +2,9 @@ import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
 import {LevelEntity} from '../level/level.entity.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
-import {createInitialRunState} from '../run/run-state.js';
+import {createInitialRunState, RunStatus} from '../run/run-state.js';
+import {canPlaceTower} from '../tower/tower-placement.js';
+import {TowerEntity} from '../tower/tower.entity.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
 
@@ -40,8 +42,40 @@ export const gameCommandHandlers: {
             msUntilNextSpawn: 0,
         });
     },
-    [GameCommandType.PlaceTower]({detail}) {
-        /** Implemented in issue "Place towers beside the path". */
-        console.info('PlaceTower command received', detail.packet);
+    async [GameCommandType.PlaceTower]({detail, state}) {
+        const {packet} = detail;
+
+        if (!state.entityStore || !state.level || state.runState?.status !== RunStatus.Playing) {
+            return;
+        }
+
+        const towers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
+            return {
+                x: tower.params.x,
+                y: tower.params.y,
+            };
+        });
+
+        if (
+            !canPlaceTower({
+                level: state.level,
+                towers,
+                point: {
+                    x: packet.x,
+                    y: packet.y,
+                },
+            }).valid
+        ) {
+            return;
+        }
+
+        await state.entityStore.addEntity(TowerEntity, {
+            x: packet.x,
+            y: packet.y,
+            towerType: packet.towerType,
+            ownerSlot: getCommandSlot(),
+            cooldownRemainingMs: 0,
+            lastProcessedAtMs: -1,
+        });
     },
 };
