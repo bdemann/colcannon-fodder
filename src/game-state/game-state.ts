@@ -1,60 +1,42 @@
 import {type createAnthaAudioMod, type createAnthaBackgroundAudioMod} from '@antha/audio';
 import {type AnthaModsState} from '@antha/engine';
-import {
-    type AnthaMenuModState,
-    type createAnthaInputBindingsMod,
-    type createAnthaMenuMod,
-    type createAnthaReadRawInputMod,
-} from '@antha/input';
-import {type ClientId} from '@antha/multiplayer-core';
 import {type createAnthaMultiplayerP2pLockStepMod} from '@antha/multiplayer-p2p-lock-step';
-import {type LocalPlayerPosition} from '@antha/util';
-import {type SeededRandom} from '@augment-vir/common';
-import {type GameBinding} from '../player/player-binding.js';
-import {type PlayerEntity} from '../player/player.entity.js';
+import {type Coords, type SeededRandom} from '@augment-vir/common';
+import {type LevelDefinition} from '../level/level.js';
+import {type RunState} from '../run/run-state.js';
+import {type TowerType} from '../tower/tower-type.js';
+import {type GameCommand} from './game-command.js';
 import {type updateEntitiesMod} from './game-entity.mod.js';
-import {type MultiplayerPacket} from './multiplayer-packet.js';
-import {type anthaAutosaveMod, type GameSaveState} from './save-data.js';
 
-export enum InputConsumer {
-    Menu = 'menu',
-}
-
-/** Names the overlays the game can show so menu navigation uses stable state values. */
-export enum GameMenuKey {
-    MultiplayerRooms = 'multiplayer-rooms',
-    Options = 'options',
-    Pause = 'pause',
-}
-
-/** Connects a player ID to its owner, controller slot, and live entity instance. */
-export type PlayerState = {
-    /**
-     * The host that this player is on. A single client will contain multiple player positions and
-     * entities when local joining is used.
-     */
-    clientId: ClientId;
-    playerEntity: PlayerEntity;
-    playerPosition: LocalPlayerPosition;
+/**
+ * Local, per-browser UI state. Never read this from simulation code (command handlers or entity
+ * `update` methods): in co-op each peer has its own UI state, so reading it would desync the game.
+ * UI code turns it into `GameCommand`s instead.
+ */
+export type UiState = {
+    selectedTowerType: TowerType | undefined;
+    /** Mouse position in game-world coordinates, or `undefined` when outside the canvas. */
+    pointerWorld: Coords | undefined;
+    /** Left clicks on the canvas, in game-world coordinates, not yet handled. Consumers clear it. */
+    pendingClicks: Coords[];
+    /** `KeyboardEvent.key` values pressed since the last tick, not yet handled. Consumers clear it. */
+    pendingKeys: string[];
 };
 
 /** Holds the game-specific data shared by all engine mods. */
 export type GameState = {
-    players: Record<string, PlayerState>;
-    saveState: GameSaveState | undefined;
+    level: LevelDefinition;
+    runState: RunState;
     seededRandom: SeededRandom;
-} & AnthaMenuModState<GameMenuKey>;
+    ui: UiState;
+};
 
 /** Derives complete game state from the mods that create and consume its shared properties. */
 export type FullGameState = AnthaModsState<
     [
-        typeof anthaAutosaveMod,
         ReturnType<typeof createAnthaAudioMod>,
         ReturnType<typeof createAnthaBackgroundAudioMod>,
-        ReturnType<typeof createAnthaReadRawInputMod>,
-        ReturnType<typeof createAnthaInputBindingsMod<GameBinding>>,
         typeof updateEntitiesMod,
-        ReturnType<typeof createAnthaMultiplayerP2pLockStepMod<MultiplayerPacket>>,
-        ReturnType<typeof createAnthaMenuMod<GameMenuKey, InputConsumer>>,
+        ReturnType<typeof createAnthaMultiplayerP2pLockStepMod<GameCommand>>,
     ]
 >;

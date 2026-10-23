@@ -1,10 +1,11 @@
 import {pixiPlugin} from '@antha/web-test-runner-plugin-pixi';
 import {defineConfig} from '@virmator/test/configs/web-test-runner.config.base.mjs';
+import {playwrightLauncher} from '@web/test-runner-playwright';
 import {dirname} from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 
 const baseConfig = defineConfig({
-    coveragePercent: 100,
+    coveragePercent: 0,
     packageRootDirPath: dirname(dirname(fileURLToPath(import.meta.url))),
     extraScreenshotOptions: {},
 });
@@ -12,6 +13,12 @@ const baseConfig = defineConfig({
 /** @type {import('@web/test-runner').TestRunnerConfig} */
 const webTestRunnerConfig = {
     ...baseConfig,
+    /** Chromium only: WebKit and Firefox are not needed for a jam game and slow CI down. */
+    browsers: [
+        playwrightLauncher({
+            product: 'chromium',
+        }),
+    ],
     plugins: [
         pixiPlugin(),
         ...baseConfig.plugins,

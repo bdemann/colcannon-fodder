@@ -7,7 +7,13 @@ module.exports = {
     ],
     words: [
         ...baseConfig.words,
+        'bdemann',
+        'colcannon',
         'despawn',
         'desync',
+        'pathing',
+        'playfield',
+        'tunables',
+        'underprocessed',
     ],
 };

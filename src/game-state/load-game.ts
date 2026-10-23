@@ -8,72 +8,20 @@ import {
     createAnthaVirtualViewportMod,
     createVirtualViewportPixiOptions,
 } from '@antha/graphics-2d';
-import {createAnthaInputBindingsMod, createAnthaReadRawInputMod} from '@antha/input';
-import {ensureErrorAndPrependMessage, randomString, SeededRandom} from '@augment-vir/common';
+import {randomString, SeededRandom} from '@augment-vir/common';
 import {css} from 'element-vir';
 import {gameAudio, gameAudioFilesToLoad, GameAudioKey} from '../audio/game-audio.js';
-import {gameMenuMod, gameMenuNavMod} from '../menu/game-menu.mod.js';
-import {PlayerEntity} from '../player/player.entity.js';
-import {defaultBindings} from './default-bindings.js';
+import {hudMod} from '../hud/hud.mod.js';
+import {inputMod} from '../input/input.mod.js';
+import {defaultLevel} from '../level/level.js';
+import {createInitialRunState} from '../run/run-state.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
+import {gameEntities} from './game-entities.js';
 import {updateEntitiesMod} from './game-entity.mod.js';
+import {gameLockstepMod} from './game-lockstep.mod.js';
 import {type FullGameState} from './game-state.js';
 import {gameUpdateMod} from './game-update.mod.js';
 import {gameWorldSize} from './game-world.js';
-import {multiplayerLockstepMod} from './multiplayer-lockstep.mod.js';
-import {anthaAutosaveMod, createDefaultGameSaveState, loadSaveDataAsset} from './save-data.js';
-
-async function loadInitialGameAssets({
-    assetLoader,
-    audioPlayer,
-    engine,
-    loadSession,
-}: Readonly<{
-    assetLoader: AssetLoader;
-    audioPlayer: AudioPlayer;
-    engine: AnthaEngine;
-    loadSession: AssetLoadSession;
-}>) {
-    try {
-        await loadAnthaAssets(
-            {
-                assetLoader,
-                assets: [
-                    loadSaveDataAsset,
-                ],
-                audio: {
-                    assetName: 'Game audio',
-                    audioPlayer,
-                    files: gameAudioFilesToLoad,
-                    serial: true,
-                },
-                entities: [
-                    PlayerEntity,
-                ],
-            },
-            {
-                doNotUnload: true,
-                loadSession,
-            },
-        );
-        const loadedSaveState = await assetLoader.loadIndividualAsset({
-            asset: loadSaveDataAsset,
-        });
-
-        if (loadedSaveState.loadError) {
-            engine.log.error(loadedSaveState.loadError);
-        }
-
-        return loadedSaveState;
-    } catch (error) {
-        engine.log.error(ensureErrorAndPrependMessage(error, 'Failed to load game save state.'));
-
-        return {
-            loadError: ensureErrorAndPrependMessage(error, 'Failed to load game save state.'),
-            saveState: createDefaultGameSaveState(),
-        };
-    }
-}
 
 /** Loads assets and installs the game mods so a new engine starts a playable session. */
 export async function bootstrapGame({
@@ -95,22 +43,37 @@ export async function bootstrapGame({
     );
     const audioPlayer = new AudioPlayer();
     state.audioPlayer = audioPlayer;
-    const loadedSaveState = await loadInitialGameAssets({
-        assetLoader,
-        audioPlayer,
-        engine,
-        loadSession,
-    });
-    state.saveState = loadedSaveState.saveState;
-    state.bindingAssignments = defaultBindings;
+
+    await loadAnthaAssets(
+        {
+            assetLoader,
+            audio: {
+                assetName: 'Game audio',
+                audioPlayer,
+                files: gameAudioFilesToLoad,
+                serial: true,
+            },
+            entities: gameEntities,
+        },
+        {
+            doNotUnload: true,
+            loadSession,
+        },
+    );
+
     state.currentBackgroundAudio = gameAudio[GameAudioKey.GameMusic];
-    state.menuState = undefined;
-    state.players = {};
+    state.level = defaultLevel;
+    state.runState = createInitialRunState();
     state.seededRandom = SeededRandom.fromSeed(randomString());
+    state.ui = {
+        selectedTowerType: undefined,
+        pointerWorld: undefined,
+        pendingClicks: [],
+        pendingKeys: [],
+    };
 
     return {
         mods: [
-            anthaAutosaveMod,
             createAnthaGraphics2dMod({
                 extraCanvasWrapperStyles: css`
                     z-index: 0;
@@ -128,17 +91,11 @@ export async function bootstrapGame({
                   ]
                 : []),
             createAnthaAudioMod(),
-            createAnthaReadRawInputMod({
-                deviceHandlerOptions: {
-                    globalDeadZone: loadedSaveState.saveState.joystickDeadZone,
-                },
-            }),
-            createAnthaInputBindingsMod(),
+            inputMod,
             updateEntitiesMod,
-            multiplayerLockstepMod,
+            gameLockstepMod,
             gameUpdateMod,
-            gameMenuNavMod,
-            gameMenuMod,
+            hudMod,
             createAnthaBackgroundAudioMod(),
         ],
     };

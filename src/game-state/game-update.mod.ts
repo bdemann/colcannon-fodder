@@ -1,128 +1,35 @@
 import {defineAnthaMod} from '@antha/engine';
-import {markBindingActed, MenuNavBinding} from '@antha/input';
-import {createMultiplayerPlayerId, type ClientId} from '@antha/multiplayer-core';
-import {type P2pLockStepMultiplayerController} from '@antha/multiplayer-p2p-lock-step';
-import {LocalPlayerPosition} from '@antha/util';
-import {arrayToObject, getEnumValues} from '@augment-vir/common';
-import {moveLocalPlayers} from '../player/player-movement.js';
+import {deployEnv, DeployEnv} from './deploy-env.js';
+import {GameCommandType, sendGameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
-import {MultiplayerPacketType, type MultiplayerPacket} from './multiplayer-packet.js';
-import {startLocalGame} from './multiplayer-session.js';
 
-function addNewLocalPlayers({
-    localClientId,
-    multiplayerController,
-    state,
-}: Readonly<{
-    localClientId: ClientId;
-    multiplayerController: P2pLockStepMultiplayerController<MultiplayerPacket>;
-    state: Partial<FullGameState>;
-}>) {
-    const newLocalPlayerPositions = getEnumValues(LocalPlayerPosition).filter((playerPosition) => {
-        const menuEnterBinding = state.activeBindings?.[playerPosition]?.[MenuNavBinding.MenuEnter];
-
-        if (
-            playerPosition === LocalPlayerPosition.One ||
-            state.players?.[
-                createMultiplayerPlayerId({
-                    clientId: localClientId,
-                    playerPosition,
-                })
-            ] ||
-            !menuEnterBinding ||
-            menuEnterBinding.actCount
-        ) {
-            return false;
-        } else {
-            markBindingActed(menuEnterBinding);
-
-            return true;
-        }
-    });
-
-    if (newLocalPlayerPositions.length) {
-        multiplayerController.act(
-            newLocalPlayerPositions.map((playerPosition) => {
-                return {
-                    playerPosition,
-                    type: MultiplayerPacketType.SpawnPlayer,
-                };
-            }),
-        );
-    }
-}
-
-/** Player one can always use menus. Other local players can use them once they've joined. */
-function getAllowedPlayerMenuNavigation({
-    localClientId,
-    state,
-}: Readonly<{
-    localClientId: ClientId | undefined;
-    state: Partial<FullGameState>;
-}>) {
-    return arrayToObject(getEnumValues(LocalPlayerPosition), (playerPosition) => {
-        return {
-            key: playerPosition,
-            value:
-                playerPosition === LocalPlayerPosition.One ||
-                (!!localClientId &&
-                    !!state.players?.[
-                        createMultiplayerPlayerId({
-                            clientId: localClientId,
-                            playerPosition,
-                        })
-                    ]),
-        };
-    });
-}
-
-/** Coordinates game state and local players. */
+/** Starts singleplayer and the first run once the engine is ready. */
 export const gameUpdateMod = defineAnthaMod<
     FullGameState & {
         hasStartedInitialGame: boolean;
     }
 >({
     modName: 'game-update',
-    execute({state, msSinceLastExecute}) {
-        if (state.saveState) {
-            if (state.deviceHandler) {
-                state.deviceHandler.globalDeadZone = state.saveState.joystickDeadZone;
-            }
-
-            state.audioChannelVolume = {
-                channels: state.saveState.volume,
-                master: state.saveState.masterVolume,
-            };
-        }
-
-        state.allowedPlayerMenuNavigation = getAllowedPlayerMenuNavigation({
-            localClientId: state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
-            state,
-        });
-
-        if (!state.multiplayerP2pLockStep || !state.pixi?.pixiApplication?.screen) {
+    execute({state}) {
+        if (
+            state.hasStartedInitialGame ||
+            !state.multiplayerP2pLockStep ||
+            !state.entityStore ||
+            !state.pixi?.pixiApplication?.screen
+        ) {
             return;
         }
 
-        const localClientId = state.multiplayerP2pLockStep.multiplayerController.getClientId();
+        state.hasStartedInitialGame = true;
 
-        if (localClientId) {
-            addNewLocalPlayers({
-                localClientId,
-                multiplayerController: state.multiplayerP2pLockStep.multiplayerController,
-                state,
-            });
-
-            moveLocalPlayers({
-                localClientId,
-                msSinceLastExecute,
-                state,
-            });
+        if (deployEnv === DeployEnv.Dev) {
+            /** Lets you inspect live state from the browser console as `gameState`. */
+            (globalThis as Record<string, unknown>).gameState = state;
         }
 
-        if (!state.hasStartedInitialGame && state.entityStore) {
-            startLocalGame(state);
-            state.hasStartedInitialGame = true;
-        }
+        state.multiplayerP2pLockStep.multiplayerController.startSingleplayer();
+        sendGameCommand(state, {
+            type: GameCommandType.StartRun,
+        });
     },
 });

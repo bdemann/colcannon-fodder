@@ -1,14 +1,42 @@
-# antha-template
+# Colcannon Fodder
 
-An example game using the Antha engine and includes:
+A mashed potato tower defense game made for a "Mashup" game jam: cooking game + tower defense.
 
--   local co-op with controllers
--   p2p multiplayer
--   controller inputs and vibration
--   full rendering and collision detection pipeline
+Potatoes march down the path toward the restaurant. Place a **Knife**, a **Boiling Pot**, and a
+**Masher** beside the path so every potato arrives cut, cooked, and mashed. Customers love a
+proper mash, grumble about half-done potatoes, and are furious about raw ones. Keep the restaurant
+happy until the last potato is served and earn the title of **Mash Champ**.
+
+## Play
+
+Play in the browser: https://bdemann.github.io/colcannon-fodder/ (after the first deploy).
+
+Controls are documented here as they are built.
+
+## Run locally
+
+Requires Node.js 22 or newer.
+
+```bash
+npm ci
+npx virmator frontend
+```
+
+Then open http://localhost:5173.
+
+## Develop
+
+-   Design: [`docs/spec.md`](docs/spec.md)
+-   Work items: [GitHub issues](https://github.com/bdemann/colcannon-fodder/issues)
+-   Engine notes and code conventions: [`CLAUDE.md`](CLAUDE.md)
+-   `npm run test:all` runs every check CI runs.
+
+Built with the [Antha engine](https://github.com/electrovir/antha), starting from
+[antha-template](https://github.com/antha-engine/antha-template).
 
 ## Audio credits
 
-<!-- cspell:words empacotatron Fupi davidou Boing Freesound -->
+<!-- cspell:words empacotatron Fupi -->
 
-All included audio is CC0. The menu and game music are `empacotatron_menu.ogg` and `empacotatron_loop.ogg` by Fupi from [Empacotatron](https://opengameart.org/content/empacotatron). The three collision sounds are pitch variations of `Boing.wav` by davidou from [Freesound](https://freesound.org/people/davidou/sounds/88451/).
+All included audio is CC0. The game music is `empacotatron_loop.ogg` by Fupi from
+[Empacotatron](https://opengameart.org/content/empacotatron).

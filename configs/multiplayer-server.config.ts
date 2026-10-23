@@ -6,7 +6,7 @@ export default {
     backendOrigin: defaultMultiplayerApiOrigin,
     games: {
         byId: {
-            'antha-template': AnyOrigin,
+            'colcannon-fodder': AnyOrigin,
         },
     },
     host: '0.0.0.0',

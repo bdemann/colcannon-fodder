@@ -71,11 +71,13 @@ corresponding property when it hits or processes a potato.
 
 ### Customer evaluation (initial proposal)
 
-  Potato state             Result
-  ------------------------ ---------------------------------------
-  Cut + cooked + mashed    Good serving; award points
-  Any processing missing   Bad serving; apply a smaller penalty
-  No processing at all     Raw potato; apply the largest penalty
+Potato state Result
+
+---
+
+Cut + cooked + mashed Good serving; award points
+Any processing missing Bad serving; apply a smaller penalty
+No processing at all Raw potato; apply the largest penalty
 
 Exact point values can be tuned later. Make them constants/configuration
 rather than scattered through code.
@@ -286,7 +288,7 @@ session.
     -   Acceptance: player can understand spawn, path, towers,
         restaurant, score, and game state at a glance.
 -   [ ] **Add basic sound or animation polish (optional within
-    milestone)**
+        milestone)**
     -   Add only if it does not threaten completion.
     -   Acceptance: core gameplay remains readable with sound off.
 -   [ ] **Write a short controls / gameplay README**

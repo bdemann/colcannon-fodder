@@ -17,9 +17,6 @@ export const defaultGameAudioVolumeByChannel: Readonly<Record<GameAudioChannel, 
 /** Names every sound the game can load and play without duplicating file details. */
 export enum GameAudioKey {
     GameMusic = 'game-music',
-    PlayerCollisionOne = 'player-collision-one',
-    PlayerCollisionThree = 'player-collision-three',
-    PlayerCollisionTwo = 'player-collision-two',
 }
 
 function createGameAudio({
@@ -45,21 +42,6 @@ export const gameAudio = {
     [GameAudioKey.GameMusic]: createGameAudio({
         audioChannel: GameAudioChannel.Music,
         fileName: 'game-music.ogg',
-        volume: 0.9,
-    }),
-    [GameAudioKey.PlayerCollisionOne]: createGameAudio({
-        audioChannel: GameAudioChannel.Effects,
-        fileName: 'player-collision-1.ogg',
-        volume: 0.9,
-    }),
-    [GameAudioKey.PlayerCollisionThree]: createGameAudio({
-        audioChannel: GameAudioChannel.Effects,
-        fileName: 'player-collision-3.ogg',
-        volume: 0.9,
-    }),
-    [GameAudioKey.PlayerCollisionTwo]: createGameAudio({
-        audioChannel: GameAudioChannel.Effects,
-        fileName: 'player-collision-2.ogg',
         volume: 0.9,
     }),
 } satisfies Record<
