@@ -1240,3 +1240,33 @@ function drawRubbery({
         ...flat,
     });
 }
+
+/**
+ * A string that changes whenever anything `drawPotato` draws changes, so the entity redraws only
+ * then. Mash progress is bucketed, but `done` is explicit: 0.99 and 1 share a bucket yet look
+ * different (meter vs. perfect blob).
+ */
+export function getPotatoLookKey({
+    processing,
+    toppings,
+    quality,
+    radius,
+    crown,
+}: {
+    processing: Readonly<PotatoProcessing>;
+    toppings: Readonly<PotatoToppings>;
+    quality: number;
+    radius: number;
+    crown: boolean;
+}): string {
+    const done = processing.mashHp <= 0;
+    return [
+        processing.cut,
+        processing.cooked,
+        done ? 'done' : Math.round(getMashProgress(processing) * 20),
+        JSON.stringify(toppings),
+        getRubberyStep(quality),
+        radius,
+        crown,
+    ].join('|');
+}
