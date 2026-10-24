@@ -711,7 +711,7 @@ function drawMicrowave(g: Graphics, pose: Readonly<TowerPose>) {
 }
 
 /** A little green cricket (the lab's `cricket`), facing right. */
-function drawCricket(
+export function drawCricket(
     g: Graphics,
     {
         timeSec,
@@ -895,30 +895,6 @@ function drawCricketTrap(g: Graphics, pose: Readonly<TowerPose>) {
     );
 }
 
-/** The cricket in flight toward the gull it was thrown at, in tower-relative world pixels. */
-function drawThrownCricket(g: Graphics, pose: Readonly<TowerPose>) {
-    const {attack: a} = pose;
-    const arcHeightPx = towerArtConfig.cricketArcPx;
-    const spin = a * 3;
-    scope(
-        g,
-        {
-            x: pose.aimX * a,
-            y: pose.aimY * a - arcHeightPx * 4 * a * (1 - a),
-            scaleX: Math.sign(pose.aimX || 1) * towerArtConfig.scale,
-            scaleY: towerArtConfig.scale,
-        },
-        () => {
-            const f = spin % 1;
-            drawCricket(g, {
-                timeSec: pose.timeSec,
-                squash: 1 - 0.15 * Math.sin(f * Math.PI),
-                tilt: -Math.cos(f * Math.PI) * 0.5,
-            });
-        },
-    );
-}
-
 function drawSwiper(g: Graphics, pose: Readonly<TowerPose>) {
     const {attack: a} = pose;
     base(g, '#6f8b6a');
@@ -1027,10 +1003,6 @@ export function drawTower(g: Graphics, pose: Readonly<TowerPose>): void {
     // Area effects and the Swiper arm are in world pixels, so they undo the art scale themselves.
     drawWithWorldOverlays(g, pose);
     g.restore();
-
-    if (pose.towerType === TowerType.CricketTrap && pose.attack >= 0) {
-        drawThrownCricket(g, pose);
-    }
 }
 
 /** Draws the lab art, converting world-pixel overlays (rings, the cone) into the scaled space. */
