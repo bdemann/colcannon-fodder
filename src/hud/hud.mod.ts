@@ -1,6 +1,8 @@
 import {defineAnthaMod} from '@antha/engine';
 import {html} from 'element-vir';
+import {GameAudioChannel} from '../audio/game-audio.js';
 import {isMuted, playSfx, setMuted, Sfx} from '../audio/sfx.js';
+import {getVolumes} from '../audio/volume-settings.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -84,6 +86,17 @@ export const hudMod = defineAnthaMod<FullGameState>({
             setMuted(!isMuted());
         }
         playHudSounds(state);
+
+        const volumes = getVolumes();
+        if (state.audioChannelVolume?.channels?.[GameAudioChannel.Music] !== volumes.music) {
+            state.audioChannelVolume = {
+                channels: {
+                    [GameAudioChannel.Music]: volumes.music,
+                    [GameAudioChannel.Effects]: volumes.effects,
+                },
+                master: 1,
+            };
+        }
 
         return html`
             <${GameHud.assign({

@@ -26,7 +26,7 @@ the ticket runs out. Keep satisfaction above zero through every wave to become t
 | `Q` / `W` / `E` / `R` | Pick Butter / Scallions / Cabbage / Gravy        |
 | Click                 | Build the selected tower, or top a mashed potato |
 | Right click / `Esc`   | Cancel the selected tower                        |
-| `P` / `Esc`           | Pause (and resume)                               |
+| `P` / `Esc`           | Pause (and resume); music and effects volume     |
 | `Space`               | Start cooking from the title screen              |
 | `R`                   | Restart after a run ends                         |
 

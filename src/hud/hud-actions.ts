@@ -1,3 +1,4 @@
+import {setVolume, type VolumeKind} from '../audio/volume-settings.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {type Topping} from '../order/topping.js';
@@ -24,6 +25,8 @@ export type HudActions = {
     beginRun(): void;
     /** Pauses or resumes the run. */
     togglePause(): void;
+    /** Sets the music or sound effects volume (0 to 1) and saves it. */
+    setVolume(kind: VolumeKind, value: number): void;
 };
 
 const actionsByState = new WeakMap<object, HudActions>();
@@ -82,6 +85,7 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
                 type: GameCommandType.TogglePause,
             });
         },
+        setVolume,
         restartRun() {
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
