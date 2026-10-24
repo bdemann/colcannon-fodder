@@ -4,6 +4,7 @@ import {GameAudioChannel} from '../audio/game-audio.js';
 import {isMuted, playSfx, setMuted, Sfx} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {SessionScreen} from '../game-state/multiplayer-session.js';
 import {isCoopRun, RunStatus, ServingResult} from '../run/run-state.js';
 import {ensureTowerIcons} from '../tower/tower-icons.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -65,7 +66,11 @@ function playHudSounds(state: Partial<FullGameState>) {
 export const hudMod = defineAnthaMod<FullGameState>({
     modName: 'hud',
     execute({state}) {
+        /** The menus use the keyboard for text, so game hotkeys only work in the game itself. */
+        const inGame = state.ui?.session.screen === SessionScreen.Playing;
+
         if (
+            inGame &&
             state.runState &&
             (state.runState.status === RunStatus.Won || state.runState.status === RunStatus.Lost) &&
             state.ui &&
@@ -75,7 +80,7 @@ export const hudMod = defineAnthaMod<FullGameState>({
             getHudActions(state).restartRun();
         }
 
-        if (state.runState?.status === RunStatus.Playing && state.ui) {
+        if (inGame && state.runState?.status === RunStatus.Playing && state.ui) {
             const pausePressed = state.ui.keys.some((key) => key === 'p' || key === 'P');
             const escapePressed = state.ui.keys.includes('Escape') && !hadSelectionLastTick;
 
@@ -101,7 +106,7 @@ export const hudMod = defineAnthaMod<FullGameState>({
             state.ui?.selectedTowerId != undefined
         );
 
-        if (state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
+        if (inGame && state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
             getHudActions(state).beginRun();
         }
 

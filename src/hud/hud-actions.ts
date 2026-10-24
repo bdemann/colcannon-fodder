@@ -3,6 +3,15 @@ import {setVolume, type VolumeKind} from '../audio/volume-settings.js';
 import {speedConfig} from '../config/game-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {
+    closeRooms,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    openRooms,
+    startSingleplayer,
+    type RoomSummary,
+} from '../game-state/multiplayer-session.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
@@ -43,6 +52,18 @@ export type HudActions = {
     speedUntilIncome(): void;
     /** Sets the music or sound effects volume (0 to 1) and saves it. */
     setVolume(kind: VolumeKind, value: number): void;
+    /** Main menu: starts a local run. */
+    startSingleplayer(): void;
+    /** Main menu: opens the co-op room list. */
+    openRooms(): void;
+    /** Room list: back to the main menu. */
+    closeRooms(): void;
+    /** Room list: creates a room (an empty password means open) and enters it as host. */
+    createRoom(name: string, password: string): void;
+    /** Room list: joins a room from the list. */
+    joinRoom(room: Pick<RoomSummary, 'roomId' | 'roomName'>, password: string): void;
+    /** Leaves the current room and returns to the main menu. */
+    leaveRoom(): void;
 };
 
 /** In co-op only the host (slot 0) may restart or change level; the handler enforces it too. */
@@ -142,6 +163,27 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         setVolume,
+        startSingleplayer() {
+            startSingleplayer(state);
+        },
+        openRooms() {
+            void openRooms(state);
+        },
+        closeRooms() {
+            closeRooms(state);
+        },
+        createRoom(name, password) {
+            void createRoom(state, {
+                name,
+                password,
+            });
+        },
+        joinRoom(room, password) {
+            void joinRoom(state, room, password);
+        },
+        leaveRoom() {
+            leaveRoom(state);
+        },
         selectLevel(levelId) {
             if (!canControlRun(state)) {
                 return;

@@ -6,6 +6,7 @@ import {HudMute} from './hud-mute.element.js';
 import {HudOrders} from './hud-orders.element.js';
 import {HudPause} from './hud-pause.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
+import {HudSession} from './hud-session.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
 import {hudFontFamily, hudThemeVariables} from './hud-theme.js';
@@ -79,6 +80,10 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudTitle}>
+            <${HudSession.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudSession}>
         `;
     },
 });
