@@ -1,8 +1,36 @@
 import {css, defineElement, html, nothing} from 'element-vir';
+import {
+    economyConfig,
+    orderConfig,
+    potatoSizeConfig,
+    seagullConfig,
+} from '../config/game-config.js';
+import {upgradeConfig} from '../config/upgrade-config.js';
 import {RunStatus} from '../run/run-state.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {controlsText, rules} from './hud-title.element.js';
+
+/** The "How you earn" lines, built from the config so they never go stale. */
+function getEarnLines(): string[] {
+    const sizes = Object.entries(potatoSizeConfig)
+        .map(
+            ([
+                size,
+                config,
+            ]) => `${size} ×${config.value}`,
+        )
+        .join(', ');
+    return [
+        `Perfect mash: ${economyConfig.servingCoins.perfect} coins × size (${sizes})`,
+        'Quality scales the pay',
+        `Filled order: +${orderConfig.fulfilled.coins} coins × size`,
+        `Eaten anyway: ${economyConfig.servingCoins.incomplete} coins`,
+        'Sent back: no pay',
+        `Seagull knocked out or fed: ${seagullConfig.bountyCoins} coins`,
+        `Selling a tower refunds ${Math.round(upgradeConfig.sellRefund * 100)}%`,
+    ];
+}
 
 /** The pause button (top center) while playing, and the full-screen pause panel while paused. */
 export const HudPause = defineElement<{
@@ -62,6 +90,22 @@ export const HudPause = defineElement<{
             font-size: 28px;
             line-height: 1.5;
             margin-bottom: 32px;
+        }
+
+        .earn-title {
+            color: #ffd700;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .earn {
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 22px;
+            gap: 4px 32px;
+            justify-content: center;
+            margin-bottom: 24px;
         }
 
         .controls {
@@ -131,6 +175,14 @@ export const HudPause = defineElement<{
                                   ${rules.map((rule) => {
                                       return html`
                                           <div>${rule}</div>
+                                      `;
+                                  })}
+                              </div>
+                              <div class="earn-title">How you earn 🪙</div>
+                              <div class="earn">
+                                  ${getEarnLines().map((line) => {
+                                      return html`
+                                          <div>${line}</div>
                                       `;
                                   })}
                               </div>

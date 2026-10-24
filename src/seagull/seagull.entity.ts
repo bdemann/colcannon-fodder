@@ -7,6 +7,7 @@ import {playSfx, Sfx} from '../audio/sfx.js';
 import {seagullConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {addCoins} from '../run/coins.js';
 import {RunStatus} from '../run/run-state.js';
 import {stealPotato} from '../run/serving.js';
 import {nearestEdgePoint, stepToward} from './seagull-logic.js';
@@ -214,7 +215,12 @@ export class SeagullEntity extends defineEntity({
         if (carried) {
             carried.params.carriedBySeagull = false;
         }
-        this.state.runState.coins += seagullConfig.bountyCoins;
+        addCoins(this.state.runState, {
+            amount: seagullConfig.bountyCoins,
+            reason: 'Seagull bonk',
+            x: this.params.x,
+            y: this.params.y,
+        });
         this.destroy();
     }
 
@@ -234,7 +240,12 @@ export class SeagullEntity extends defineEntity({
         this.params.carryingPotatoId = 0;
         this.params.targetPotatoId = 0;
         this.startEscape();
-        this.state.runState.coins += seagullConfig.bountyCoins;
+        addCoins(this.state.runState, {
+            amount: seagullConfig.bountyCoins,
+            reason: 'Seagull fed',
+            x: this.params.x,
+            y: this.params.y,
+        });
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {

@@ -114,6 +114,7 @@ export const HudRunOver = defineElement<{
                     <div class="stars">Prestige ${formatStars(snapshot.prestigeStars)}</div>
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
+                        <div>Coins earned ${snapshot.coinsEarned}</div>
                         <div>Perfect mashes ${snapshot.servingCounts[ServingResult.Perfect]}</div>
                         <div>
                             Not fully mashed ${snapshot.servingCounts[ServingResult.Incomplete]}

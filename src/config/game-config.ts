@@ -193,6 +193,16 @@ export const mashConfig = {
 /** HUD timings. */
 export const hudConfig = {
     servingPopupMs: 1200,
+    /** How long a floating coin popup stays visible. */
+    coinPopupMs: 1600,
+    /** How far a coin popup floats up while it fades. */
+    coinPopupRisePx: 50,
+    /** Vertical gap between popups that appear at the same spot. */
+    coinPopupStaggerPx: 64,
+    /** Popups cycle through this many stagger slots by id. */
+    coinPopupStaggerSlots: 3,
+    /** Popup start height above the event position. */
+    coinPopupOffsetPx: 40,
 } as const;
 
 /** Hand-applied topping input. */
@@ -217,6 +227,8 @@ export const sfxConfig = {
 /** Coins: the only currency. Keyed by TowerType / ServingResult string values. */
 export const economyConfig = {
     startingCoins: 150,
+    /** How many recent coin events the run state keeps for the floating popups. */
+    coinEventsKept: 8,
     towerCost: {
         knife: 40,
         boiler: 60,

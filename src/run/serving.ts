@@ -7,11 +7,20 @@ import {
     servingConfig,
 } from '../config/game-config.js';
 import {qualityConfig} from '../config/quality-config.js';
+import {defaultLevel} from '../level/level.js';
+import {dishDefinitions} from '../order/dish.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {matchDish} from '../order/toppings.js';
 import {getMashProgress} from '../potato/mash.js';
 import {pushRecentQuality} from '../quality/quality.js';
+import {addCoins, getPerfectReason} from './coins.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
+
+/** Where serving and order coin popups appear. */
+const restaurantSpot = {
+    x: defaultLevel.restaurant.x,
+    y: defaultLevel.restaurant.y,
+};
 
 /** Which result a potato earns: fully mashed is Perfect, untouched is Raw, anything else Incomplete. */
 export function evaluatePotato(processing: Readonly<PotatoProcessing>): ServingResult {
@@ -66,7 +75,11 @@ function fillOrder(
     const coins = Math.round(orderConfig.fulfilled.coins * serving.value);
     runState.scoreBySlot[serving.ownerSlot] =
         (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
-    runState.coins += coins;
+    addCoins(runState, {
+        amount: coins,
+        reason: `Order: ${dishDefinitions[dish].label}`,
+        ...restaurantSpot,
+    });
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + orderConfig.fulfilled.satisfaction),
@@ -170,8 +183,16 @@ export function servePotato(
         runState.servingCounts[result] += 1;
         runState.scoreBySlot[serving.ownerSlot] =
             (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
-        runState.coins += coins;
     }
+    addCoins(runState, {
+        amount: sentBack ? 0 : coins,
+        reason: sentBack
+            ? 'Sent back · no pay'
+            : isPerfect
+              ? getPerfectReason(serving)
+              : 'Eaten anyway',
+        ...restaurantSpot,
+    });
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + satisfactionDelta),

@@ -11,9 +11,10 @@ import {OrderBoardEntity} from '../order/order-board.entity.js';
 import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {addCoins} from '../run/coins.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
-import {getSellValue, getUpgradeCost} from '../tower/tower-type.js';
+import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
@@ -154,7 +155,12 @@ export const gameCommandHandlers: {
 
         for (const tower of state.entityStore.getEntities(TowerEntity)) {
             if (tower.params.towerId === detail.packet.towerId) {
-                state.runState.coins += getSellValue(tower.params.towerType, tower.params.level);
+                addCoins(state.runState, {
+                    amount: getSellValue(tower.params.towerType, tower.params.level),
+                    reason: `Sold ${towerTypes[tower.params.towerType].label}`,
+                    x: tower.params.x,
+                    y: tower.params.y,
+                });
                 tower.destroy();
                 // Destruction is deferred, so a second sale this frame must not find it again.
                 tower.params.towerId = 0;

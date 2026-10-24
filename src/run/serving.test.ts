@@ -1,4 +1,4 @@
-import {assert} from '@augment-vir/assert';
+import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {doorConfig} from '../config/door-config.js';
 import {
@@ -488,6 +488,51 @@ describe('servePotato coins', () => {
         });
 
         assert.strictEquals(runState.coins, economyConfig.startingCoins);
+    });
+});
+
+describe('servePotato coin events', () => {
+    function serve(processing: PotatoProcessing, timesSentBack: number) {
+        const runState = createInitialRunState();
+        servePotato(runState, {
+            processing,
+            ownerSlot: 0,
+            value: 1.8,
+            toppings: createNoToppings(),
+            timesSentBack,
+            quality: 50,
+        });
+        return runState;
+    }
+
+    it('explains a perfect serving', () => {
+        const runState = serve(perfect, 0);
+
+        assert.strictEquals(
+            assertWrap.isDefined(runState.coinEvents[0]).reason,
+            'Perfect mash · large ×1.8 · quality 50%',
+        );
+        assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).amount, 18);
+    });
+
+    it('records a zero-coin event for a send-back', () => {
+        const runState = serve(partial, 0);
+
+        assert.strictEquals(
+            assertWrap.isDefined(runState.coinEvents[0]).reason,
+            'Sent back · no pay',
+        );
+        assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).amount, 0);
+    });
+
+    it('records the eaten-anyway pay once sends run out', () => {
+        const runState = serve(partial, doorConfig.maxSendBacks);
+
+        assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).reason, 'Eaten anyway');
+        assert.strictEquals(
+            assertWrap.isDefined(runState.coinEvents[0]).amount,
+            economyConfig.servingCoins.incomplete,
+        );
     });
 });
 
