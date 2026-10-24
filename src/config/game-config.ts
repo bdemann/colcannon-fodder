@@ -35,6 +35,12 @@ export const beltConfig = {
     stripeSpacingPx: 40,
 } as const;
 
+/** How much decoration the meadow gets. Placed from a seed derived from the level id. */
+export const meadowConfig = {
+    tuftCount: 260,
+    flowerCount: 36,
+} as const;
+
 /** Restaurant satisfaction is the "health" of a run. The run is lost when it reaches 0. */
 export const satisfactionConfig = {
     starting: 100,

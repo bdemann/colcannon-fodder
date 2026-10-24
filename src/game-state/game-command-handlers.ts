@@ -10,6 +10,7 @@ import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
 import {getPositionAlongPath} from '../level/level.js';
 import {getLevel} from '../level/levels.js';
+import {RestaurantSignEntity} from '../level/restaurant-sign.entity.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
 import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
@@ -61,6 +62,7 @@ export const gameCommandHandlers: {
 
         await state.entityStore.addEntity(LevelEntity);
         await state.entityStore.addEntity(BeltEntity);
+        await state.entityStore.addEntity(RestaurantSignEntity);
         for (const path of level.paths) {
             for (const chute of path.chutes ?? []) {
                 await state.entityStore.addEntity(ChuteEntity, {

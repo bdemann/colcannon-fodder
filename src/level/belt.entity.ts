@@ -50,7 +50,8 @@ export class BeltEntity extends defineEntity({
 
         graphics.stroke({
             color: levelColors.beltStripe,
-            width: 4,
+            width: 5,
+            cap: 'round',
         });
     }
 }
