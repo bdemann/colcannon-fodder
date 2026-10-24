@@ -189,6 +189,23 @@ export const towerConfig = {
     radius: 30,
 } as const;
 
+/** How the Cozy tower art is drawn and animated (render-only). */
+export const towerArtConfig = {
+    /** The lab's tower drawings are shrunk by this so the base roughly fills the tower circle. */
+    scale: 1,
+    /** How long each tower's attack animation plays after `lastProcessedAtMs`. */
+    attackMs: {
+        knife: 250,
+        boiler: 800,
+        masher: 600,
+        microwave: 300,
+        'cricket-trap': 400,
+        swiper: 500,
+    },
+    /** How high the thrown cricket's arc peaks. */
+    cricketArcPx: 30,
+} as const;
+
 /** Per-type tower tunables. Keyed by `TowerType` values from `src/tower/tower-type.ts`. */
 export const towerTypeConfig = {
     /** Light and fast: its job is to Cut many potatoes so later hits land harder. */

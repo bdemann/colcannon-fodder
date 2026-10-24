@@ -14,6 +14,7 @@ import {
     type RunMode,
     type ServingResult,
 } from '../run/run-state.js';
+import {hasTowerIcons} from '../tower/tower-icons.js';
 import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getServiceCost} from '../tower/wear.js';
@@ -82,6 +83,8 @@ export type HudSnapshot = {
     stealPopup: {satisfactionDelta: number; id: number} | undefined;
     /** Potatoes seagulls got away with this run. */
     potatoesStolen: number;
+    /** True once the toolbar's tower icon images exist, so the toolbar re-renders with them. */
+    towerIconsReady: boolean;
     selectedTowerType: TowerType | undefined;
     selectedTopping: Topping | undefined;
     /** The built tower selected for upgrade or sale, for the tower panel. */
@@ -217,6 +220,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   }
                 : undefined,
         potatoesStolen: runState.potatoesStolen,
+        towerIconsReady: hasTowerIcons(),
         selectedTowerType: state.ui?.selectedTowerType,
         selectedTopping: state.ui?.selectedTopping,
         selectedTower: getSelectedTower(state),
