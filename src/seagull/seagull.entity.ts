@@ -16,6 +16,8 @@ const bodyHeightPx = 13;
 /** How far below a flying gull its shadow falls. */
 const shadowOffsetPx = 30;
 const wingFlapPeriodMs = 90;
+const cricketWidthPx = 6;
+const cricketHeightPx = 3;
 
 /** What a gull is doing: heading for a potato, or running for the nearest edge. */
 export const seagullPhases = {
@@ -43,6 +45,8 @@ export class SeagullEntity extends defineEntity({
             /** Where the gull is running to, fixed at the moment it grabbed (or gave up). */
             escapeX: 0,
             escapeY: 0,
+            /** Ate a cricket from a Cricket Trap: ignored by towers, never grabs potatoes. */
+            fed: false,
         }),
     ),
     paramsMap: {
@@ -56,6 +60,7 @@ export class SeagullEntity extends defineEntity({
     protected flipper: Container | undefined;
     protected wings: Graphics | undefined;
     protected hpBar: Graphics | undefined;
+    protected cricket: Graphics | undefined;
     /** Last values seen by `render`, so each grab squawks once and the gull faces its heading. */
     protected lastSeenCarryingId = 0;
     protected lastSeenX: number | undefined;
@@ -124,12 +129,21 @@ export class SeagullEntity extends defineEntity({
         );
         view.addChild(flipper);
 
+        const cricket = new Graphics()
+            .ellipse(bodyWidthPx + 9, 1, cricketWidthPx / 2, cricketHeightPx / 2)
+            .fill({
+                color: '#1b5e20',
+            });
+        cricket.visible = false;
+        flipper.addChild(cricket);
+
         const hpBar = new Graphics();
         view.addChild(hpBar);
 
         this.flipper = flipper;
         this.wings = wings;
         this.hpBar = hpBar;
+        this.cricket = cricket;
 
         return {
             view,
@@ -204,6 +218,25 @@ export class SeagullEntity extends defineEntity({
         this.destroy();
     }
 
+    /**
+     * Eats a cricket: drops any carried potato back on the belt, then leaves for the nearest edge
+     * with no satisfaction penalty. Pays the bounty.
+     */
+    public feedCricket() {
+        if (this.params.hp <= 0 || this.params.fed) {
+            return;
+        }
+        const carried = this.findPotato(this.params.carryingPotatoId);
+        if (carried) {
+            carried.params.carriedBySeagull = false;
+        }
+        this.params.fed = true;
+        this.params.carryingPotatoId = 0;
+        this.params.targetPotatoId = 0;
+        this.startEscape();
+        this.state.runState.coins += seagullConfig.bountyCoins;
+    }
+
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
         if (this.params.hp <= 0) {
             return;
@@ -269,11 +302,12 @@ export class SeagullEntity extends defineEntity({
 
     /** Flaps the wings, faces the gull along its heading, squawks on grab. Presentation only. */
     public override render() {
-        const {flipper, wings, hpBar} = this;
-        if (!flipper || !wings || !hpBar) {
+        const {flipper, wings, hpBar, cricket} = this;
+        if (!flipper || !wings || !hpBar || !cricket) {
             return;
         }
-        const {x, carryingPotatoId, flying, hp} = this.params;
+        const {x, carryingPotatoId, flying, hp, fed} = this.params;
+        cricket.visible = fed;
 
         if (
             carryingPotatoId !== 0 &&
