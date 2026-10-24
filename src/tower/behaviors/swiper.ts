@@ -47,7 +47,10 @@ export function distanceToSegment({
     return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
 }
 
-/** Whether the arm should swipe this potato now: touching the arm and not swiped within a turn. */
+/**
+ * Whether the arm should swipe this potato now: touching the arm and not swiped within the debounce
+ * window.
+ */
 export function shouldSwipe({
     potato,
     potatoRadius,
@@ -71,7 +74,7 @@ export function shouldSwipe({
         }) <=
         swiperConfig.armHalfWidthPx + potatoRadius;
     const recentlySwiped =
-        lastSwipedAtMs >= 0 && elapsedMs - lastSwipedAtMs < swiperConfig.rotationMs;
+        lastSwipedAtMs >= 0 && elapsedMs - lastSwipedAtMs < swiperConfig.debounceMs;
     return touching && !recentlySwiped;
 }
 
