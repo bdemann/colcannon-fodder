@@ -13,7 +13,8 @@ import {
     type RoomSummary,
 } from '../game-state/multiplayer-session.js';
 import {saveLevelChoice} from '../level/level-choice.js';
-import {defaultLevel} from '../level/levels.js';
+import {levelSupportsPlayerCount} from '../level/level.js';
+import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
 import {getSlotForClient, isCoopRun, type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
@@ -188,7 +189,10 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             if (!canControlRun(state)) {
                 return;
             }
-            saveLevelChoice(levelId);
+            /** Co-op maps are not remembered: singleplayer boots into the saved map. */
+            if (levelSupportsPlayerCount(getLevel(levelId), 1)) {
+                saveLevelChoice(levelId);
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
                 seed: randomString(),

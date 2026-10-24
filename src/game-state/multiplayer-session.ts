@@ -324,3 +324,17 @@ export function leaveRoom(state: Partial<FullGameState>) {
     session.error = undefined;
     session.screen = SessionScreen.Menu;
 }
+
+/** The host disconnected: the room is over, so go back to the menu and say why. */
+export function handleHostLost(state: Partial<FullGameState>) {
+    if (
+        !state.ui ||
+        state.ui.session.screen !== SessionScreen.Playing ||
+        !state.ui.session.roomName
+    ) {
+        return;
+    }
+
+    leaveRoom(state);
+    state.ui.session.error = 'The host left, so the room has closed.';
+}

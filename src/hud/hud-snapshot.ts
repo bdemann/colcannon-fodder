@@ -18,7 +18,12 @@ import {
     type RunStatus,
     type ServingResult,
 } from '../run/run-state.js';
-import {getPlayerCount, rankSlots, type SlotContribution} from '../run/slot-ranking.js';
+import {
+    getPlayerCount,
+    getSlotColor,
+    rankSlots,
+    type SlotContribution,
+} from '../run/slot-ranking.js';
 import {hasTowerIcons} from '../tower/tower-icons.js';
 import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -51,6 +56,16 @@ export type HudSnapshot = {
     isCoop: boolean;
     /** True when this client owns slot 0, the only one that can restart or change level in co-op. */
     isHost: boolean;
+    /** Everyone in the room by slot, for the co-op lobby. */
+    lobbyPlayers: Array<{
+        slot: number;
+        name: string;
+        color: string;
+        connected: boolean;
+        isYou: boolean;
+    }>;
+    /** True when this client joined a co-op run in progress with no free slot: it can only watch. */
+    isSpectator: boolean;
     /** The main menu, room list and connection status. */
     session: SessionUi;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
@@ -184,6 +199,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
             enabled: false,
             search: '',
         });
+    const clientId = state.multiplayerP2pLockStep?.multiplayerController.getClientId();
     const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
     const playerCount = getPlayerCount(runState);
     const prestigeStars = getPrestigeStars(runState.recentQualities);
@@ -210,6 +226,23 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   `Player ${runState.pausedBySlot + 1}`)
                 : undefined,
         isCoop: isCoopRun(runState),
+        lobbyPlayers: Object.keys(runState.slotNames)
+            .map(Number)
+            .sort((first, second) => first - second)
+            .map((slot) => {
+                return {
+                    slot,
+                    name: runState.slotNames[slot] ?? `Player ${slot + 1}`,
+                    color: getSlotColor(slot),
+                    connected: runState.connected[slot] !== false,
+                    isYou: !!clientId && runState.slotByClientId[clientId] === slot,
+                };
+            }),
+        isSpectator:
+            !!state.ui?.session.roomName &&
+            Object.keys(runState.slotByClientId).length > 0 &&
+            !!clientId &&
+            !(clientId in runState.slotByClientId),
         session: {
             ...session,
             rooms: session.rooms?.map((room) => {
@@ -218,11 +251,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                 };
             }),
         },
-        isHost:
-            getSlotForClient(
-                runState,
-                state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
-            ) === 0,
+        isHost: getSlotForClient(runState, clientId) === 0,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
         satisfaction: runState.satisfaction,
