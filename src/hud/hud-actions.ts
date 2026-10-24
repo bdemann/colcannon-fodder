@@ -15,6 +15,8 @@ export type HudActions = {
     selectTower(towerId: number | undefined): void;
     /** Upgrades a built tower one level. */
     upgradeTower(towerId: number): void;
+    /** Services a worn tower for coins. */
+    serviceTower(towerId: number): void;
     /** Sells a built tower. */
     sellTower(towerId: number): void;
     /** Selects a topping to apply by hand, or clears it with `undefined`. */
@@ -63,6 +65,12 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         upgradeTower(towerId) {
             sendGameCommand(state, {
                 type: GameCommandType.UpgradeTower,
+                towerId,
+            });
+        },
+        serviceTower(towerId) {
+            sendGameCommand(state, {
+                type: GameCommandType.ServiceTower,
                 towerId,
             });
         },

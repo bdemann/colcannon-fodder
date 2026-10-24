@@ -4,6 +4,7 @@ import {getPath, getPositionAlongPath} from '../../level/level.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
+import {addWear, getWearMultiplier, getWearPerSecond} from '../wear.js';
 
 type Point = {x: number; y: number};
 
@@ -79,7 +80,11 @@ export function shouldSwipe({
 }
 
 /** Swiper behavior: a slow rotating arm that knocks touched potatoes back up the belt. */
-export function updateSwiper(tower: TowerEntity): void {
+export function updateSwiper(tower: TowerEntity, msSinceLastExecute: number): void {
+    tower.params.wear = addWear({
+        wear: tower.params.wear,
+        amount: (getWearPerSecond(tower.params.towerType) * msSinceLastExecute) / 1000,
+    });
     const {elapsedMs} = tower.state.runState;
     const center = {
         x: tower.params.x,
@@ -111,7 +116,10 @@ export function updateSwiper(tower: TowerEntity): void {
         ) {
             continue;
         }
-        params.distancePx = Math.max(0, params.distancePx - swiperConfig.pushBackPx);
+        params.distancePx = Math.max(
+            0,
+            params.distancePx - swiperConfig.pushBackPx * getWearMultiplier(tower.params.wear),
+        );
         const position = getPositionAlongPath(
             getPath(tower.state.level, params.pathId),
             params.distancePx,

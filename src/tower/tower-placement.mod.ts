@@ -84,6 +84,12 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                     towerId: ui.selectedTowerId,
                 });
                 continue;
+            } else if (ui.selectedTowerId != undefined && (key === 's' || key === 'S')) {
+                sendGameCommand(state, {
+                    type: GameCommandType.ServiceTower,
+                    towerId: ui.selectedTowerId,
+                });
+                continue;
             } else if (ui.selectedTowerId != undefined && (key === 'x' || key === 'X')) {
                 sendGameCommand(state, {
                     type: GameCommandType.SellTower,

@@ -6,18 +6,24 @@ import {getTowerStats, TowerType, towerTypes} from '../tower/tower-type.js';
 export function getHitDamage(
     processing: Readonly<PotatoProcessing>,
     towerType: TowerType,
-    level = 1,
+    tower: Readonly<{level?: number; wear?: number}> = {},
 ): number {
     const cutFactor = processing.cut ? mashConfig.cutMultiplier : 1;
     const softFactor =
         towerType === TowerType.Masher && processing.cooked ? mashConfig.softMasherMultiplier : 1;
 
-    return getTowerStats(towerType, level).damage * cutFactor * softFactor;
+    return (
+        getTowerStats(towerType, tower.level ?? 1, tower.wear ?? 0).damage * cutFactor * softFactor
+    );
 }
 
 /** Applies one hit in place: damage first (using the state before the hit), then the tower's effect. */
-export function applyTowerHit(processing: PotatoProcessing, towerType: TowerType, level = 1): void {
-    processing.mashHp = Math.max(0, processing.mashHp - getHitDamage(processing, towerType, level));
+export function applyTowerHit(
+    processing: PotatoProcessing,
+    towerType: TowerType,
+    tower: Readonly<{level?: number; wear?: number}> = {},
+): void {
+    processing.mashHp = Math.max(0, processing.mashHp - getHitDamage(processing, towerType, tower));
 
     const effect = towerTypes[towerType].appliesEffect;
     if (effect) {

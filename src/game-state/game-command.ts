@@ -19,6 +19,8 @@ export enum GameCommandType {
     UpgradeTower = 'upgrade-tower',
     /** Destroys a tower and refunds part of everything spent on it. */
     SellTower = 'sell-tower',
+    /** Spends coins to reset a worn tower's wear to 0. */
+    ServiceTower = 'service-tower',
     /** Adds a topping to a potato on the belt. */
     ApplyTopping = 'apply-topping',
     /** Pauses or resumes the run. Ignored unless the run is `Playing`. */
@@ -50,6 +52,10 @@ export type GameCommand =
       }
     | {
           type: GameCommandType.SellTower;
+          towerId: number;
+      }
+    | {
+          type: GameCommandType.ServiceTower;
           towerId: number;
       }
     | {

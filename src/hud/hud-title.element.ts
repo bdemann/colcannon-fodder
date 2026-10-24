@@ -26,6 +26,7 @@ export const rules = [
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
     'The Microwave is fast and cheap, but rubbery potatoes hurt your prestige.',
+    'Towers wear out with use. Click one and press S to service it.',
     'Keep satisfaction above zero through every wave to become the Mash Champ.',
 ];
 
