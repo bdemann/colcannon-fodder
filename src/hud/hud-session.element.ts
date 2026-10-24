@@ -172,7 +172,10 @@ export const HudSession = defineElement<{
 
             return html`
                 <div class="leave">
-                    <div class="leave-room-name">Room: ${session.roomName}</div>
+                    <div class="leave-room-name">
+                        Room: ${session.roomName}
+                        ${inputs.snapshot.isSpectator ? '(spectating: no free kitchen)' : ''}
+                    </div>
                     <button
                         @click=${() => {
                             inputs.actions.leaveRoom();
@@ -196,6 +199,7 @@ export const HudSession = defineElement<{
                     <div class="panel">
                         <div class="title">Colcannon Fodder</div>
                         <div class="tagline">A mashed potato tower defense</div>
+                        ${errorTemplate}
                         <div class="menu-buttons">
                             <button
                                 class="primary"

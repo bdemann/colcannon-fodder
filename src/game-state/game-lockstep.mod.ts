@@ -10,10 +10,15 @@ import {
 } from '@augment-vir/common';
 import {RunStatus, type RunState} from '../run/run-state.js';
 import {getEffectiveSpeed, stepsForFrame} from '../run/speed.js';
-import {gameCommandHandlers, syncLevelWithRunState} from './game-command-handlers.js';
+import {
+    gameCommandHandlers,
+    isSpectatorCommand,
+    syncLevelWithRunState,
+} from './game-command-handlers.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {gameEntities} from './game-entities.js';
 import {type FullGameState} from './game-state.js';
+import {handleHostLost} from './multiplayer-session.js';
 
 /** Snapshot sent to a peer that joins mid-run (co-op, later). */
 export type GameStateSync = {
@@ -121,6 +126,9 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
         resyncOnDesync: true,
     },
     async handlePacket({packet, state}) {
+        if (isSpectatorCommand(state, packet.sourceClientId, packet.packet.type)) {
+            return;
+        }
         try {
             await (
                 gameCommandHandlers[packet.packet.type] as (params: {
@@ -140,7 +148,12 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
             );
         }
     },
-    handleClientStatus({event, multiplayerController}) {
+    handleClientStatus({event, multiplayerController, state}) {
+        /** Host loss ends the room for v1: there is no host migration. */
+        if (event.detail.lostHost != undefined) {
+            handleHostLost(state);
+            return;
+        }
         if (multiplayerController.isHost() && 'lostMember' in event.detail) {
             multiplayerController.act({
                 type: GameCommandType.LeaveRun,

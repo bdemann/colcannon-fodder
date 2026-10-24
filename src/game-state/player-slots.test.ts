@@ -3,7 +3,7 @@ import {createMockPixi} from '@antha/graphics-2d';
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {type LevelDefinition} from '../level/level.js';
-import {defaultLevel, levels} from '../level/levels.js';
+import {crossroadsLevel, defaultLevel, levels} from '../level/levels.js';
 import {createInitialRunState, RunStatus, type RunState} from '../run/run-state.js';
 import {TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -133,6 +133,7 @@ describe('player slots', () => {
         await send(state, 'host', {
             type: GameCommandType.StartRun,
             seed: 's',
+            ready: true,
         });
         await send(state, 'guest', {
             type: GameCommandType.JoinRun,
@@ -250,7 +251,8 @@ describe('player slots', () => {
         await send(state, 'd', {
             type: GameCommandType.JoinRun,
         });
-        assert.strictEquals(getRun(state).slotByClientId['d'], 2);
+        /** The level has two paths, both owned, so a fourth client only watches. */
+        assert.isFalse('d' in getRun(state).slotByClientId);
     });
 
     it('singleplayer: commands from any client resolve to slot 0 and placement is unrestricted', async () => {
@@ -285,6 +287,8 @@ describe('shared run rules', () => {
         await send(state, 'host', {
             type: GameCommandType.StartRun,
             seed: 's',
+            ready: true,
+            levelId: crossroadsLevel.levelId,
         });
         await send(state, 'b', {
             type: GameCommandType.JoinRun,
@@ -361,6 +365,8 @@ describe('shared run rules', () => {
         await send(state, 'host', {
             type: GameCommandType.StartRun,
             seed: 's',
+            ready: true,
+            levelId: crossroadsLevel.levelId,
         });
         getRun(state).status = RunStatus.Playing;
         await send(state, 'host', {

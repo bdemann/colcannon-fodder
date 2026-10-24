@@ -8,7 +8,8 @@ import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
-import {getPositionAlongPath} from '../level/level.js';
+
+import {getPositionAlongPath, levelSupportsPlayerCount} from '../level/level.js';
 import {getLevel} from '../level/levels.js';
 import {RestaurantSignEntity} from '../level/restaurant-sign.entity.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
@@ -16,7 +17,9 @@ import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
+import {removeClientFromLobby} from '../run/lobby.js';
 import {createInitialRunState, getSlotForClient, isCoopRun, RunStatus} from '../run/run-state.js';
+import {getPlayerCount} from '../run/slot-ranking.js';
 import {isAllowedSpeed} from '../run/speed.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
@@ -40,6 +43,25 @@ export function getCommandSlot(
     sourceClientId: string | undefined,
 ): number {
     return getSlotForClient(state.runState, sourceClientId);
+}
+
+/**
+ * Whether a command comes from a client with no slot in a run that has slots (a spectator who
+ * joined a full run). Their commands are ignored, except asking to join and the first `StartRun`.
+ */
+export function isSpectatorCommand(
+    state: Partial<FullGameState>,
+    sourceClientId: string | undefined,
+    type: GameCommandType,
+): boolean {
+    const slotByClientId = state.runState?.slotByClientId ?? {};
+
+    return (
+        type !== GameCommandType.JoinRun &&
+        !(type === GameCommandType.StartRun && !isCoopRun(state.runState)) &&
+        Object.keys(slotByClientId).length > 0 &&
+        (sourceClientId == undefined || !(sourceClientId in slotByClientId))
+    );
 }
 
 function getDefaultSlotName(slot: number): string {
@@ -76,7 +98,23 @@ export const gameCommandHandlers: {
         const level = getLevel(detail.packet.levelId);
         state.level = level;
         state.seededRandom = SeededRandom.fromSeed(detail.packet.seed);
+        const previousRunState = state.runState;
         state.runState = createInitialRunState(level.levelId, detail.packet.mode);
+        /** Restarting or changing the map keeps everyone in the room in their slot. */
+        if (previousRunState) {
+            state.runState.slotByClientId = {
+                ...previousRunState.slotByClientId,
+            };
+            state.runState.slotNames = {
+                ...previousRunState.slotNames,
+            };
+            state.runState.connected = {
+                ...previousRunState.connected,
+            };
+            for (const slot of Object.keys(previousRunState.slotNames)) {
+                state.runState.scoreBySlot[Number(slot)] ??= 0;
+            }
+        }
         /** The host's own client starts the run and always owns slot 0. */
         state.runState.slotByClientId[detail.sourceClientId] = 0;
         state.runState.slotNames[0] = getDefaultSlotName(0);
@@ -112,10 +150,22 @@ export const gameCommandHandlers: {
         });
         await state.entityStore.addEntity(PassLampEntity);
     },
-    [GameCommandType.BeginRun]({state}) {
-        if (state.runState?.status === RunStatus.Ready) {
-            state.runState.status = RunStatus.Playing;
+    [GameCommandType.BeginRun]({detail, state}) {
+        const {runState} = state;
+
+        /** In a room only the host starts, and only on a map that fits the players present. */
+        if (
+            runState?.status !== RunStatus.Ready ||
+            (Object.keys(runState.slotByClientId).length > 0 &&
+                (getCommandSlot(state, detail.sourceClientId) !== 0 ||
+                    !levelSupportsPlayerCount(
+                        getLevel(runState.levelId),
+                        getPlayerCount(runState),
+                    )))
+        ) {
+            return;
         }
+        runState.status = RunStatus.Playing;
     },
     async [GameCommandType.PlaceTower]({detail, state}) {
         const {packet} = detail;
@@ -186,6 +236,9 @@ export const gameCommandHandlers: {
         }
 
         const takenSlots = new Set(Object.values(runState.slotByClientId));
+        const levelSlotCount = new Set(
+            (state.level ?? getLevel(runState.levelId)).paths.map((p) => p.ownerSlot),
+        ).size;
         /** Reclaiming: the lowest disconnected slot comes before any brand new slot. */
         const reclaimedSlot = [...takenSlots]
             .filter((slot) => runState.connected[slot] === false)
@@ -196,6 +249,10 @@ export const gameCommandHandlers: {
             slot = 0;
             while (takenSlots.has(slot)) {
                 slot++;
+            }
+            /** Joining a run in progress with no path left to own makes you a spectator. */
+            if (runState.status !== RunStatus.Ready && slot >= levelSlotCount) {
+                return;
             }
         } else {
             for (const [
@@ -222,7 +279,13 @@ export const gameCommandHandlers: {
     [GameCommandType.LeaveRun]({detail, state}) {
         const slot = state.runState?.slotByClientId[detail.packet.clientId];
 
-        if (state.runState && slot != undefined) {
+        if (!state.runState || slot == undefined) {
+            return;
+        }
+        if (state.runState.status === RunStatus.Ready) {
+            /** In the lobby a leaver just disappears and the others close ranks. */
+            removeClientFromLobby(state.runState, detail.packet.clientId);
+        } else {
             state.runState.connected[slot] = false;
         }
     },

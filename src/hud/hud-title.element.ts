@@ -46,7 +46,7 @@ const previewSize = {
 } as const;
 
 /** A mini map of the level: the belt as a polyline, the restaurant square and chute dots. */
-function renderLevelPreview(level: Readonly<LevelDefinition>) {
+export function renderLevelPreview(level: Readonly<LevelDefinition>) {
     const scale = previewSize.width / gameWorldSize.width;
     const restaurantSize = level.restaurant.sizePx * scale;
 
@@ -92,7 +92,7 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
 }
 
 /** A level card's record line for the selected mode: best score, stars and Mash Champ count. */
-function renderRecord(snapshot: HudSnapshot, levelId: string) {
+export function renderRecord(snapshot: HudSnapshot, levelId: string) {
     const record = getModeRecord(snapshot.records, levelId, snapshot.mode);
 
     if (!record.bestScore) {
@@ -328,7 +328,8 @@ export const HudTitle = defineElement<{
         }
     `,
     render({inputs}) {
-        if (inputs.snapshot.status !== RunStatus.Ready) {
+        /** Rooms use the lobby panel instead. */
+        if (inputs.snapshot.status !== RunStatus.Ready || inputs.snapshot.session.roomName) {
             return html`
                 ${nothing}
             `;

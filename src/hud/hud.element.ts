@@ -2,6 +2,7 @@ import {css, defineElement, html, unsafeCSS} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
 import {HudBossBanner} from './hud-boss-banner.element.js';
 import {HudCoinPopups} from './hud-coin-popups.element.js';
+import {HudLobby} from './hud-lobby.element.js';
 import {HudMute} from './hud-mute.element.js';
 import {HudOrders} from './hud-orders.element.js';
 import {HudPause} from './hud-pause.element.js';
@@ -80,6 +81,10 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudTitle}>
+            <${HudLobby.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudLobby}>
             <${HudSession.assign({
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
