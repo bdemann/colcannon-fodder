@@ -1,4 +1,5 @@
-import {towerTypeConfig} from '../config/game-config.js';
+import {economyConfig, towerTypeConfig} from '../config/game-config.js';
+import {upgradeConfig} from '../config/upgrade-config.js';
 
 export enum TowerType {
     Knife = 'knife',
@@ -105,17 +106,46 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     },
 };
 
+type LevelKey = keyof typeof upgradeConfig.damageByLevel;
+
+/** Clamps any level into the configured range, so a bad level never reads an undefined multiplier. */
+function toLevelKey(level: number): LevelKey {
+    return Math.min(upgradeConfig.maxLevel, Math.max(1, Math.round(level))) as LevelKey;
+}
+
+/** The damage multiplier at a level, for damage that is not a per-hit number (the Microwave cone). */
+export function getDamageScale(level: number): number {
+    return upgradeConfig.damageByLevel[toLevelKey(level)];
+}
+
 /**
  * A tower's stats at an upgrade level. Every reader of damage, range or cooldown should go through
- * this so upgrades (tower upgrades issue) only change one place. Level 1 is the base stats.
+ * this so upgrades only change one place. Level 1 is the base stats.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- level is used once upgrades land
-export function getTowerStats(towerType: TowerType, _level: number) {
+export function getTowerStats(towerType: TowerType, level: number) {
     const {damage, rangePx, cooldownMs} = towerTypes[towerType];
+    const key = toLevelKey(level);
 
     return {
-        damage,
-        rangePx,
-        cooldownMs,
+        damage: Math.round(damage * upgradeConfig.damageByLevel[key]),
+        rangePx: Math.round(rangePx * upgradeConfig.rangeByLevel[key]),
+        cooldownMs: cooldownMs * upgradeConfig.cooldownByLevel[key],
     };
+}
+
+/** Coins to upgrade a tower to `toLevel` (2 or 3). */
+export function getUpgradeCost(towerType: TowerType, toLevel: 2 | 3): number {
+    return Math.round(
+        economyConfig.towerCost[towerType] * upgradeConfig.costMultiplierByLevel[toLevel],
+    );
+}
+
+/** Coins refunded for selling a tower at `level`: a share of the build cost plus every upgrade paid. */
+export function getSellValue(towerType: TowerType, level: number): number {
+    let spent = economyConfig.towerCost[towerType];
+    for (let toLevel = 2; toLevel <= toLevelKey(level); toLevel++) {
+        spent += getUpgradeCost(towerType, toLevel as 2 | 3);
+    }
+
+    return Math.round(spent * upgradeConfig.sellRefund);
 }

@@ -70,22 +70,28 @@ export function canAfford(coins: number, towerType: TowerType): boolean {
     return coins >= economyConfig.towerCost[towerType];
 }
 
-/** A built tower's range ring shows while placing, or while the pointer hovers the tower. */
+/** A built tower's range ring shows while placing, while selected, or while the pointer hovers it. */
 export function shouldShowTowerRange({
     tower,
     pointerWorld,
     selectedTowerType,
+    selectedTowerId,
 }: Readonly<{
-    tower: Readonly<Coords & {towerType: TowerType}>;
+    tower: Readonly<Coords & {towerType: TowerType; towerId?: number}>;
     pointerWorld: Readonly<Coords> | undefined;
     selectedTowerType: TowerType | undefined;
+    /** The built tower selected for upgrading or selling, if any. */
+    selectedTowerId?: number | undefined;
 }>): boolean {
-    /** While placing, show the coverage of towers of the same type as the one being placed. */
-    if (selectedTowerType === tower.towerType) {
+    if (selectedTowerId != undefined && selectedTowerId === tower.towerId) {
         return true;
+        /** While placing, show the coverage of towers of the same type as the one being placed. */
+    } else if (selectedTowerType === tower.towerType) {
+        return true;
+    } else {
+        return (
+            !!pointerWorld &&
+            Math.hypot(pointerWorld.x - tower.x, pointerWorld.y - tower.y) <= towerConfig.radius
+        );
     }
-    return (
-        !!pointerWorld &&
-        Math.hypot(pointerWorld.x - tower.x, pointerWorld.y - tower.y) <= towerConfig.radius
-    );
 }

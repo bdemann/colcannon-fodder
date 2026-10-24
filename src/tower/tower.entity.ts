@@ -22,7 +22,7 @@ import {
     chooseTargetIndex,
     getGullsInRange,
 } from './tower-targeting.js';
-import {TowerType, towerTypes} from './tower-type.js';
+import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
 
 const processSfx: Record<TowerType, Sfx> = {
     [TowerType.Knife]: Sfx.Chop,
@@ -33,6 +33,12 @@ const processSfx: Record<TowerType, Sfx> = {
     [TowerType.CricketTrap]: Sfx.Build,
     [TowerType.Swiper]: Sfx.Chop,
 };
+
+/** Level pips: gold dots under the tower body. */
+const pipRadiusPx = 5;
+const pipSpacingPx = 16;
+/** The white selection circle sits this far outside the tower body. */
+const selectionGapPx = 8;
 
 const trapBoxPx = 44;
 /** How long the thrown cricket is drawn in flight, and how high its arc peaks. */
@@ -78,6 +84,10 @@ export class TowerEntity extends defineEntity({
     /** Swiper only: the rotating paddle. */
     protected paddle: Graphics | undefined;
     protected splash: Graphics | undefined;
+    protected pips: Graphics | undefined;
+    protected selection: Graphics | undefined;
+    /** The level the range ring, paddle and pips were last drawn for. */
+    protected drawnLevel = 0;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
     protected lastSeenProcessedAtMs: number | undefined;
 
@@ -85,17 +95,7 @@ export class TowerEntity extends defineEntity({
         const definition = towerTypes[this.params.towerType];
         const view = new Container();
 
-        const rangeView = new Graphics()
-            .circle(0, 0, definition.rangePx)
-            .fill({
-                color: definition.color,
-                alpha: 0.08,
-            })
-            .stroke({
-                color: definition.color,
-                alpha: 0.35,
-                width: 3,
-            });
+        const rangeView = new Graphics();
         view.addChild(rangeView);
         const isTrap = definition.behavior === 'gull-trap';
         const body = new Graphics();
@@ -134,29 +134,7 @@ export class TowerEntity extends defineEntity({
         view.addChild(body);
 
         if (definition.behavior === 'swipe') {
-            const tip = getArmTip({
-                center: {
-                    x: 0,
-                    y: 0,
-                },
-                angle: 0,
-                lengthPx: definition.rangePx,
-            });
-            this.paddle = new Graphics()
-                .roundRect(
-                    0,
-                    -swiperConfig.armHalfWidthPx,
-                    tip.x,
-                    swiperConfig.armHalfWidthPx * 2,
-                    swiperConfig.armHalfWidthPx,
-                )
-                .fill({
-                    color: '#a1887f',
-                })
-                .stroke({
-                    color: '#5d4037',
-                    width: 3,
-                });
+            this.paddle = new Graphics();
             view.addChild(this.paddle);
         }
 
@@ -172,6 +150,12 @@ export class TowerEntity extends defineEntity({
         letter.visible = !isTrap;
         view.addChild(letter);
 
+        const selection = new Graphics();
+        view.addChild(selection);
+
+        const pips = new Graphics();
+        view.addChild(pips);
+
         const beam = new Graphics();
         view.addChild(beam);
 
@@ -183,6 +167,9 @@ export class TowerEntity extends defineEntity({
         this.letter = letter;
         this.beam = beam;
         this.splash = splash;
+        this.pips = pips;
+        this.selection = selection;
+        this.drawnLevel = 0;
 
         return {
             view,
@@ -212,6 +199,7 @@ export class TowerEntity extends defineEntity({
         }
 
         const definition = towerTypes[this.params.towerType];
+        const stats = getTowerStats(this.params.towerType, this.params.level);
         const gulls = [...this.state.entityStore.getEntities(SeagullEntity)].filter(
             (gull) => gull.params.hp > 0 && !gull.params.fed,
         );
@@ -225,7 +213,7 @@ export class TowerEntity extends defineEntity({
         const towerCircle = {
             x: this.params.x,
             y: this.params.y,
-            rangePx: definition.rangePx,
+            rangePx: stats.rangePx,
         };
         const gullIndexes = definition.areaOfEffect
             ? getGullsInRange(towerCircle, gullCandidates)
@@ -237,8 +225,8 @@ export class TowerEntity extends defineEntity({
             const gull = hitGulls[0];
             this.params.lastTargetX = gull.params.x;
             this.params.lastTargetY = gull.params.y;
-            gull.takeHit(definition.damage);
-            this.params.cooldownRemainingMs = definition.cooldownMs;
+            gull.takeHit(stats.damage);
+            this.params.cooldownRemainingMs = stats.cooldownMs;
             this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
             return;
         }
@@ -260,7 +248,7 @@ export class TowerEntity extends defineEntity({
                 {
                     x: this.params.x,
                     y: this.params.y,
-                    rangePx: definition.rangePx,
+                    rangePx: stats.rangePx,
                 },
                 potatoCandidates,
             );
@@ -268,7 +256,7 @@ export class TowerEntity extends defineEntity({
                 return;
             }
             for (const gull of hitGulls) {
-                gull.takeHit(definition.damage);
+                gull.takeHit(stats.damage);
             }
             for (const targetIndex of targetIndexes) {
                 const hitPotato = potatoes[targetIndex];
@@ -276,12 +264,12 @@ export class TowerEntity extends defineEntity({
                     continue;
                 }
                 const hitProcessing = hitPotato.getProcessing();
-                applyTowerHit(hitProcessing, this.params.towerType);
+                applyTowerHit(hitProcessing, this.params.towerType, this.params.level);
                 hitPotato.params.cut = hitProcessing.cut;
                 hitPotato.params.cooked = hitProcessing.cooked;
                 hitPotato.params.mashHp = hitProcessing.mashHp;
             }
-            this.params.cooldownRemainingMs = definition.cooldownMs;
+            this.params.cooldownRemainingMs = stats.cooldownMs;
             this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
             this.params.lastTargetX = this.params.x;
             this.params.lastTargetY = this.params.y;
@@ -292,7 +280,7 @@ export class TowerEntity extends defineEntity({
             {
                 x: this.params.x,
                 y: this.params.y,
-                rangePx: definition.rangePx,
+                rangePx: stats.rangePx,
                 appliesEffect: definition.appliesEffect,
             },
             potatoCandidates,
@@ -303,14 +291,86 @@ export class TowerEntity extends defineEntity({
         }
 
         const processing = target.getProcessing();
-        applyTowerHit(processing, this.params.towerType);
+        applyTowerHit(processing, this.params.towerType, this.params.level);
         target.params.cut = processing.cut;
         target.params.cooked = processing.cooked;
         target.params.mashHp = processing.mashHp;
-        this.params.cooldownRemainingMs = definition.cooldownMs;
+        this.params.cooldownRemainingMs = stats.cooldownMs;
         this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
         this.params.lastTargetX = target.params.x;
         this.params.lastTargetY = target.params.y;
+    }
+
+    /** Redraws everything that depends on the level: range ring, swiper arm, pips, selection ring. */
+    protected drawLevelParts() {
+        const {rangeView, pips, selection, paddle} = this;
+        if (!rangeView || !pips || !selection) {
+            return;
+        }
+        const {towerType, level} = this.params;
+        const definition = towerTypes[towerType];
+        const {rangePx} = getTowerStats(towerType, level);
+        this.drawnLevel = level;
+
+        rangeView
+            .clear()
+            .circle(0, 0, rangePx)
+            .fill({
+                color: definition.color,
+                alpha: 0.08,
+            })
+            .stroke({
+                color: definition.color,
+                alpha: 0.35,
+                width: 3,
+            });
+
+        if (paddle) {
+            const tip = getArmTip({
+                center: {
+                    x: 0,
+                    y: 0,
+                },
+                angle: 0,
+                lengthPx: rangePx,
+            });
+            paddle
+                .clear()
+                .roundRect(
+                    0,
+                    -swiperConfig.armHalfWidthPx,
+                    tip.x,
+                    swiperConfig.armHalfWidthPx * 2,
+                    swiperConfig.armHalfWidthPx,
+                )
+                .fill({
+                    color: '#a1887f',
+                })
+                .stroke({
+                    color: '#5d4037',
+                    width: 3,
+                });
+        }
+
+        const bodyRadius = definition.behavior === 'gull-trap' ? trapBoxPx / 2 : towerConfig.radius;
+        pips.clear();
+        for (let index = 0; index < level; index++) {
+            pips.circle(
+                (index - (level - 1) / 2) * pipSpacingPx,
+                bodyRadius + selectionGapPx + 14,
+                pipRadiusPx,
+            ).fill({
+                color: '#ffd700',
+            });
+        }
+
+        selection
+            .clear()
+            .circle(0, 0, towerConfig.radius + selectionGapPx)
+            .stroke({
+                color: '#ffffff',
+                width: 4,
+            });
     }
 
     /** Flashes the tower and draws a beam to the last target. Presentation only. */
@@ -320,11 +380,19 @@ export class TowerEntity extends defineEntity({
             return;
         }
 
+        if (this.drawnLevel !== this.params.level) {
+            this.drawLevelParts();
+        }
+
         rangeView.visible = shouldShowTowerRange({
             tower: this.params,
             pointerWorld: this.state.ui.pointerWorld,
             selectedTowerType: this.state.ui.selectedTowerType,
+            selectedTowerId: this.state.ui.selectedTowerId,
         });
+        if (this.selection) {
+            this.selection.visible = this.state.ui.selectedTowerId === this.params.towerId;
+        }
 
         if (this.paddle) {
             this.paddle.rotation = getSwiperAngle({
@@ -361,7 +429,13 @@ export class TowerEntity extends defineEntity({
                 const half = (qualityConfig.microwaveConeHalfAngleDeg * Math.PI) / 180;
                 splash
                     .moveTo(0, 0)
-                    .arc(0, 0, definition.rangePx, aim - half, aim + half)
+                    .arc(
+                        0,
+                        0,
+                        getTowerStats(towerType, this.params.level).rangePx,
+                        aim - half,
+                        aim + half,
+                    )
                     .closePath()
                     .fill({
                         color: definition.color,
@@ -371,11 +445,17 @@ export class TowerEntity extends defineEntity({
         } else if (definition.areaOfEffect) {
             if (lastProcessedAtMs >= 0 && sinceMs < towerFeedbackConfig.splashMs) {
                 const t = sinceMs / towerFeedbackConfig.splashMs;
-                splash.circle(0, 0, definition.rangePx * (0.3 + 0.7 * t)).stroke({
-                    color: definition.color,
-                    width: 10,
-                    alpha: 0.8 * (1 - t),
-                });
+                splash
+                    .circle(
+                        0,
+                        0,
+                        getTowerStats(towerType, this.params.level).rangePx * (0.3 + 0.7 * t),
+                    )
+                    .stroke({
+                        color: definition.color,
+                        width: 10,
+                        alpha: 0.8 * (1 - t),
+                    });
             }
         } else if (definition.behavior === 'gull-trap') {
             if (lastProcessedAtMs >= 0 && sinceMs < trapThrowMs) {

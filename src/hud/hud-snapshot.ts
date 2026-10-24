@@ -1,11 +1,13 @@
 import {isMuted} from '../audio/sfx.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
 import {getPrestigeStars} from '../quality/quality.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
-import {type TowerType} from '../tower/tower-type.js';
+import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
+import {TowerEntity} from '../tower/tower.entity.js';
 
 /**
  * Plain copies of everything the HUD shows. `hudMod` builds a fresh snapshot every tick; the HUD
@@ -49,6 +51,18 @@ export type HudSnapshot = {
     potatoesStolen: number;
     selectedTowerType: TowerType | undefined;
     selectedTopping: Topping | undefined;
+    /** The built tower selected for upgrade or sale, for the tower panel. */
+    selectedTower:
+        | {
+              towerId: number;
+              towerType: TowerType;
+              level: number;
+              /** `undefined` at the max level. */
+              upgradeCost: number | undefined;
+              sellValue: number;
+              stats: {damage: number; rangePx: number; cooldownMs: number};
+          }
+        | undefined;
     /** Open orders, oldest first. Times are coarse so the HUD re-renders only a few times a second. */
     orders: Array<{orderId: number; dish: Dish; secondsLeft: number; fractionLeft: number}>;
     /** Set while the latest order outcome is recent enough to show; `id` changes for each one. */
@@ -66,6 +80,33 @@ export type HudSnapshot = {
     /** Whether sound effects are muted. */
     muted: boolean;
 };
+
+/** Describes the selected built tower for the tower panel, if one is selected and still exists. */
+function getSelectedTower(state: Partial<FullGameState>): HudSnapshot['selectedTower'] {
+    const selectedId = state.ui?.selectedTowerId;
+    if (selectedId == undefined || !state.entityStore) {
+        return undefined;
+    }
+
+    for (const tower of state.entityStore.getEntities(TowerEntity)) {
+        const {towerId, towerType, level} = tower.params;
+        if (towerId === selectedId) {
+            return {
+                towerId,
+                towerType,
+                level,
+                upgradeCost:
+                    level < upgradeConfig.maxLevel
+                        ? getUpgradeCost(towerType, (level + 1) as 2 | 3)
+                        : undefined,
+                sellValue: getSellValue(towerType, level),
+                stats: getTowerStats(towerType, level),
+            };
+        }
+    }
+
+    return undefined;
+}
 
 export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const runState = state.runState ?? createInitialRunState();
@@ -113,6 +154,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         potatoesStolen: runState.potatoesStolen,
         selectedTowerType: state.ui?.selectedTowerType,
         selectedTopping: state.ui?.selectedTopping,
+        selectedTower: getSelectedTower(state),
         orders: runState.orders.map((order) => {
             const totalMs = Math.max(1, order.expiresAtMs - order.createdAtMs);
             const leftMs = Math.max(0, order.expiresAtMs - runState.elapsedMs);

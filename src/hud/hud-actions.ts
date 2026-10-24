@@ -10,6 +10,12 @@ import {type TowerType} from '../tower/tower-type.js';
 export type HudActions = {
     /** Selects a tower type for placement, or clears the selection with `undefined`. */
     selectTowerType(towerType: TowerType | undefined): void;
+    /** Selects a built tower for upgrade or sale, or clears the selection with `undefined`. */
+    selectTower(towerId: number | undefined): void;
+    /** Upgrades a built tower one level. */
+    upgradeTower(towerId: number): void;
+    /** Sells a built tower. */
+    sellTower(towerId: number): void;
     /** Selects a topping to apply by hand, or clears it with `undefined`. */
     selectTopping(topping: Topping | undefined): void;
     /** Starts a fresh run. */
@@ -33,6 +39,7 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         selectTowerType(towerType) {
             if (state.ui) {
                 state.ui.selectedTowerType = towerType;
+                state.ui.selectedTowerId = undefined;
                 state.ui.selectedTopping = undefined;
             }
         },
@@ -40,6 +47,29 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             if (state.ui) {
                 state.ui.selectedTopping = topping;
                 state.ui.selectedTowerType = undefined;
+                state.ui.selectedTowerId = undefined;
+            }
+        },
+        selectTower(towerId) {
+            if (state.ui) {
+                state.ui.selectedTowerId = towerId;
+                state.ui.selectedTowerType = undefined;
+                state.ui.selectedTopping = undefined;
+            }
+        },
+        upgradeTower(towerId) {
+            sendGameCommand(state, {
+                type: GameCommandType.UpgradeTower,
+                towerId,
+            });
+        },
+        sellTower(towerId) {
+            sendGameCommand(state, {
+                type: GameCommandType.SellTower,
+                towerId,
+            });
+            if (state.ui) {
+                state.ui.selectedTowerId = undefined;
             }
         },
         beginRun() {

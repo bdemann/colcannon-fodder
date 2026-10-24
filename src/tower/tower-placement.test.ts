@@ -183,6 +183,31 @@ describe(shouldShowTowerRange.name, () => {
         );
     });
 
+    it('shows when this tower is the selected built tower', () => {
+        assert.isTrue(
+            shouldShowTowerRange({
+                tower: {
+                    ...tower,
+                    towerId: 4,
+                },
+                pointerWorld: undefined,
+                selectedTowerType: undefined,
+                selectedTowerId: 4,
+            }),
+        );
+        assert.isFalse(
+            shouldShowTowerRange({
+                tower: {
+                    ...tower,
+                    towerId: 5,
+                },
+                pointerWorld: undefined,
+                selectedTowerType: undefined,
+                selectedTowerId: 4,
+            }),
+        );
+    });
+
     it('hides when neither, or with no pointer', () => {
         assert.isFalse(
             shouldShowTowerRange({

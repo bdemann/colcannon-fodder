@@ -2,7 +2,7 @@ import {potatoSizeConfig} from '../../config/game-config.js';
 import {swiperConfig} from '../../config/swiper-config.js';
 import {getPath, getPositionAlongPath} from '../../level/level.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
-import {towerTypes} from '../tower-type.js';
+import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
 
 type Point = {x: number; y: number};
@@ -88,7 +88,7 @@ export function updateSwiper(tower: TowerEntity): void {
             elapsedMs,
             builtAtMs: tower.params.builtAtMs,
         }),
-        lengthPx: towerTypes[tower.params.towerType].rangePx,
+        lengthPx: getTowerStats(tower.params.towerType, tower.params.level).rangePx,
     });
 
     for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {

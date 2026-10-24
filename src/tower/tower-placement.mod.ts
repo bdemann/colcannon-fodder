@@ -6,7 +6,7 @@ import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus} from '../run/run-state.js';
 import {canAfford, canPlaceTower} from './tower-placement.js';
-import {TowerType, towerTypes} from './tower-type.js';
+import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
 import {TowerEntity} from './tower.entity.js';
 
 /** The ghost tower. Owned by this mod, not an entity, because it is UI only. */
@@ -57,6 +57,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
         if (state.runState.status !== RunStatus.Playing || state.runState.paused) {
             ui.selectedTowerType = undefined;
+            ui.selectedTowerId = undefined;
             preview.visible = false;
             return;
         }
@@ -66,6 +67,22 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         for (const key of ui.keys) {
             if (key === 'Escape') {
                 ui.selectedTowerType = undefined;
+                ui.selectedTowerId = undefined;
+                continue;
+            }
+
+            if (ui.selectedTowerId != undefined && (key === 'u' || key === 'U')) {
+                sendGameCommand(state, {
+                    type: GameCommandType.UpgradeTower,
+                    towerId: ui.selectedTowerId,
+                });
+                continue;
+            } else if (ui.selectedTowerId != undefined && (key === 'x' || key === 'X')) {
+                sendGameCommand(state, {
+                    type: GameCommandType.SellTower,
+                    towerId: ui.selectedTowerId,
+                });
+                ui.selectedTowerId = undefined;
                 continue;
             }
 
@@ -81,16 +98,31 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             }
         }
 
-        const towers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
+        const builtTowers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
             return {
                 x: tower.params.x,
                 y: tower.params.y,
+                towerId: tower.params.towerId,
             };
         });
+
+        // A selected tower may have been sold; also, picking a type or topping drops the selection.
+        if (
+            ui.selectedTowerType ||
+            ui.selectedTopping ||
+            !builtTowers.some((tower) => tower.towerId === ui.selectedTowerId)
+        ) {
+            ui.selectedTowerId = undefined;
+        }
 
         for (const click of ui.clicks) {
             if (click.button === 'right') {
                 ui.selectedTowerType = undefined;
+                ui.selectedTowerId = undefined;
+            } else if (!ui.selectedTowerType && !ui.selectedTopping) {
+                ui.selectedTowerId = builtTowers.find((tower) => {
+                    return Math.hypot(tower.x - click.x, tower.y - click.y) <= towerConfig.radius;
+                })?.towerId;
             } else if (ui.selectedTowerType && !ui.selectedTopping) {
                 const x = Math.round(click.x);
                 const y = Math.round(click.y);
@@ -99,7 +131,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                     canAfford(state.runState.coins, ui.selectedTowerType) &&
                     canPlaceTower({
                         level: state.level,
-                        towers,
+                        towers: builtTowers,
                         point: {
                             x,
                             y,
@@ -124,7 +156,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         const {x, y} = ui.pointerWorld;
         const placement = canPlaceTower({
             level: state.level,
-            towers,
+            towers: builtTowers,
             point: {
                 x,
                 y,
@@ -140,7 +172,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         }
 
         preview
-            .circle(x, y, definition.rangePx)
+            .circle(x, y, getTowerStats(ui.selectedTowerType, 1).rangePx)
             .stroke({
                 color: '#ffffff',
                 alpha: 0.5,

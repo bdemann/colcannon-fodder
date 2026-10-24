@@ -2,6 +2,7 @@ import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
 import {doorConfig} from '../config/door-config.js';
 import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
+import {upgradeConfig} from '../config/upgrade-config.js';
 import {PassLampEntity} from '../door/pass-lamp.entity.js';
 import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
@@ -12,6 +13,7 @@ import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
+import {getSellValue, getUpgradeCost} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
@@ -116,6 +118,49 @@ export const gameCommandHandlers: {
             lastTargetY: 0,
         });
         state.runState.nextTowerId++;
+    },
+    [GameCommandType.UpgradeTower]({detail, state}) {
+        if (
+            !state.entityStore ||
+            state.runState?.status !== RunStatus.Playing ||
+            state.runState.paused
+        ) {
+            return;
+        }
+
+        for (const tower of state.entityStore.getEntities(TowerEntity)) {
+            if (tower.params.towerId !== detail.packet.towerId) {
+                continue;
+            }
+            if (tower.params.level >= upgradeConfig.maxLevel) {
+                return;
+            }
+            const cost = getUpgradeCost(tower.params.towerType, (tower.params.level + 1) as 2 | 3);
+            if (state.runState.coins >= cost) {
+                state.runState.coins -= cost;
+                tower.params.level++;
+            }
+            return;
+        }
+    },
+    [GameCommandType.SellTower]({detail, state}) {
+        if (
+            !state.entityStore ||
+            state.runState?.status !== RunStatus.Playing ||
+            state.runState.paused
+        ) {
+            return;
+        }
+
+        for (const tower of state.entityStore.getEntities(TowerEntity)) {
+            if (tower.params.towerId === detail.packet.towerId) {
+                state.runState.coins += getSellValue(tower.params.towerType, tower.params.level);
+                tower.destroy();
+                // Destruction is deferred, so a second sale this frame must not find it again.
+                tower.params.towerId = 0;
+                return;
+            }
+        }
     },
     [GameCommandType.TogglePause]({state}) {
         if (state.runState?.status === RunStatus.Playing) {

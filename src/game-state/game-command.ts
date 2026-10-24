@@ -15,6 +15,10 @@ export enum GameCommandType {
     BeginRun = 'begin-run',
     /** Places a tower at a world position, if the position is valid. */
     PlaceTower = 'place-tower',
+    /** Spends coins to raise a tower one level, if affordable and below the max level. */
+    UpgradeTower = 'upgrade-tower',
+    /** Destroys a tower and refunds part of everything spent on it. */
+    SellTower = 'sell-tower',
     /** Adds a topping to a potato on the belt. */
     ApplyTopping = 'apply-topping',
     /** Pauses or resumes the run. Ignored unless the run is `Playing`. */
@@ -36,6 +40,15 @@ export type GameCommand =
           towerType: TowerType;
           x: number;
           y: number;
+      }
+    | {
+          type: GameCommandType.UpgradeTower;
+          /** The tower's `towerId` param. */
+          towerId: number;
+      }
+    | {
+          type: GameCommandType.SellTower;
+          towerId: number;
       }
     | {
           type: GameCommandType.ApplyTopping;
