@@ -1,8 +1,9 @@
-tower,cost,damage_type,base_damage,attack_interval_s,range_px,special_effect,dps,dps_per_coin
-Knife,40,line,4,0.25,160,"Cut: later hits x1.5; cuts straight across the belt (line across belt)",16,0.4000
-Boiling Pot,60,area,6,1.2,140,"Soft: Masher x2; hits every potato in range",5,0.0833
-Masher,80,single target,40,1,140,"Finisher; x1.5 on Cut and x2 on Soft potatoes",40,0.5000
-Microwave,50,cone (continuous),50,0.7,120,"quality loss 40/s; 45 damage/s in a 25 degree half-angle cone",45,0.9000
-Cricket Trap,60,gull-only,0,6,170,"feeds gull a cricket (lures it away)",0,0.0000
-Swiper,70,push-back,0,0,110,"pushes potato back 120px; arm turns every 5s",0,0.0000
-Laser,150,line,4,0.25,220,"Cut: later hits x1.5; aimable long line",16,0.1067
+tower,cost,damage_type,base_damage,attack_interval_s,range_px,special_effect,dps,dps_per_coin,targets_w1,targets_w2,targets_w3,targets_w4,targets_w5,eff_dps_w1,eff_dps_w2,eff_dps_w3,eff_dps_w4,eff_dps_w5
+Knife,40,line,4,0.25,160,Cut: later hits x1.5; cuts straight across the belt (line across belt),16,0.4000,0.27,0.36,0.48,0.64,0.90,4.3,5.8,7.7,10.2,14.4
+Boiling Pot,60,area,6,1.2,140,Soft: Masher x2; hits every potato in range,5,0.0833,0.88,1.11,1.42,1.77,2.41,4.4,5.5,7.1,8.8,12.0
+Masher,80,single target,40,1,140,Finisher; x1.5 on Cut and x2 on Soft potatoes,40,0.5000,1.00,1.00,1.00,1.00,1.00,40.0,40.0,40.0,40.0,40.0
+Microwave,50,cone (continuous),50,0.7,120,quality loss 40/s; 45 damage/s in a 25 degree half-angle cone,45,0.9000,0.38,0.48,0.62,0.77,1.04,17.0,21.6,27.7,34.4,46.8
+Cricket Trap,60,gull-only,0,6,170,feeds gull a cricket (lures it away),0,0.0000,0.00,0.00,0.00,0.00,0.00,0.0,0.0,0.0,0.0,0.0
+Swiper,70,push-back,0,0,110,pushes potato back 120px; arm turns every 5s,0,0.0000,0.00,0.00,0.00,0.00,0.00,0.0,0.0,0.0,0.0,0.0
+Laser,150,line,4,0.25,220,Cut: later hits x1.5; aimable long line,16,0.1067,0.90,1.14,1.46,1.81,2.47,14.4,18.2,23.3,29.0,39.5
+Laser (across belt),150,line,4,0.25,220,Cut: later hits x1.5; beam aimed straight across the belt (like the Knife),16,0.1067,0.27,0.36,0.48,0.64,0.90,4.3,5.8,7.7,10.2,14.4
