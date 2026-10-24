@@ -7,11 +7,12 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
 import {getPrestigeStars} from '../quality/quality.js';
-import {getWaveSettings, getWavesReached, recordEndlessBest} from '../run/endless.js';
+import {getRecords, saveFinishedRun, type Records} from '../records/records.js';
+import {getWaveSettings, getWavesReached} from '../run/endless.js';
 import {
     createInitialRunState,
-    RunStatus,
     type RunMode,
+    type RunStatus,
     type ServingResult,
 } from '../run/run-state.js';
 import {hasTowerIcons} from '../tower/tower-icons.js';
@@ -32,9 +33,12 @@ export type HudSnapshot = {
     mode: RunMode;
     /** True while the current or upcoming wave has a boss. */
     isBossWave: boolean;
-    /** Endless: waves the restaurant got through, and the saved best (updated on a loss). */
+    /** Endless: waves the restaurant got through. */
     wavesReached: number;
-    endlessBest: number;
+    /** Saved bests and the Hall of Mash Champs; includes the finished run once it is saved. */
+    records: Records;
+    /** True when the finished run beat a record. */
+    newBest: boolean;
     /** Whether the run is paused. */
     paused: boolean;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
@@ -158,6 +162,14 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const lastServing = runState.lastServing;
     const lastOrderEvent = runState.lastOrderEvent;
     const lastSteal = runState.lastSteal;
+    const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
+    const prestigeStars = getPrestigeStars(runState.recentQualities);
+    // Saves the finished run exactly once (UI side), before `records` is read below.
+    const newBest = saveFinishedRun(runState, {
+        score: totalScore,
+        stars: prestigeStars,
+        wavesReached: getWavesReached(runState),
+    });
 
     return {
         status: runState.status,
@@ -165,10 +177,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         mode: runState.mode,
         isBossWave: (getWaveSettings(runState, runState.waveIndex)?.bossCount ?? 0) > 0,
         wavesReached: getWavesReached(runState),
-        endlessBest:
-            runState.mode === 'endless' && runState.status === RunStatus.Lost
-                ? recordEndlessBest(runState.levelId, getWavesReached(runState))
-                : 0,
+        records: getRecords(),
+        newBest: newBest ?? false,
         paused: runState.paused,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
@@ -189,7 +199,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                         (event.id % hudConfig.coinPopupStaggerSlots) * hudConfig.coinPopupStaggerPx,
                 };
             }),
-        totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
+        totalScore,
         potatoesServed: runState.potatoesServed,
         waveNumber: runState.waveIndex + 1,
         waveCount: runState.mode === 'endless' ? 0 : waveConfig.waves.length,
@@ -252,7 +262,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       id: runState.lastBossSpawnAtMs,
                   }
                 : undefined,
-        prestigeStars: getPrestigeStars(runState.recentQualities),
+        prestigeStars,
         muted: isMuted(),
         volumes: {
             ...getVolumes(),

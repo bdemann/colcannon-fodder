@@ -42,5 +42,5 @@ export const endlessConfig = {
     },
 } as const;
 
-/** LocalStorage key prefix for the best endless wave count; the level id is appended. */
+/** Old per-level key prefix for the best endless wave count; the records module migrates it. */
 export const endlessBestStorageKey = 'colcannon-fodder-endless-best:';
