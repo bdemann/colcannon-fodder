@@ -9,7 +9,7 @@ import {
     type SeededRandomState,
 } from '@augment-vir/common';
 import {RunStatus, type RunState} from '../run/run-state.js';
-import {stepsForFrame} from '../run/speed.js';
+import {getEffectiveSpeed, stepsForFrame} from '../run/speed.js';
 import {gameCommandHandlers, syncLevelWithRunState} from './game-command-handlers.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {gameEntities} from './game-entities.js';
@@ -84,7 +84,7 @@ export async function runGameFrameUpdate(
 
     const {steps, accumulator} = stepsForFrame({
         accumulator: state.runState.speedAccumulator,
-        speed: state.runState.speed,
+        speed: getEffectiveSpeed(state.runState),
     });
     state.runState.speedAccumulator = accumulator;
 

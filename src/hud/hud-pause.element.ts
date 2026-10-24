@@ -49,6 +49,10 @@ export const HudPause = defineElement<{
 }>()({
     tagName: 'hud-pause',
     styles: css`
+        [hidden] {
+            display: none !important;
+        }
+
         :host {
             display: block;
         }
@@ -195,7 +199,11 @@ export const HudPause = defineElement<{
                 ? html`
                       <div class="layer">
                           <div class="panel">
-                              <div class="title">Paused</div>
+                              <div class="title">
+                                  Paused${snapshot.pausedByName
+                                      ? ` by ${snapshot.pausedByName}`
+                                      : ''}
+                              </div>
                               <div class="rules">
                                   ${rules.map((rule) => {
                                       return html`
@@ -263,6 +271,7 @@ export const HudPause = defineElement<{
                                   </button>
                                   <button
                                       class="secondary"
+                                      ?hidden=${!snapshot.isHost}
                                       @click=${() => {
                                           inputs.actions.restartRun();
                                       }}
@@ -284,6 +293,7 @@ export const HudPause = defineElement<{
             </button>
             <button
                 class="speed-button"
+                ?hidden=${snapshot.isCoop}
                 style="left: 1004px; width: 150px;"
                 title="Fast-forward (F)"
                 @click=${() => {
@@ -293,6 +303,7 @@ export const HudPause = defineElement<{
                 ⏩ ${formatSpeed(snapshot.speed)}
             </button>
             <button
+                ?hidden=${snapshot.isCoop}
                 class=${'speed-button' + (snapshot.resetSpeedOnIncome ? ' armed' : '')}
                 style="left: 1170px; width: 190px;"
                 title="Fast-forward until the next income (G)"
