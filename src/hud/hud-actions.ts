@@ -5,8 +5,8 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
-import {getNextSpeed} from '../run/speed.js';
 import {type RunMode} from '../run/run-state.js';
+import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
 /**
