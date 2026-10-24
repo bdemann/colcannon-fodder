@@ -42,6 +42,10 @@ export type UiState = {
     wheelSteps: number;
     /** Laser direction while placing, in degrees. Kept between placements. */
     placementAngleDeg: number;
+    /** Whether the Help panel is open. */
+    helpOpen: boolean;
+    /** True when opening Help paused the run, so closing it resumes. */
+    helpPausedRun: boolean;
     /** Which menu or room screen is showing, and the room list. */
     session: SessionUi;
 };

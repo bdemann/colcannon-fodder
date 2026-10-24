@@ -1,10 +1,11 @@
-import {css, defineElement, html, listen} from 'element-vir';
+import {css, defineElement, html, listen, unsafeCSS} from 'element-vir';
 import {Topping, toppingDefinitions} from '../order/topping.js';
 import {type HudActions} from './hud-actions.js';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
-import {hudButtonStyles, hudPanelStyles, hudSelectedStyles} from './hud-theme.js';
+import {hudButtonStyles, hudSelectedStyles} from './hud-theme.js';
 
-/** Right-edge column with one button per topping (Q/W/E/R). */
+/** Right-edge row of small buttons, one per topping (Q/W/E/R). The label shows on hover. */
 export const HudToppingBar = defineElement<{
     snapshot: HudSnapshot;
     actions: HudActions;
@@ -12,43 +13,30 @@ export const HudToppingBar = defineElement<{
     tagName: 'hud-topping-bar',
     styles: css`
         :host {
-            align-items: stretch;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            gap: 6px;
+            left: ${unsafeCSS(hudLayout.toppings.x)}px;
             pointer-events: auto;
             position: absolute;
-            right: 24px;
-            top: 62%;
-            transform: translateY(-50%);
-        }
-
-        .title {
-            ${hudPanelStyles}
-            border-radius: 14px;
-            font-size: 24px;
-            font-weight: 700;
-            padding: 2px 0;
-            text-align: center;
+            top: ${unsafeCSS(hudLayout.toppings.y)}px;
         }
 
         button {
             ${hudButtonStyles}
-            border-radius: 16px;
-            height: 90px;
-            width: 200px;
+            align-items: center;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            height: 64px;
+            justify-content: center;
+            padding: 0;
+            width: 64px;
         }
 
         button.selected {
             ${hudSelectedStyles}
-            transform: translateX(-8px);
-        }
-
-        .content {
-            align-items: center;
-            display: flex;
-            gap: 14px;
-            justify-content: center;
+            transform: translateY(-4px);
         }
 
         .swatch {
@@ -56,37 +44,25 @@ export const HudToppingBar = defineElement<{
             border-radius: 50%;
             box-sizing: border-box;
             flex-shrink: 0;
-            height: 40px;
-            width: 40px;
-        }
-
-        .text {
-            align-items: flex-start;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .label {
-            font-size: 28px;
-            font-weight: 700;
-            white-space: nowrap;
+            height: 28px;
+            width: 28px;
         }
 
         .hotkey {
-            font-size: 22px;
-            opacity: 0.7;
+            font-size: 20px;
+            line-height: 1;
         }
     `,
     render({inputs}) {
         const selected = inputs.snapshot.selectedTopping;
 
         return html`
-            <div class="title">TOPPINGS</div>
             ${Object.values(Topping).map((topping) => {
                 const definition = toppingDefinitions[topping];
 
                 return html`
                     <button
+                        title="${definition.label} [${definition.hotkey.toUpperCase()}]"
                         class=${topping === selected ? 'selected' : ''}
                         ${listen('click', () => {
                             inputs.actions.selectTopping(
@@ -94,13 +70,8 @@ export const HudToppingBar = defineElement<{
                             );
                         })}
                     >
-                        <div class="content">
-                            <div class="swatch" style="background: ${definition.color}"></div>
-                            <div class="text">
-                                <span class="label">${definition.label}</span>
-                                <span class="hotkey">[${definition.hotkey.toUpperCase()}]</span>
-                            </div>
-                        </div>
+                        <div class="swatch" style="background: ${definition.color}"></div>
+                        <span class="hotkey">${definition.hotkey.toUpperCase()}</span>
                     </button>
                 `;
             })}

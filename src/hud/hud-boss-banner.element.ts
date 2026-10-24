@@ -1,4 +1,5 @@
-import {css, defineElement, html, nothing} from 'element-vir';
+import {css, defineElement, html, nothing, unsafeCSS} from 'element-vir';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {hudFloatingTextStyles} from './hud-theme.js';
 
@@ -15,12 +16,12 @@ export const HudBossBanner = defineElement<{
         .banner {
             ${hudFloatingTextStyles}
             color: var(--hud-butter);
-            font-size: 64px;
-            left: 0;
+            font-size: 40px;
+            left: ${unsafeCSS(hudLayout.noticeStrip.x)}px;
             position: absolute;
-            right: 0;
             text-align: center;
-            top: 100px;
+            top: ${unsafeCSS(hudLayout.noticeStrip.y)}px;
+            width: ${unsafeCSS(hudLayout.noticeStrip.width)}px;
         }
     `,
     render({inputs}) {

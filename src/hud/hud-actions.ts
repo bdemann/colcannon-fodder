@@ -17,7 +17,7 @@ import {levelSupportsPlayerCount} from '../level/level.js';
 import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
 import {getStarsFromPoints, isTowerUnlocked} from '../progression/progression.js';
-import {getSlotForClient, isCoopRun, type RunMode} from '../run/run-state.js';
+import {getSlotForClient, isCoopRun, RunStatus, type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -50,6 +50,10 @@ export type HudActions = {
     goToMainMenu(): void;
     /** Pauses or resumes the run. */
     togglePause(): void;
+    /** Opens the Help panel. During a singleplayer run it also pauses, and closing resumes. */
+    openHelp(): void;
+    /** Closes the Help panel (and resumes the run if opening it paused). */
+    closeHelp(): void;
     /** Cycles the fast-forward speed 1x, 1.5x, 2x, 3x, 1x. */
     cycleSpeed(): void;
     /** Speeds up to 2x if at 1x, and drops back to 1x at the next income. */
@@ -148,6 +152,38 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             sendGameCommand(state, {
                 type: GameCommandType.TogglePause,
             });
+        },
+        openHelp() {
+            const ui = state.ui;
+            if (!ui || ui.helpOpen) {
+                return;
+            }
+            ui.helpOpen = true;
+            if (
+                state.runState?.status === RunStatus.Playing &&
+                !state.runState.paused &&
+                !isCoopRun(state.runState)
+            ) {
+                ui.helpPausedRun = true;
+                sendGameCommand(state, {
+                    type: GameCommandType.TogglePause,
+                });
+            }
+        },
+        closeHelp() {
+            const ui = state.ui;
+            if (!ui?.helpOpen) {
+                return;
+            }
+            ui.helpOpen = false;
+            if (ui.helpPausedRun) {
+                ui.helpPausedRun = false;
+                if (state.runState?.paused) {
+                    sendGameCommand(state, {
+                        type: GameCommandType.TogglePause,
+                    });
+                }
+            }
         },
         cycleSpeed() {
             if (isCoopRun(state.runState)) {
