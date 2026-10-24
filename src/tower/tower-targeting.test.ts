@@ -6,6 +6,7 @@ import {
     chooseTargetIndex,
     getGullsInRange,
     isInRangeBox,
+    isTargetablePotato,
     type GullCandidate,
     type TargetCandidate,
 } from './tower-targeting.js';
@@ -472,6 +473,47 @@ describe('isInRangeBox box filter', () => {
                     y: 0,
                 },
             ),
+        );
+    });
+});
+
+describe(isTargetablePotato.name, () => {
+    const base = {
+        served: false,
+        carriedBySeagull: false,
+        dropInMs: 0,
+        mashHp: 5,
+    };
+
+    it('accepts a live potato on the belt', () => {
+        assert.isTrue(isTargetablePotato(base));
+    });
+    it('skips fully mashed potatoes (every tower behavior relies on this)', () => {
+        assert.isFalse(
+            isTargetablePotato({
+                ...base,
+                mashHp: 0,
+            }),
+        );
+    });
+    it('skips served, carried and falling potatoes', () => {
+        assert.isFalse(
+            isTargetablePotato({
+                ...base,
+                served: true,
+            }),
+        );
+        assert.isFalse(
+            isTargetablePotato({
+                ...base,
+                carriedBySeagull: true,
+            }),
+        );
+        assert.isFalse(
+            isTargetablePotato({
+                ...base,
+                dropInMs: 100,
+            }),
         );
     });
 });

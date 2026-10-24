@@ -11,6 +11,7 @@ module.exports = {
         ...baseConfig.words,
         'bdemann',
         'aimable',
+        'targetable',
         'playtesting',
         'empacotatron',
         'Fupi',

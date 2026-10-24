@@ -1,5 +1,21 @@
 import {type PotatoProcessing} from '../run/run-state.js';
 
+/**
+ * Whether a tower may affect this potato at all: not served, not carried off by a seagull, not
+ * still falling onto the belt, and not fully mashed (`mashHp > 0`). Every tower behavior uses
+ * this.
+ */
+export function isTargetablePotato(
+    potato: Readonly<{
+        served: boolean;
+        carriedBySeagull: boolean;
+        dropInMs: number;
+        mashHp: number;
+    }>,
+): boolean {
+    return !potato.served && !potato.carriedBySeagull && potato.dropInMs <= 0 && potato.mashHp > 0;
+}
+
 /** A potato a tower could process, with where it is and how far along its path it is. */
 export type TargetCandidate = Readonly<{
     x: number;

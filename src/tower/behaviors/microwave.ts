@@ -1,6 +1,7 @@
 import {comboDisplayConfig} from '../../config/game-config.js';
 import {qualityConfig} from '../../config/quality-config.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
+import {isTargetablePotato} from '../tower-targeting.js';
 import {getDamageScale, getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
 import {addWear, getWearMultiplier, getWearPerSecond} from '../wear.js';
@@ -50,11 +51,7 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
     };
     const potatoes: PotatoEntity[] = [];
     for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
-        if (
-            !potato.params.served &&
-            !potato.params.carriedBySeagull &&
-            potato.params.dropInMs <= 0
-        ) {
+        if (isTargetablePotato(potato.params)) {
             potatoes.push(potato);
         }
     }
@@ -62,7 +59,6 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
     let target: PotatoEntity | undefined;
     for (const potato of potatoes) {
         if (
-            potato.params.mashHp > 0 &&
             Math.hypot(potato.params.x - origin.x, potato.params.y - origin.y) <= rangePx &&
             (!target || potato.params.distancePx > target.params.distancePx)
         ) {
