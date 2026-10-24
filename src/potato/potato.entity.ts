@@ -18,10 +18,10 @@ import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {type TowerType} from '../tower/tower-type.js';
-import {getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
+import {getHitDamage, getHitMultiplier} from './mash.js';
 import {getPotatoMotion} from './potato-motion.js';
 import {PotatoSize} from './potato-size.js';
-import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
+import {defaultMeter, drawPotato, getPotatoLookKey} from './potato-view.js';
 
 const shadowLabel = 'chute-shadow';
 
@@ -242,9 +242,13 @@ export class PotatoEntity extends defineEntity({
     }
 
     protected getLookKey(): string {
-        const progress = getMashProgress(this.getProcessing());
-        const {butter, scallions, cabbage, gravy} = this.params;
-        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}${butter}${scallions}${cabbage}${gravy}${getRubberyStep(this.params.quality)}`;
+        return getPotatoLookKey({
+            processing: this.getProcessing(),
+            toppings: this.getToppings(),
+            quality: this.params.quality,
+            radius: this.getRadius(),
+            crown: this.params.size === PotatoSize.King,
+        });
     }
 
     protected redrawIfChanged() {
