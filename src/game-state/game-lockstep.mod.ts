@@ -8,6 +8,7 @@ import {
     SeededRandom,
     type SeededRandomState,
 } from '@augment-vir/common';
+import {frameConfig} from '../config/game-config.js';
 import {RunStatus, type RunState} from '../run/run-state.js';
 import {getEffectiveSpeed, stepsForFrame} from '../run/speed.js';
 import {
@@ -114,6 +115,9 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
     GameStateSync
 >({
     gameId: 'colcannon-fodder',
+    frameDuration: {
+        milliseconds: frameConfig.frameMs,
+    },
     desyncCheck: {
         interval: {
             seconds: 1,

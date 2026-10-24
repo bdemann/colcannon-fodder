@@ -11,6 +11,7 @@ import {TowerEntity} from '../tower/tower.entity.js';
 import {getHudActions} from './hud-actions.js';
 import {createHudSnapshot} from './hud-snapshot.js';
 import {GameHud} from './hud.element.js';
+import {createSimSpeedTracker} from './sim-speed.js';
 
 const servingSfx: Record<ServingResult, Sfx> = {
     [ServingResult.Perfect]: Sfx.ServePerfect,
@@ -29,6 +30,7 @@ let lastSeenTowerCount: number | undefined;
 let hadSelectionLastTick = false;
 let lastSeenStealAtMs: number | undefined;
 let lastSeenBossSpawnAtMs = -1;
+const simSpeedTracker = createSimSpeedTracker();
 
 /** Plays serving and build sounds. Presentation only, so it lives here and not in the simulation. */
 function playHudSounds(state: Partial<FullGameState>) {
@@ -131,9 +133,20 @@ export const hudMod = defineAnthaMod<FullGameState>({
             };
         }
 
+        const snapshot = createHudSnapshot(state);
+        const simSpeed = simSpeedTracker.sample({
+            elapsedMs: state.runState?.elapsedMs ?? 0,
+            nowMs: performance.now(),
+            running: state.runState?.status === RunStatus.Playing && !state.runState.paused,
+        });
+        /** Only a co-op host sees it. */
+        if (simSpeed != undefined && snapshot.isCoop && snapshot.isHost) {
+            snapshot.simSpeedPercent = Math.round(simSpeed * 20) * 5;
+        }
+
         return html`
             <${GameHud.assign({
-                snapshot: createHudSnapshot(state),
+                snapshot,
                 actions: getHudActions(state),
             })}></${GameHud}>
         `;
