@@ -8,6 +8,7 @@ import {type RunState} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {type GameCommand} from './game-command.js';
 import {type updateEntitiesMod} from './game-entity.mod.js';
+import {type SessionUi} from './multiplayer-session.js';
 
 /** A canvas click in game-world coordinates. */
 export type UiClick = Coords & {
@@ -41,6 +42,8 @@ export type UiState = {
     wheelSteps: number;
     /** Laser direction while placing, in degrees. Kept between placements. */
     placementAngleDeg: number;
+    /** Which menu or room screen is showing, and the room list. */
+    session: SessionUi;
 };
 
 /** Holds the game-specific data shared by all engine mods. */

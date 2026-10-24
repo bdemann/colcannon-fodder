@@ -1,12 +1,23 @@
+import {randomString} from '@augment-vir/common';
 import {setVolume, type VolumeKind} from '../audio/volume-settings.js';
 import {speedConfig} from '../config/game-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {
+    closeRooms,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    openRooms,
+    startSingleplayer,
+    type RoomSummary,
+} from '../game-state/multiplayer-session.js';
 import {saveLevelChoice} from '../level/level-choice.js';
-import {defaultLevel} from '../level/levels.js';
+import {levelSupportsPlayerCount} from '../level/level.js';
+import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
 import {getStarsFromPoints, isTowerUnlocked} from '../progression/progression.js';
-import {type RunMode} from '../run/run-state.js';
+import {getSlotForClient, isCoopRun, type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -45,7 +56,30 @@ export type HudActions = {
     speedUntilIncome(): void;
     /** Sets the music or sound effects volume (0 to 1) and saves it. */
     setVolume(kind: VolumeKind, value: number): void;
+    /** Main menu: starts a local run. */
+    startSingleplayer(): void;
+    /** Main menu: opens the co-op room list. */
+    openRooms(): void;
+    /** Room list: back to the main menu. */
+    closeRooms(): void;
+    /** Room list: creates a room (an empty password means open) and enters it as host. */
+    createRoom(name: string, password: string): void;
+    /** Room list: joins a room from the list. */
+    joinRoom(room: Pick<RoomSummary, 'roomId' | 'roomName'>, password: string): void;
+    /** Leaves the current room and returns to the main menu. */
+    leaveRoom(): void;
 };
+
+/** In co-op only the host (slot 0) may restart or change level; the handler enforces it too. */
+function canControlRun(state: Partial<FullGameState>): boolean {
+    return (
+        !isCoopRun(state.runState) ||
+        getSlotForClient(
+            state.runState,
+            state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
+        ) === 0
+    );
+}
 
 const actionsByState = new WeakMap<object, HudActions>();
 
@@ -116,12 +150,18 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         cycleSpeed() {
+            if (isCoopRun(state.runState)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.SetSpeed,
                 speed: getNextSpeed(state.runState?.speed ?? 1),
             });
         },
         speedUntilIncome() {
+            if (isCoopRun(state.runState)) {
+                return;
+            }
             if ((state.runState?.speed ?? 1) === 1) {
                 sendGameCommand(state, {
                     type: GameCommandType.SetSpeed,
@@ -133,18 +173,50 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         setVolume,
+        startSingleplayer() {
+            startSingleplayer(state);
+        },
+        openRooms() {
+            void openRooms(state);
+        },
+        closeRooms() {
+            closeRooms(state);
+        },
+        createRoom(name, password) {
+            void createRoom(state, {
+                name,
+                password,
+            });
+        },
+        joinRoom(room, password) {
+            void joinRoom(state, room, password);
+        },
+        leaveRoom() {
+            leaveRoom(state);
+        },
         selectLevel(levelId) {
-            saveLevelChoice(levelId);
+            if (!canControlRun(state)) {
+                return;
+            }
+            /** Co-op maps are not remembered: singleplayer boots into the saved map. */
+            if (levelSupportsPlayerCount(getLevel(levelId), 1)) {
+                saveLevelChoice(levelId);
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 ready: true,
                 levelId,
                 mode: state.runState?.mode,
             });
         },
         selectMode(mode) {
+            if (!canControlRun(state)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 ready: true,
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode,
@@ -153,14 +225,19 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         goToMainMenu() {
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 ready: true,
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode: state.runState?.mode,
             });
         },
         restartRun() {
+            if (!canControlRun(state)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode: state.runState?.mode,
             });

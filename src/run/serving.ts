@@ -229,6 +229,10 @@ export function servePotato(
     runState.servingCounts[result] += 1;
     runState.scoreBySlot[serving.ownerSlot] =
         (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
+    if (isPerfect) {
+        runState.perfectBySlot[serving.ownerSlot] =
+            (runState.perfectBySlot[serving.ownerSlot] ?? 0) + 1;
+    }
     addCoins(runState, {
         amount: coins,
         reason: isPerfect ? getPerfectReason(serving) : 'Eaten anyway',

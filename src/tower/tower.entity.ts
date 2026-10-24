@@ -15,6 +15,7 @@ import {getStarsFromPoints, isTowerWorking} from '../progression/progression.js'
 import {ProjectileKind} from '../projectile/projectile-kind.js';
 import {spawnProjectile} from '../projectile/projectile-layer.js';
 import {RunStatus} from '../run/run-state.js';
+import {getPlayerCount, getSlotColor} from '../run/slot-ranking.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
 import {getKnifeLine, updateKnife} from './behaviors/knife.js';
@@ -119,6 +120,16 @@ export class TowerEntity extends defineEntity({
 
     public override createView(): ViewCreation2d {
         const view = new Container();
+
+        // In co-op each player's towers sit on a ring in their slot color. Solo looks unchanged.
+        if (getPlayerCount(this.state.runState) > 1) {
+            const ring = new Graphics();
+            ring.circle(0, 0, towerConfig.radius + 6).stroke({
+                color: getSlotColor(this.params.ownerSlot),
+                width: 6,
+            });
+            view.addChild(ring);
+        }
 
         const rangeView = new Graphics();
         view.addChild(rangeView);

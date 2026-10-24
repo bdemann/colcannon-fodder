@@ -4,12 +4,14 @@ import {GameAudioChannel} from '../audio/game-audio.js';
 import {isMuted, playSfx, setMuted, Sfx} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
 import {type FullGameState} from '../game-state/game-state.js';
-import {RunStatus, ServingResult} from '../run/run-state.js';
+import {SessionScreen} from '../game-state/multiplayer-session.js';
+import {isCoopRun, RunStatus, ServingResult} from '../run/run-state.js';
 import {ensureTowerIcons} from '../tower/tower-icons.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getHudActions} from './hud-actions.js';
 import {createHudSnapshot} from './hud-snapshot.js';
 import {GameHud} from './hud.element.js';
+import {createSimSpeedTracker} from './sim-speed.js';
 
 const servingSfx: Record<ServingResult, Sfx> = {
     [ServingResult.Perfect]: Sfx.ServePerfect,
@@ -28,6 +30,7 @@ let lastSeenTowerCount: number | undefined;
 let hadSelectionLastTick = false;
 let lastSeenStealAtMs: number | undefined;
 let lastSeenBossSpawnAtMs = -1;
+const simSpeedTracker = createSimSpeedTracker();
 
 /** Plays serving and build sounds. Presentation only, so it lives here and not in the simulation. */
 function playHudSounds(state: Partial<FullGameState>) {
@@ -65,26 +68,37 @@ function playHudSounds(state: Partial<FullGameState>) {
 export const hudMod = defineAnthaMod<FullGameState>({
     modName: 'hud',
     execute({state}) {
+        /** The menus use the keyboard for text, so game hotkeys only work in the game itself. */
+        const inGame = state.ui?.session.screen === SessionScreen.Playing;
+
         if (
+            inGame &&
             state.runState &&
             (state.runState.status === RunStatus.Won || state.runState.status === RunStatus.Lost) &&
             state.ui &&
-            (state.ui.keys.includes('r') || state.ui.keys.includes('R'))
+            (state.ui.keys.includes('r') || state.ui.keys.includes('R')) &&
+            createHudSnapshot(state).isHost
         ) {
             getHudActions(state).restartRun();
         }
 
-        if (state.runState?.status === RunStatus.Playing && state.ui) {
+        if (inGame && state.runState?.status === RunStatus.Playing && state.ui) {
             const pausePressed = state.ui.keys.some((key) => key === 'p' || key === 'P');
             const escapePressed = state.ui.keys.includes('Escape') && !hadSelectionLastTick;
 
             if (pausePressed || escapePressed) {
                 getHudActions(state).togglePause();
             }
-            if (state.ui.keys.some((key) => key === 'f' || key === 'F')) {
+            if (
+                !isCoopRun(state.runState) &&
+                state.ui.keys.some((key) => key === 'f' || key === 'F')
+            ) {
                 getHudActions(state).cycleSpeed();
             }
-            if (state.ui.keys.some((key) => key === 'g' || key === 'G')) {
+            if (
+                !isCoopRun(state.runState) &&
+                state.ui.keys.some((key) => key === 'g' || key === 'G')
+            ) {
                 getHudActions(state).speedUntilIncome();
             }
         }
@@ -94,7 +108,7 @@ export const hudMod = defineAnthaMod<FullGameState>({
             state.ui?.selectedTowerId != undefined
         );
 
-        if (state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
+        if (inGame && state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
             getHudActions(state).beginRun();
         }
 
@@ -119,9 +133,20 @@ export const hudMod = defineAnthaMod<FullGameState>({
             };
         }
 
+        const snapshot = createHudSnapshot(state);
+        const simSpeed = simSpeedTracker.sample({
+            elapsedMs: state.runState?.elapsedMs ?? 0,
+            nowMs: performance.now(),
+            running: state.runState?.status === RunStatus.Playing && !state.runState.paused,
+        });
+        /** Only a co-op host sees it. */
+        if (simSpeed != undefined && snapshot.isCoop && snapshot.isHost) {
+            snapshot.simSpeedPercent = Math.round(simSpeed * 20) * 5;
+        }
+
         return html`
             <${GameHud.assign({
-                snapshot: createHudSnapshot(state),
+                snapshot,
                 actions: getHudActions(state),
             })}></${GameHud}>
         `;

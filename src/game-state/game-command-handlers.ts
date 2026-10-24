@@ -1,11 +1,12 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
-import {type MaybePromise} from '@augment-vir/common';
+import {SeededRandom, type MaybePromise} from '@augment-vir/common';
 import {economyConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
-import {getPositionAlongPath} from '../level/level.js';
+
+import {getPositionAlongPath, levelSupportsPlayerCount} from '../level/level.js';
 import {getLevel} from '../level/levels.js';
 import {RestaurantSignEntity} from '../level/restaurant-sign.entity.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
@@ -18,7 +19,9 @@ import {
     isTowerUnlocked,
 } from '../progression/progression.js';
 import {addCoins} from '../run/coins.js';
-import {createInitialRunState, RunStatus} from '../run/run-state.js';
+import {removeClientFromLobby} from '../run/lobby.js';
+import {createInitialRunState, getSlotForClient, isCoopRun, RunStatus} from '../run/run-state.js';
+import {getPlayerCount} from '../run/slot-ranking.js';
 import {isAllowedSpeed} from '../run/speed.js';
 import {getPerpendicularKnifeAngle} from '../tower/behaviors/knife.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
@@ -35,11 +38,44 @@ export type GameCommandHandlerParams<Type extends GameCommandType> = Readonly<{
 }>;
 
 /**
- * The player slot that sent a command. Singleplayer is always slot 0. Co-op will take the command's
- * `detail.sourceClientId` and map it to that client's slot.
+ * The player slot that sent a command, from the synced `slotByClientId` map. Singleplayer (empty
+ * map) and unknown clients are slot 0.
  */
-export function getCommandSlot(): number {
-    return 0;
+export function getCommandSlot(
+    state: Partial<FullGameState>,
+    sourceClientId: string | undefined,
+): number {
+    return getSlotForClient(state.runState, sourceClientId);
+}
+
+/**
+ * Whether a command comes from a client with no slot in a run that has slots (a spectator who
+ * joined a full run). Their commands are ignored, except asking to join and the first `StartRun`.
+ */
+export function isSpectatorCommand(
+    state: Partial<FullGameState>,
+    sourceClientId: string | undefined,
+    type: GameCommandType,
+): boolean {
+    const slotByClientId = state.runState?.slotByClientId ?? {};
+
+    return (
+        type !== GameCommandType.JoinRun &&
+        !(type === GameCommandType.StartRun && !isCoopRun(state.runState)) &&
+        Object.keys(slotByClientId).length > 0 &&
+        (sourceClientId == undefined || !(sourceClientId in slotByClientId))
+    );
+}
+
+function getDefaultSlotName(slot: number): string {
+    return `Player ${slot + 1}`;
+}
+
+/** Restores `state.level` from `state.runState.levelId`, e.g. after a state sync. */
+export function syncLevelWithRunState(state: Partial<FullGameState>) {
+    if (state.runState) {
+        state.level = getLevel(state.runState.levelId);
+    }
 }
 
 /**
@@ -53,12 +89,39 @@ export const gameCommandHandlers: {
     async [GameCommandType.StartRun]({detail, state}) {
         if (!state.entityStore) {
             throw new Error('Cannot start run: no entity store exists.');
+            /** In co-op only the host (slot 0) can restart or change the level. */
+        } else if (
+            isCoopRun(state.runState) &&
+            getCommandSlot(state, detail.sourceClientId) !== 0
+        ) {
+            return;
         }
 
         state.entityStore.destroyAllEntities();
         const level = getLevel(detail.packet.levelId);
         state.level = level;
+        state.seededRandom = SeededRandom.fromSeed(detail.packet.seed);
+        const previousRunState = state.runState;
         state.runState = createInitialRunState(level.levelId, detail.packet.mode);
+        /** Restarting or changing the map keeps everyone in the room in their slot. */
+        if (previousRunState) {
+            state.runState.slotByClientId = {
+                ...previousRunState.slotByClientId,
+            };
+            state.runState.slotNames = {
+                ...previousRunState.slotNames,
+            };
+            state.runState.connected = {
+                ...previousRunState.connected,
+            };
+            for (const slot of Object.keys(previousRunState.slotNames)) {
+                state.runState.scoreBySlot[Number(slot)] ??= 0;
+            }
+        }
+        /** The host's own client starts the run and always owns slot 0. */
+        state.runState.slotByClientId[detail.sourceClientId] = 0;
+        state.runState.slotNames[0] = getDefaultSlotName(0);
+        state.runState.connected[0] = true;
 
         if (detail.packet.ready) {
             state.runState.status = RunStatus.Ready;
@@ -88,10 +151,22 @@ export const gameCommandHandlers: {
         });
         await state.entityStore.addEntity(OrderBoardEntity, {});
     },
-    [GameCommandType.BeginRun]({state}) {
-        if (state.runState?.status === RunStatus.Ready) {
-            state.runState.status = RunStatus.Playing;
+    [GameCommandType.BeginRun]({detail, state}) {
+        const {runState} = state;
+
+        /** In a room only the host starts, and only on a map that fits the players present. */
+        if (
+            runState?.status !== RunStatus.Ready ||
+            (Object.keys(runState.slotByClientId).length > 0 &&
+                (getCommandSlot(state, detail.sourceClientId) !== 0 ||
+                    !levelSupportsPlayerCount(
+                        getLevel(runState.levelId),
+                        getPlayerCount(runState),
+                    )))
+        ) {
+            return;
         }
+        runState.status = RunStatus.Playing;
     },
     async [GameCommandType.PlaceTower]({detail, state}) {
         const {packet} = detail;
@@ -105,6 +180,7 @@ export const gameCommandHandlers: {
             return;
         }
 
+        const slot = getCommandSlot(state, detail.sourceClientId);
         const towers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
             return {
                 x: tower.params.x,
@@ -118,6 +194,7 @@ export const gameCommandHandlers: {
             !canPlaceTower({
                 level: state.level,
                 towers,
+                slot,
                 point: {
                     x: packet.x,
                     y: packet.y,
@@ -136,7 +213,7 @@ export const gameCommandHandlers: {
             towerId: state.runState.nextTowerId,
             level: 1,
             builtAtMs: state.runState.elapsedMs,
-            ownerSlot: getCommandSlot(),
+            ownerSlot: slot,
             cooldownRemainingMs: 0,
             lastProcessedAtMs: -1,
             lastTargetX: 0,
@@ -148,6 +225,74 @@ export const gameCommandHandlers: {
             wear: 0,
         });
         state.runState.nextTowerId++;
+    },
+    [GameCommandType.JoinRun]({detail, state}) {
+        const {runState} = state;
+
+        if (!runState) {
+            return;
+        }
+
+        const existingSlot = runState.slotByClientId[detail.sourceClientId];
+
+        if (existingSlot != undefined) {
+            runState.connected[existingSlot] = true;
+            return;
+        }
+
+        const takenSlots = new Set(Object.values(runState.slotByClientId));
+        const levelSlotCount = new Set(
+            (state.level ?? getLevel(runState.levelId)).paths.map((p) => p.ownerSlot),
+        ).size;
+        /** Reclaiming: the lowest disconnected slot comes before any brand new slot. */
+        const reclaimedSlot = [...takenSlots]
+            .filter((slot) => runState.connected[slot] === false)
+            .sort((a, b) => a - b)[0];
+        let slot = reclaimedSlot;
+
+        if (slot == undefined) {
+            slot = 0;
+            while (takenSlots.has(slot)) {
+                slot++;
+            }
+            /** Joining a run in progress with no path left to own makes you a spectator. */
+            if (runState.status !== RunStatus.Ready && slot >= levelSlotCount) {
+                return;
+            }
+        } else {
+            for (const [
+                clientId,
+                clientSlot,
+            ] of Object.entries(runState.slotByClientId)) {
+                if (clientSlot === slot) {
+                    delete runState.slotByClientId[clientId];
+                }
+            }
+        }
+
+        runState.slotByClientId[detail.sourceClientId] = slot;
+        runState.slotNames[slot] = detail.packet.name || getDefaultSlotName(slot);
+        runState.connected[slot] = true;
+        runState.scoreBySlot[slot] ??= 0;
+
+        /** Fast-forward is disabled in co-op, so drop any speed set before the second player joined. */
+        if (isCoopRun(runState)) {
+            runState.speed = 1;
+            runState.resetSpeedOnIncome = false;
+        }
+    },
+    [GameCommandType.LeaveRun]({detail, state}) {
+        const slot = state.runState?.slotByClientId[detail.packet.clientId];
+
+        if (!state.runState || slot == undefined) {
+            return;
+        }
+        if (state.runState.status === RunStatus.Ready) {
+            /** In the lobby a leaver just disappears and the others close ranks. */
+            removeClientFromLobby(state.runState, detail.packet.clientId);
+        } else {
+            state.runState.connected[slot] = false;
+        }
     },
     [GameCommandType.UpgradeTower]({detail, state}) {
         if (
@@ -230,18 +375,35 @@ export const gameCommandHandlers: {
             return;
         }
     },
-    [GameCommandType.TogglePause]({state}) {
-        if (state.runState?.status === RunStatus.Playing) {
-            state.runState.paused = !state.runState.paused;
+    [GameCommandType.TogglePause]({detail, state}) {
+        if (state.runState?.status !== RunStatus.Playing) {
+            return;
+        }
+
+        const slot = getCommandSlot(state, detail.sourceClientId);
+
+        if (state.runState.paused) {
+            /** Only the pauser or the host can resume. */
+            if (slot === state.runState.pausedBySlot || slot === 0) {
+                state.runState.paused = false;
+                state.runState.pausedBySlot = undefined;
+            }
+        } else {
+            state.runState.paused = true;
+            state.runState.pausedBySlot = slot;
         }
     },
     [GameCommandType.SetSpeed]({detail, state}) {
-        if (state.runState?.status === RunStatus.Playing && isAllowedSpeed(detail.packet.speed)) {
+        if (
+            state.runState?.status === RunStatus.Playing &&
+            !isCoopRun(state.runState) &&
+            isAllowedSpeed(detail.packet.speed)
+        ) {
             state.runState.speed = detail.packet.speed;
         }
     },
     [GameCommandType.ArmSpeedReset]({state}) {
-        if (state.runState?.status === RunStatus.Playing) {
+        if (state.runState?.status === RunStatus.Playing && !isCoopRun(state.runState)) {
             state.runState.resetSpeedOnIncome = true;
         }
     },

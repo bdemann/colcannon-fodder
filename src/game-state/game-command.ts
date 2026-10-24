@@ -30,6 +30,10 @@ export enum GameCommandType {
     SetSpeed = 'set-speed',
     /** Resets the speed to 1x on the next income, without changing the speed now. */
     ArmSpeedReset = 'arm-speed-reset',
+    /** Sent once by each client on entering a room: claims a player slot. */
+    JoinRun = 'join-run',
+    /** Sent by the host when a member leaves: frees their slot for reclaiming. */
+    LeaveRun = 'leave-run',
 }
 
 /** Must stay JSON compatible: it is sent over the network in co-op. */
@@ -40,6 +44,8 @@ export type GameCommand =
           ready?: boolean;
           /** The level to play (`LevelDefinition.levelId`). Defaults to the first level. */
           levelId?: string;
+          /** Seeds `state.seededRandom`. The sender generates it so every client rolls the same. */
+          seed: string;
           /** Campaign (default) or endless waves. */
           mode?: RunMode | undefined;
       }
@@ -82,6 +88,16 @@ export type GameCommand =
       }
     | {
           type: GameCommandType.ArmSpeedReset;
+      }
+    | {
+          type: GameCommandType.JoinRun;
+          /** Display name for the player's slot. */
+          name?: string | undefined;
+      }
+    | {
+          type: GameCommandType.LeaveRun;
+          /** The client id of the departed member. */
+          clientId: string;
       };
 
 /** Queues a command for the next lockstep frame. Call this from UI code, never from handlers. */

@@ -1,6 +1,6 @@
 import {css, defineElement, html, nothing} from 'element-vir';
 import {qualityConfig} from '../config/quality-config.js';
-import {getModeRecord} from '../records/records.js';
+import {getRunRecord} from '../records/records.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudActions} from './hud-actions.js';
 import {starRow} from './hud-icons.js';
@@ -14,6 +14,10 @@ export const HudRunOver = defineElement<{
 }>()({
     tagName: 'hud-run-over',
     styles: css`
+        [hidden] {
+            display: none !important;
+        }
+
         :host {
             display: block;
         }
@@ -81,6 +85,38 @@ export const HudRunOver = defineElement<{
             opacity: 0.85;
         }
 
+        .contributors {
+            display: flex;
+            flex-direction: column;
+            font-size: 30px;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .contributor {
+            align-items: center;
+            border-left: 14px solid var(--slot-color);
+            display: flex;
+            gap: 16px;
+            padding: 4px 16px;
+            text-align: left;
+        }
+
+        .contributor .name {
+            flex: 1;
+            font-weight: 700;
+        }
+
+        .contributor.crowned {
+            background: var(--hud-butter);
+            border-radius: 14px;
+        }
+
+        .contributor .champ {
+            color: var(--hud-pumpkin);
+            font-weight: 700;
+        }
+
         button {
             ${hudPrimaryButtonStyles}
         }
@@ -103,7 +139,11 @@ export const HudRunOver = defineElement<{
         const won = snapshot.status === RunStatus.Won;
         const champ = won && snapshot.prestigeStars >= qualityConfig.mashChampStars;
         const survived = won && !champ;
-        const best = getModeRecord(snapshot.records, snapshot.levelId, snapshot.mode);
+        const best = getRunRecord(snapshot.records, {
+            levelId: snapshot.levelId,
+            mode: snapshot.mode,
+            playerCount: snapshot.playerCount,
+        });
 
         return html`
             <div class="layer">
@@ -138,6 +178,33 @@ export const HudRunOver = defineElement<{
                           `
                         : nothing}
                     <div class="stars">Prestige ${starRow(snapshot.prestigeStars)}</div>
+                    ${snapshot.playerCount > 1
+                        ? html`
+                              <div class="contributors">
+                                  ${snapshot.contributions.map((entry) => {
+                                      return html`
+                                          <div
+                                              class="contributor ${entry.crowned ? 'crowned' : ''}"
+                                              style="--slot-color: ${entry.color}"
+                                          >
+                                              <span class="name">
+                                                  ${entry.crowned ? '🏆 ' : ''}${entry.name}
+                                              </span>
+                                              ${entry.crowned
+                                                  ? html`
+                                                        <span class="champ">Mash Champ</span>
+                                                    `
+                                                  : nothing}
+                                              <span>
+                                                  ${entry.points.toLocaleString('en-US')} pts ·
+                                                  ${entry.perfectServings} perfect
+                                              </span>
+                                          </div>
+                                      `;
+                                  })}
+                              </div>
+                          `
+                        : nothing}
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
                         <div>Coins earned ${snapshot.coinsEarned}</div>
@@ -155,6 +222,7 @@ export const HudRunOver = defineElement<{
                             : ` · 🏆 ${best.champs}`}
                     </div>
                     <button
+                        ?hidden=${!snapshot.isHost}
                         @click=${() => {
                             inputs.actions.restartRun();
                         }}
