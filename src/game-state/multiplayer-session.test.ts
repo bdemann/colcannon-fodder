@@ -52,12 +52,11 @@ describe(getMultiplayerBackendOrigin.name, () => {
         );
     });
 
-    it('is empty in prod until a backend URL is configured', () => {
+    it('uses the production backend in prod', () => {
         assert.strictEquals(
             getMultiplayerBackendOrigin(DeployEnv.Prod, 'bdemann.github.io'),
-            multiplayerConfig.prodBackendOrigin,
+            'https://backend.mp.electrovir.com',
         );
-        assert.strictEquals(multiplayerConfig.prodBackendOrigin, '');
     });
 });
 

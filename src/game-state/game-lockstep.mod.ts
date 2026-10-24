@@ -9,6 +9,7 @@ import {
     type SeededRandomState,
 } from '@augment-vir/common';
 import {frameConfig} from '../config/game-config.js';
+import {multiplayerConfig} from '../config/multiplayer-config.js';
 import {RunStatus, type RunState} from '../run/run-state.js';
 import {getEffectiveSpeed, stepsForFrame} from '../run/speed.js';
 import {
@@ -19,6 +20,7 @@ import {
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {gameEntities} from './game-entities.js';
 import {type FullGameState} from './game-state.js';
+import {getMultiplayerGameId} from './multiplayer-game-id.js';
 import {handleHostLost} from './multiplayer-session.js';
 
 /** Snapshot sent to a peer that joins mid-run (co-op, later). */
@@ -114,7 +116,7 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
     FullGameState,
     GameStateSync
 >({
-    gameId: 'colcannon-fodder',
+    gameId: getMultiplayerGameId(globalThis.location.origin) ?? multiplayerConfig.gameId,
     frameDuration: {
         milliseconds: frameConfig.frameMs,
     },
