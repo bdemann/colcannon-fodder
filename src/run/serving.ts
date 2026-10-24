@@ -98,11 +98,24 @@ function fillOrder(
     runState.satisfaction = newSatisfaction;
 }
 
+/**
+ * True once every wave has spawned and nothing is left in play: no queued clump potatoes, and every
+ * spawned potato (on the belt, falling from a chute, or the boss) was served or stolen. Extra
+ * spawns make the total unpredictable, so this counts what actually spawned.
+ */
+export function isRunCleared(runState: Readonly<RunState>): boolean {
+    return (
+        runState.wavePhase === 'done' &&
+        runState.potatoesPending === 0 &&
+        runState.potatoesServed + runState.potatoesStolen >= runState.potatoesSpawned
+    );
+}
+
 /** Ends the run if satisfaction ran out (lost) or every potato is dealt with (won). */
 function checkRunEnd(runState: RunState): RunStatus {
     if (runState.satisfaction <= 0) {
         runState.status = RunStatus.Lost;
-    } else if (runState.potatoesServed + runState.potatoesStolen >= runState.potatoesPerRun) {
+    } else if (isRunCleared(runState)) {
         runState.status = RunStatus.Won;
     }
 

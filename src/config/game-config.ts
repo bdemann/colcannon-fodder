@@ -67,13 +67,17 @@ export const waveConfig = {
     /** Early waves are sparse and slow; later ones get closer together AND faster (playtest 3). */
     /**
      * `chuteShare` is the fraction of spawns on a path with drop chutes that drop in at a chute
-     * instead of entering at the start.
+     * instead of entering at the start. `clumpChance`, `clumpMaxExtra` and `extraSpawnsPerSecond`
+     * are the spawn variety odds (see `spawnConfig`).
      */
     waves: [
         {
             potatoCount: 8,
             chuteShare: 0,
             seagullCount: 0,
+            clumpChance: 0,
+            clumpMaxExtra: 0,
+            extraSpawnsPerSecond: 0,
             bossCount: 0,
             spawnIntervalMs: 3500,
             speedPxPerMs: 0.07,
@@ -87,6 +91,9 @@ export const waveConfig = {
             potatoCount: 10,
             chuteShare: 0,
             seagullCount: 1,
+            clumpChance: 0.1,
+            clumpMaxExtra: 1,
+            extraSpawnsPerSecond: 0.02,
             bossCount: 0,
             spawnIntervalMs: 2800,
             speedPxPerMs: 0.08,
@@ -100,6 +107,9 @@ export const waveConfig = {
             potatoCount: 14,
             chuteShare: 0.15,
             seagullCount: 2,
+            clumpChance: 0.15,
+            clumpMaxExtra: 2,
+            extraSpawnsPerSecond: 0.04,
             bossCount: 0,
             spawnIntervalMs: 2200,
             speedPxPerMs: 0.09,
@@ -113,6 +123,9 @@ export const waveConfig = {
             potatoCount: 18,
             chuteShare: 0.2,
             seagullCount: 3,
+            clumpChance: 0.2,
+            clumpMaxExtra: 2,
+            extraSpawnsPerSecond: 0.06,
             bossCount: 0,
             spawnIntervalMs: 1700,
             speedPxPerMs: 0.1,
@@ -126,6 +139,9 @@ export const waveConfig = {
             potatoCount: 24,
             chuteShare: 0.25,
             seagullCount: 4,
+            clumpChance: 0.25,
+            clumpMaxExtra: 3,
+            extraSpawnsPerSecond: 0.08,
             bossCount: 1,
             spawnIntervalMs: 1300,
             speedPxPerMs: 0.11,
@@ -160,17 +176,6 @@ export const seagullConfig = {
     /** Chance a gull flies instead of walking. */
     flyChance: 0.5,
 } as const;
-
-/**
- * Total potatoes in a run (every path spawns one per spawn, plus the bosses). Used for the win
- * check.
- */
-export function getPotatoesPerRun(pathCount: number): number {
-    return (
-        waveConfig.waves.reduce((sum, wave) => sum + wave.potatoCount + wave.bossCount, 0) *
-        pathCount
-    );
-}
 
 /** Tower placement rules shared by every tower type. */
 export const towerConfig = {

@@ -174,9 +174,7 @@ export const HudStats = defineElement<{
             </div>
             <div class="prestige">Prestige ${formatStars(snapshot.prestigeStars)}</div>
             <div class="wave">Wave ${snapshot.waveNumber} / ${snapshot.waveCount}</div>
-            <div class="label">
-                Potatoes served ${snapshot.potatoesServed} / ${snapshot.potatoesPerRun}
-            </div>
+            <div class="label">Potatoes served ${snapshot.potatoesServed}</div>
             ${snapshot.wavePhase === 'break' && snapshot.status !== RunStatus.Ready
                 ? html`
                       <div class="banner">

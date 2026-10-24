@@ -1,11 +1,5 @@
 import {assertWrap} from '@augment-vir/assert';
-import {
-    economyConfig,
-    getPotatoesPerRun,
-    orderConfig,
-    satisfactionConfig,
-    waveConfig,
-} from '../config/game-config.js';
+import {economyConfig, orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 
@@ -117,10 +111,10 @@ export type RunState = {
     /** Simulation time since the run started. */
     elapsedMs: number;
     /**
-     * Total potatoes this run will spawn; `potatoesServed + potatoesStolen` reaching it wins. Set
-     * by `StartRun`.
+     * Clump potatoes queued but not yet released. The run can't be won while any are pending, since
+     * they are not in `potatoesSpawned` yet.
      */
-    potatoesPerRun: number;
+    potatoesPending: number;
     /** 0-based index into waveConfig.waves of the current or upcoming wave. */
     waveIndex: number;
     /**
@@ -181,8 +175,7 @@ export function createInitialRunState(levelId = defaultLevel.levelId): RunState 
         },
         lastServing: undefined,
         elapsedMs: 0,
-        // Assumes one path until `StartRun` sets the real value from the level.
-        potatoesPerRun: getPotatoesPerRun(1),
+        potatoesPending: 0,
         waveIndex: 0,
         wavePhase: 'break',
         breakRemainingMs: waveConfig.breakMs,

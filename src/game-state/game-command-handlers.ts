@@ -1,7 +1,7 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
 import {doorConfig} from '../config/door-config.js';
-import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
+import {economyConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {PassLampEntity} from '../door/pass-lamp.entity.js';
 import {PassEntity} from '../door/pass.entity.js';
@@ -71,9 +71,11 @@ export const gameCommandHandlers: {
                 });
             }
         }
-        state.runState.potatoesPerRun = getPotatoesPerRun(level.paths.length);
         await state.entityStore.addEntity(PotatoSpawnerEntity, {
             msUntilNextSpawn: 0,
+            pendingClumpSpawns: 0,
+            msUntilClumpSpawn: 0,
+            clumpWaveIndex: 0,
         });
         await state.entityStore.addEntity(OrderBoardEntity, {});
         await state.entityStore.addEntity(PassEntity, {
