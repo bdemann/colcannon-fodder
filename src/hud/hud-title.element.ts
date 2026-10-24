@@ -2,7 +2,7 @@ import {createFullDateInUserTimezone, toFormattedString} from 'date-vir';
 import {css, defineElement, html, nothing, svg} from 'element-vir';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getPositionAlongPath, type LevelDefinition} from '../level/level.js';
-import {getLevel, levels} from '../level/levels.js';
+import {getLevel, getLevelsForPlayerCount} from '../level/levels.js';
 import {getModeRecord} from '../records/records.js';
 import {RunStatus} from '../run/run-state.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
@@ -16,6 +16,9 @@ import {
     hudScrimStyles,
     hudSelectedStyles,
 } from './hud-theme.js';
+
+/** The title screen starts singleplayer runs, so it only offers 1-player maps. */
+const singleplayerCount = 1;
 
 /** The recipe order, with what each tower does to a potato. */
 const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
@@ -382,7 +385,7 @@ export const HudTitle = defineElement<{
                         })}
                     </div>
                     <div class="levels">
-                        ${levels.map((level) => {
+                        ${getLevelsForPlayerCount(singleplayerCount).map((level) => {
                             return html`
                                 <button
                                     ?disabled=${!inputs.snapshot.isHost}

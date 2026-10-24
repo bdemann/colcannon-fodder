@@ -1,6 +1,7 @@
 import {type Coords} from '@augment-vir/common';
 import {
     getPathLength,
+    levelSupportsPlayerCount,
     type LevelDefinition,
     type PathDefinition,
     type RestaurantDefinition,
@@ -62,6 +63,8 @@ function createLevel({
                 : path,
         ],
         restaurant,
+        minPlayers: 1,
+        maxPlayers: 1,
     };
 }
 
@@ -233,7 +236,253 @@ export const theForkLevel: LevelDefinition = {
         },
     ],
     restaurant: forkRestaurant,
+    minPlayers: 1,
+    maxPlayers: 1,
 };
+
+const coopRestaurant: RestaurantDefinition = {
+    x: 960,
+    y: 540,
+    sizePx: restaurantSizePx,
+};
+
+/** Where each edge's path enters the co-op restaurant (the middle of that side). */
+export const coopEntrances = {
+    west: {
+        x: coopRestaurant.x - coopRestaurant.sizePx / 2,
+        y: coopRestaurant.y,
+    },
+    east: {
+        x: coopRestaurant.x + coopRestaurant.sizePx / 2,
+        y: coopRestaurant.y,
+    },
+    north: {
+        x: coopRestaurant.x,
+        y: coopRestaurant.y - coopRestaurant.sizePx / 2,
+    },
+    south: {
+        x: coopRestaurant.x,
+        y: coopRestaurant.y + coopRestaurant.sizePx / 2,
+    },
+} as const;
+
+type CoopPathSpec = Readonly<{
+    pathId: keyof typeof coopEntrances;
+    /** Every waypoint except the last, which is that side's restaurant entrance. */
+    waypoints: ReadonlyArray<Readonly<Coords>>;
+    chuteFractions?: ReadonlyArray<number>;
+}>;
+
+/**
+ * Builds a multi-path co-op map around the central restaurant. Each spec becomes one path owned by
+ * the slot of its position in `pathSpecs`, ending at its side's entrance. The map supports exactly
+ * `minPlayers` to `maxPlayers` players: there are no unowned paths.
+ */
+function createCoopLevel({
+    levelId,
+    name,
+    description,
+    pathSpecs,
+    minPlayers,
+    maxPlayers,
+}: Readonly<{
+    levelId: string;
+    name: string;
+    description: string;
+    pathSpecs: ReadonlyArray<CoopPathSpec>;
+    minPlayers: number;
+    maxPlayers: number;
+}>): LevelDefinition {
+    return {
+        levelId,
+        name,
+        description,
+        paths: pathSpecs.map((spec, ownerSlot): PathDefinition => {
+            const path: PathDefinition = {
+                pathId: spec.pathId,
+                ownerSlot,
+                waypoints: [
+                    ...spec.waypoints,
+                    coopEntrances[spec.pathId],
+                ],
+                widthPx: beltWidthPx,
+            };
+            const length = getPathLength(path);
+
+            return spec.chuteFractions?.length
+                ? {
+                      ...path,
+                      chutes: spec.chuteFractions.map((fraction) => {
+                          return {
+                              distancePx: Math.round(length * fraction),
+                          };
+                      }),
+                  }
+                : path;
+        }),
+        restaurant: coopRestaurant,
+        minPlayers,
+        maxPlayers,
+    };
+}
+
+/** Two players: mirrored winding belts from the left and right edges, one each. */
+export const twoRoadsLevel = createCoopLevel({
+    levelId: 'two-roads',
+    name: 'Two Roads',
+    description: 'Two players, one belt each, one hungry restaurant.',
+    minPlayers: 2,
+    maxPlayers: 2,
+    pathSpecs: [
+        {
+            pathId: 'west',
+            waypoints: [
+                {
+                    x: 0,
+                    y: 450,
+                },
+                {
+                    x: 500,
+                    y: 450,
+                },
+                {
+                    x: 500,
+                    y: 800,
+                },
+                {
+                    x: 720,
+                    y: 800,
+                },
+                {
+                    x: 720,
+                    y: 540,
+                },
+            ],
+        },
+        {
+            pathId: 'east',
+            waypoints: [
+                {
+                    x: 1920,
+                    y: 450,
+                },
+                {
+                    x: 1420,
+                    y: 450,
+                },
+                {
+                    x: 1420,
+                    y: 800,
+                },
+                {
+                    x: 1200,
+                    y: 800,
+                },
+                {
+                    x: 1200,
+                    y: 540,
+                },
+            ],
+        },
+    ],
+});
+
+/** Three or four players: one long curving belt per edge, with chutes on two of them. */
+export const crossroadsLevel = createCoopLevel({
+    levelId: 'crossroads',
+    name: 'Crossroads',
+    description: 'Three or four players, a belt from every side.',
+    minPlayers: 3,
+    maxPlayers: 4,
+    pathSpecs: [
+        {
+            pathId: 'west',
+            waypoints: [
+                {
+                    x: 0,
+                    y: 450,
+                },
+                {
+                    x: 330,
+                    y: 450,
+                },
+                {
+                    x: 330,
+                    y: 640,
+                },
+                {
+                    x: 640,
+                    y: 640,
+                },
+                {
+                    x: 640,
+                    y: 540,
+                },
+            ],
+            chuteFractions: [0.55],
+        },
+        {
+            pathId: 'east',
+            waypoints: [
+                {
+                    x: 1920,
+                    y: 450,
+                },
+                {
+                    x: 1500,
+                    y: 450,
+                },
+                {
+                    x: 1500,
+                    y: 540,
+                },
+            ],
+        },
+        {
+            pathId: 'north',
+            waypoints: [
+                {
+                    x: 760,
+                    y: 0,
+                },
+                {
+                    x: 760,
+                    y: 220,
+                },
+                {
+                    x: 1180,
+                    y: 220,
+                },
+                {
+                    x: 1180,
+                    y: 350,
+                },
+                {
+                    x: 960,
+                    y: 350,
+                },
+            ],
+            chuteFractions: [0.5],
+        },
+        {
+            pathId: 'south',
+            waypoints: [
+                {
+                    x: 150,
+                    y: 1080,
+                },
+                {
+                    x: 150,
+                    y: 835,
+                },
+                {
+                    x: 960,
+                    y: 835,
+                },
+            ],
+        },
+    ],
+});
 
 /** Every level, in title-screen order. */
 export const levels: ReadonlyArray<LevelDefinition> = [
@@ -241,7 +490,14 @@ export const levels: ReadonlyArray<LevelDefinition> = [
     doubleBackLevel,
     longHaulLevel,
     theForkLevel,
+    twoRoadsLevel,
+    crossroadsLevel,
 ];
+
+/** The levels a room of this many players can pick from (singleplayer sees only 1-player maps). */
+export function getLevelsForPlayerCount(playerCount: number): ReadonlyArray<LevelDefinition> {
+    return levels.filter((level) => levelSupportsPlayerCount(level, playerCount));
+}
 
 export const defaultLevel = windingWayLevel;
 

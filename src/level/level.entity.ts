@@ -13,7 +13,7 @@ import {
 import {meadowConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {gameWorldSize} from '../game-state/game-world.js';
-import {type PathDefinition} from './level.js';
+import {getSlotColor, type PathDefinition} from './level.js';
 import {createCozyText, createRestaurantBuilding} from './restaurant-art.js';
 
 /** Colors of the playfield, all from the cozy palette. */
@@ -145,7 +145,11 @@ function strokePath({
  * across all paths, so where belts overlap (a fork) one path's rails never cover another's
  * surface.
  */
-function drawBelts(ground: Graphics, paths: ReadonlyArray<Readonly<PathDefinition>>) {
+function drawBelts(
+    ground: Graphics,
+    paths: ReadonlyArray<Readonly<PathDefinition>>,
+    colorBySlot: boolean,
+) {
     const outline = cozyStyle.outlineWidth * 2;
     const layers = [
         // drop shadow, then Bark outline, wooden frame and a darker inner lip
@@ -191,7 +195,10 @@ function drawBelts(ground: Graphics, paths: ReadonlyArray<Readonly<PathDefinitio
                           }),
                       }
                     : path,
-                color: layer.color,
+                color:
+                    colorBySlot && layer.color === levelColors.beltRail
+                        ? getSlotColor(path.ownerSlot)
+                        : layer.color,
                 width: path.widthPx + layer.extraWidth,
             });
         }
@@ -199,7 +206,11 @@ function drawBelts(ground: Graphics, paths: ReadonlyArray<Readonly<PathDefinitio
 }
 
 /** A barn door where potatoes come in, half hidden by the screen edge. */
-function drawSpawnMarker(view: Container, path: Readonly<PathDefinition>) {
+function drawSpawnMarker(
+    view: Container,
+    path: Readonly<PathDefinition>,
+    doorColor: string = cozyPalette.caramel,
+) {
     const first = path.waypoints[0];
 
     if (!first) {
@@ -235,7 +246,7 @@ function drawSpawnMarker(view: Container, path: Readonly<PathDefinition>) {
             height: half * 2,
             radius: 5,
         }),
-        fill: cozyPalette.caramel,
+        fill: doorColor,
         outlineScale: 0.7,
     });
     // plank seams and the cross brace
@@ -288,6 +299,29 @@ function drawSpawnMarker(view: Container, path: Readonly<PathDefinition>) {
     view.addChild(label);
 }
 
+/** A slot-colored plaque where a path meets the restaurant, so players can tell entrances apart. */
+function drawEntranceMarker(view: Container, path: Readonly<PathDefinition>) {
+    const last = path.waypoints.at(-1);
+
+    if (!last) {
+        return;
+    }
+
+    const art = new Graphics();
+
+    drawCozyShape(art, {
+        path: ellipsePath({
+            x: last.x,
+            y: last.y,
+            rx: 16,
+            ry: 16,
+        }),
+        fill: getSlotColor(path.ownerSlot),
+        outlineScale: 0.8,
+    });
+    view.addChild(art);
+}
+
 /**
  * Draws the static playfield in the Cozy Farmhouse style: meadow, the wooden belt frame and
  * surface, each path's barn-door spawn marker, and the cottage restaurant. Reads the level from
@@ -307,11 +341,19 @@ export class LevelEntity extends defineEntity({
         });
 
         drawMeadow(ground, level.levelId);
-        drawBelts(ground, level.paths);
+        const isCoop = new Set(level.paths.map((path) => path.ownerSlot)).size > 1;
+
+        drawBelts(ground, level.paths, isCoop);
         view.addChild(ground);
 
-        level.paths.forEach((path) => drawSpawnMarker(view, path));
+        level.paths.forEach((path) => {
+            drawSpawnMarker(view, path, isCoop ? getSlotColor(path.ownerSlot) : undefined);
+        });
         view.addChild(createRestaurantBuilding(level.restaurant));
+
+        if (isCoop) {
+            level.paths.forEach((path) => drawEntranceMarker(view, path));
+        }
 
         return {
             view,
