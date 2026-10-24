@@ -5,16 +5,16 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
-import {swiperConfig} from '../config/swiper-config.js';
 import {qualityConfig} from '../config/quality-config.js';
+import {swiperConfig} from '../config/swiper-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
-import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {updateMicrowave} from './behaviors/microwave.js';
+import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {
     chooseAreaTargetIndexes,
