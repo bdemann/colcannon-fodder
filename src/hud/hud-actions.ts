@@ -1,3 +1,4 @@
+import {randomString} from '@augment-vir/common';
 import {setVolume, type VolumeKind} from '../audio/volume-settings.js';
 import {speedConfig} from '../config/game-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
@@ -128,6 +129,7 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             saveLevelChoice(levelId);
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 ready: true,
                 levelId,
                 mode: state.runState?.mode,
@@ -136,6 +138,7 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         selectMode(mode) {
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 ready: true,
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode,
@@ -144,6 +147,7 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         restartRun() {
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
+                seed: randomString(),
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode: state.runState?.mode,
             });

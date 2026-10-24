@@ -40,6 +40,8 @@ export type GameCommand =
           ready?: boolean;
           /** The level to play (`LevelDefinition.levelId`). Defaults to the first level. */
           levelId?: string;
+          /** Seeds `state.seededRandom`. The sender generates it so every client rolls the same. */
+          seed: string;
           /** Campaign (default) or endless waves. */
           mode?: RunMode | undefined;
       }

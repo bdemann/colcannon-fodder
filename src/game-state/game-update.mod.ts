@@ -1,4 +1,5 @@
 import {defineAnthaMod} from '@antha/engine';
+import {randomString} from '@augment-vir/common';
 import {loadLevelChoice} from '../level/level-choice.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
 import {GameCommandType, sendGameCommand} from './game-command.js';
@@ -33,6 +34,7 @@ export const gameUpdateMod = defineAnthaMod<
             type: GameCommandType.StartRun,
             ready: true,
             levelId: loadLevelChoice(),
+            seed: randomString(),
         });
     },
 });
