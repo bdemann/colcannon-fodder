@@ -1,0 +1,2879 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Colcannon Fodder - Art Style Lab</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>
+            :root {
+                --bg: #1e1b18;
+                --fg: #f3e9d6;
+                --mut: #a89c88;
+                --acc: #e8b04a;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--fg);
+                font:
+                    14px/1.4 system-ui,
+                    sans-serif;
+            }
+            header {
+                padding: 14px 20px 0;
+            }
+            h1 {
+                margin: 0 0 4px;
+                font-size: 20px;
+            }
+            header p {
+                margin: 0 0 10px;
+                color: var(--mut);
+                max-width: 900px;
+            }
+            nav {
+                display: flex;
+                gap: 6px;
+                padding: 0 20px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            nav button {
+                background: #2c2722;
+                color: var(--fg);
+                border: 1px solid #4a4238;
+                padding: 8px 16px;
+                border-radius: 8px 8px 0 0;
+                cursor: pointer;
+                font: 600 14px system-ui;
+            }
+            nav button.on {
+                background: var(--acc);
+                color: #2b1a12;
+                border-color: var(--acc);
+            }
+            nav .sp {
+                flex: 1;
+            }
+            #pause {
+                border-radius: 8px;
+            }
+            .sty {
+                display: none;
+                padding: 0 20px 30px;
+            }
+            .sty.on {
+                display: block;
+            }
+            .desc {
+                margin: 10px 0;
+                color: var(--mut);
+                max-width: 1000px;
+            }
+            .pal {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin: 8px 0 12px;
+            }
+            .sw {
+                width: 64px;
+                font-size: 10px;
+                text-align: center;
+                color: var(--mut);
+            }
+            .sw i {
+                display: block;
+                height: 28px;
+                border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                margin-bottom: 2px;
+            }
+            canvas {
+                display: block;
+                border-radius: 10px;
+                max-width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Colcannon Fodder: Art Style Lab</h1>
+            <p>
+                Everything is drawn in code with Canvas 2D and animated purely by transforms
+                (wobble, squash and stretch, bob, rotation, flap). No image files. Each drawing
+                function takes
+                <code>(ctx, style, state, time)</code>
+                so it can be ported to Pixi Graphics.
+            </p>
+        </header>
+        <nav id="tabs"></nav>
+        <main id="main"></main>
+        <script>
+            'use strict';
+            const TAU = Math.PI * 2,
+                PI = Math.PI;
+            const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+            const lerp = (a, b, t) => a + (b - a) * t;
+            const seg = (p, a, b) => cl((p - a) / (b - a));
+            const eo = (x) => 1 - Math.pow(1 - x, 3),
+                ei = (x) => x * x * x;
+            const ebk = (x) => {
+                const k = 2.2;
+                return 1 + (k + 1) * Math.pow(x - 1, 3) + k * Math.pow(x - 1, 2);
+            };
+            /* ---------- path builders (each returns f(ctx) with .b = bbox) ---------- */
+            const withB = (f, b) => {
+                f.b = b;
+                return f;
+            };
+            const ell = (x, y, rx, ry, rot = 0) =>
+                withB(
+                    (c) => {
+                        c.moveTo(x + Math.cos(rot) * rx, y + Math.sin(rot) * rx);
+                        c.ellipse(x, y, rx, ry, rot, 0, TAU);
+                    },
+                    [
+                        x - rx,
+                        y - ry,
+                        2 * rx,
+                        2 * ry,
+                    ],
+                );
+            const circ = (x, y, r) => ell(x, y, r, r);
+            const rr = (x, y, w, h, r) =>
+                withB(
+                    (c) => c.roundRect(x, y, w, h, r),
+                    [
+                        x,
+                        y,
+                        w,
+                        h,
+                    ],
+                );
+            const poly = (pts) => {
+                const xs = pts.map((p) => p[0]),
+                    ys = pts.map((p) => p[1]),
+                    x0 = Math.min(...xs),
+                    y0 = Math.min(...ys);
+                return withB(
+                    (c) => {
+                        pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+                        c.closePath();
+                    },
+                    [
+                        x0,
+                        y0,
+                        Math.max(...xs) - x0,
+                        Math.max(...ys) - y0,
+                    ],
+                );
+            };
+            const multi = (b, ...fs) => withB((c) => fs.forEach((f) => f(c)), b);
+            const blob = (rx, ry, k = 0.05, n = 5, ph = 0) =>
+                withB(
+                    (c) => {
+                        for (let i = 0; i <= 48; i++) {
+                            const a = (i / 48) * TAU,
+                                m = 1 + k * Math.sin(n * a + ph);
+                            const x = Math.cos(a) * rx * m,
+                                y = Math.sin(a) * ry * m;
+                            i ? c.lineTo(x, y) : c.moveTo(x, y);
+                        }
+                        c.closePath();
+                    },
+                    [
+                        -rx * 1.1,
+                        -ry * 1.1,
+                        rx * 2.2,
+                        ry * 2.2,
+                    ],
+                );
+            const mashBlob = (r) =>
+                multi(
+                    [
+                        -1.25 * r,
+                        -1.15 * r,
+                        2.5 * r,
+                        2.2 * r,
+                    ],
+                    circ(-0.45 * r, 0, 0.8 * r),
+                    circ(0.45 * r, 0, 0.8 * r),
+                    circ(0, -0.35 * r, 0.8 * r),
+                    circ(0, 0.3 * r, 0.7 * r),
+                );
+            const starPath = (R, r, n = 5) => {
+                const pts = [];
+                for (let i = 0; i < n * 2; i++) {
+                    const a = -PI / 2 + (i * PI) / n,
+                        q = i % 2 ? r : R;
+                    pts.push([
+                        Math.cos(a) * q,
+                        Math.sin(a) * q,
+                    ]);
+                }
+                return poly(pts);
+            };
+
+            /* ---------- the one primitive every style shares ---------- */
+            function P(c, S, col, path, o = {}) {
+                c.save();
+                c.beginPath();
+                path(c);
+                c.lineJoin = 'round';
+                c.lineCap = 'round';
+                if (o.a != null) c.globalAlpha *= o.a;
+                const D = S.dpr,
+                    sh = o.sh && S.shadow;
+                const setSh = () => {
+                    if (sh) {
+                        c.shadowColor = S.shc;
+                        c.shadowBlur = S.shadow.b * D;
+                        c.shadowOffsetX = (S.shadow.x || 0) * D;
+                        c.shadowOffsetY = S.shadow.y * D;
+                    }
+                };
+                const noSh = () => {
+                    c.shadowColor = 'transparent';
+                    c.shadowBlur = 0;
+                    c.shadowOffsetX = 0;
+                    c.shadowOffsetY = 0;
+                };
+                if (S.ol > 0 && o.ol !== 0) {
+                    setSh();
+                    c.lineWidth = 2 * S.ol * (o.olw || 1);
+                    c.strokeStyle = o.olc || S.olc;
+                    c.stroke();
+                    noSh();
+                    c.fillStyle = col;
+                    c.fill();
+                } else {
+                    setSh();
+                    c.fillStyle = col;
+                    c.fill();
+                    noSh();
+                }
+                if (!o.flat && path.b && (S.hl > 0 || S.shade > 0)) {
+                    const b = path.b;
+                    c.clip();
+                    const g = c.createLinearGradient(b[0], b[1], b[0] + b[2] * 0.7, b[1] + b[3]);
+                    g.addColorStop(0, `rgba(255,255,255,${S.hl})`);
+                    g.addColorStop(0.45, 'rgba(255,255,255,0)');
+                    g.addColorStop(1, `rgba(${S.shadeC},${S.shade})`);
+                    c.fillStyle = g;
+                    c.fillRect(b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6);
+                }
+                c.restore();
+            }
+            /** Stroked line/curve with optional outline halo (style aware). */
+            function L(c, S, col, w, path, o = {}) {
+                c.save();
+                c.beginPath();
+                path(c);
+                c.lineJoin = 'round';
+                c.lineCap = 'round';
+                if (o.a != null) c.globalAlpha *= o.a;
+                if (S.ol > 0 && o.ol) {
+                    c.lineWidth = w + 2 * S.ol * 0.6;
+                    c.strokeStyle = S.olc;
+                    c.stroke();
+                }
+                c.lineWidth = w;
+                c.strokeStyle = col;
+                c.stroke();
+                c.restore();
+            }
+            const mv =
+                (...p) =>
+                (c) => {
+                    c.moveTo(p[0], p[1]);
+                    for (let i = 2; i < p.length; i += 2) c.lineTo(p[i], p[i + 1]);
+                };
+            /** Soft/hard/subtle ground shadow, style dependent. */
+            function gsh(c, S, rx, ry, y = 0, k = 1) {
+                c.save();
+                c.globalAlpha *= k;
+                if (S.gshadow === 'hard') {
+                    c.fillStyle = 'rgba(0,0,0,.3)';
+                    c.beginPath();
+                    c.ellipse(3, y + 3, rx, ry, 0, 0, TAU);
+                    c.fill();
+                } else {
+                    c.translate(0, y);
+                    c.scale(1, ry / rx);
+                    const g = c.createRadialGradient(0, 0, 0, 0, 0, rx);
+                    g.addColorStop(0, `rgba(${S.shadeC},${S.gshadow === 'soft' ? 0.38 : 0.2})`);
+                    g.addColorStop(1, `rgba(${S.shadeC},0)`);
+                    c.fillStyle = g;
+                    c.beginPath();
+                    c.arc(0, 0, rx, 0, TAU);
+                    c.fill();
+                }
+                c.restore();
+            }
+            function shine(c, S, x, y, rx, ry, rot = -0.5, k = 1) {
+                if (S.shine <= 0) return;
+                c.save();
+                c.globalAlpha *= S.shine * k;
+                c.fillStyle = '#fff';
+                c.beginPath();
+                c.ellipse(x, y, rx, ry, rot, 0, TAU);
+                c.fill();
+                c.restore();
+            }
+            function txt(c, S, s, x, y, size = 13, col = S.text, al = 'center') {
+                c.save();
+                c.font = `${S.fontW} ${size}px ${S.font}`;
+                c.fillStyle = col;
+                c.textAlign = al;
+                c.textBaseline = 'middle';
+                c.fillText(s, x, y);
+                c.restore();
+            }
+
+            /* ---------- faces ---------- */
+            function face(c, S, r, t, mood, ph = 0) {
+                if (!S.face) return;
+                const p = S.pal,
+                    blink = (t + ph) % 3.4 < 0.12,
+                    ex = r * 0.3,
+                    ey = -r * 0.05;
+                if (S.face === 1) {
+                    // tiny dot eyes + blush
+                    for (const s of [
+                        -1,
+                        1,
+                    ]) {
+                        if (blink || mood === 'happy')
+                            L(c, S, p.ink, r * 0.07, (c) => {
+                                c.arc(s * ex, ey + r * 0.02, r * 0.09, PI * 1.1, PI * 1.9);
+                            });
+                        else P(c, S, p.ink, circ(s * ex, ey, r * 0.075), {ol: 0});
+                        if (mood !== 'angry')
+                            P(c, S, p.blush, circ(s * r * 0.5, ey + r * 0.2, r * 0.12), {
+                                ol: 0,
+                                flat: 1,
+                                a: 0.55,
+                            });
+                    }
+                    if (mood === 'happy' || mood === 'calm')
+                        L(c, S, p.ink, r * 0.05, (c) => {
+                            c.arc(0, ey + r * 0.12, r * 0.1, 0.2, PI - 0.2);
+                        });
+                    return;
+                }
+                const er = r * 0.2;
+                for (const s of [
+                    -1,
+                    1,
+                ]) {
+                    const x = s * ex;
+                    if (blink) {
+                        L(c, S, p.ink, r * 0.07, mv(x - er * 0.7, ey, x + er * 0.7, ey));
+                        continue;
+                    }
+                    if (mood === 'happy') {
+                        L(c, S, p.ink, r * 0.1, (c) => {
+                            c.arc(x, ey + er * 0.4, er * 0.8, PI * 1.1, PI * 1.9);
+                        });
+                        continue;
+                    }
+                    P(c, S, '#fff', circ(x, ey, er), {olw: 0.55});
+                    const px = Math.sin(t * 1.7 + ph) * er * 0.25,
+                        py = mood === 'dazed' ? Math.cos(t * 5) * er * 0.3 : 0;
+                    P(c, S, p.ink, circ(x + px + s * er * 0.1, ey + py, er * 0.5), {ol: 0});
+                    P(c, S, '#fff', circ(x + px - er * 0.1, ey + py - er * 0.2, er * 0.17), {
+                        ol: 0,
+                        flat: 1,
+                    });
+                    if (mood === 'angry')
+                        L(
+                            c,
+                            S,
+                            p.ink,
+                            r * 0.1,
+                            mv(
+                                x - s * er * 1.3,
+                                ey - er * 1.5 - s * er * 0.0,
+                                x + s * er * 0.4,
+                                ey - er * 0.9,
+                            ),
+                        );
+                    if (mood === 'angry' && s === 1) {
+                    }
+                }
+                if (mood === 'angry')
+                    L(c, S, p.ink, r * 0.07, (c) => {
+                        c.arc(0, ey + r * 0.42, r * 0.14, PI * 1.15, PI * 1.85);
+                    });
+                else if (mood === 'dazed')
+                    L(c, S, p.ink, r * 0.06, (c) => {
+                        c.moveTo(-r * 0.12, ey + r * 0.3);
+                        c.bezierCurveTo(
+                            -r * 0.05,
+                            ey + r * 0.24,
+                            r * 0.05,
+                            ey + r * 0.36,
+                            r * 0.12,
+                            ey + r * 0.3,
+                        );
+                    });
+                else
+                    L(c, S, p.ink, r * 0.07, (c) => {
+                        c.arc(0, ey + r * 0.2, r * 0.14, 0.15, PI - 0.15);
+                    });
+                if (mood !== 'angry')
+                    for (const s of [
+                        -1,
+                        1,
+                    ])
+                        P(c, S, p.blush, circ(s * r * 0.55, ey + r * 0.28, r * 0.11), {
+                            ol: 0,
+                            flat: 1,
+                            a: 0.5,
+                        });
+            }
+
+            /* ---------- toppings (on a mash of radius r) ---------- */
+            function toppings(c, S, r, top, t) {
+                const p = S.pal;
+                if (!top) return;
+                if (top.gravy) {
+                    const br = 1 + Math.sin(t * 2) * 0.02;
+                    P(
+                        c,
+                        S,
+                        p.gravy,
+                        multi(
+                            [
+                                -r * 0.8,
+                                -r * 0.5,
+                                r * 1.6,
+                                r,
+                            ],
+                            ell(0, -r * 0.12, r * 0.72 * br, r * 0.36 * br),
+                            circ(-r * 0.5, r * 0.12, r * 0.14),
+                            circ(r * 0.3, r * 0.2, r * 0.18),
+                            circ(r * 0.62, r * 0.0, r * 0.12),
+                        ),
+                        {olw: 0.6},
+                    );
+                    shine(c, S, -r * 0.25, -r * 0.24, r * 0.22, r * 0.07, -0.2, 0.8);
+                    P(c, S, p.gravyL, ell(r * 0.15, -r * 0.08, r * 0.2, r * 0.07), {
+                        ol: 0,
+                        flat: 1,
+                        a: 0.5,
+                    });
+                }
+                if (top.cabbage)
+                    for (const [
+                        x,
+                        y,
+                        a,
+                    ] of [
+                        [
+                            -0.45,
+                            0.18,
+                            -0.5,
+                        ],
+                        [
+                            0.38,
+                            0.28,
+                            0.4,
+                        ],
+                    ]) {
+                        c.save();
+                        c.translate(x * r, y * r);
+                        c.rotate(a);
+                        P(c, S, p.cab, ell(0, 0, r * 0.34, r * 0.2), {olw: 0.6});
+                        L(c, S, p.cabD, Math.max(1.2, r * 0.05), mv(-r * 0.28, 0, r * 0.26, 0));
+                        L(
+                            c,
+                            S,
+                            p.cabD,
+                            Math.max(1, r * 0.035),
+                            mv(-r * 0.08, 0, r * 0.04, -r * 0.1),
+                        );
+                        L(
+                            c,
+                            S,
+                            p.cabD,
+                            Math.max(1, r * 0.035),
+                            mv(-r * 0.08, 0, r * 0.04, r * 0.1),
+                        );
+                        c.restore();
+                    }
+                if (top.scallion)
+                    for (const [
+                        x,
+                        y,
+                        a,
+                    ] of [
+                        [
+                            -0.3,
+                            -0.55,
+                            -0.6,
+                        ],
+                        [
+                            0,
+                            -0.62,
+                            0,
+                        ],
+                        [
+                            0.3,
+                            -0.55,
+                            0.6,
+                        ],
+                        [
+                            0.1,
+                            -0.35,
+                            0.9,
+                        ],
+                    ]) {
+                        c.save();
+                        c.translate(x * r, y * r);
+                        c.rotate(a);
+                        L(c, S, p.scalD, r * 0.16, mv(0, 0, 0, -r * 0.3), {ol: 1});
+                        L(c, S, p.scal, r * 0.09, mv(0, 0, 0, -r * 0.3));
+                        c.restore();
+                    }
+                if (top.scallion)
+                    for (const [
+                        x,
+                        y,
+                    ] of [
+                        [
+                            -0.55,
+                            -0.2,
+                        ],
+                        [
+                            0.55,
+                            -0.15,
+                        ],
+                        [
+                            0,
+                            -0.15,
+                        ],
+                    ]) {
+                        P(c, S, p.scal, circ(x * r, y * r, r * 0.09), {olw: 0.5});
+                        P(c, S, p.mash, circ(x * r, y * r, r * 0.04), {ol: 0, flat: 1});
+                    }
+                if (top.butter) {
+                    const jig = Math.sin(t * 2.2) * 0.5;
+                    P(c, S, p.butterD, rr(-r * 0.3, -r * 0.55 + jig, r * 0.6, r * 0.44, r * 0.1), {
+                        sh: 1,
+                        olw: 0.7,
+                    });
+                    P(c, S, p.butter, rr(-r * 0.3, -r * 0.62 + jig, r * 0.6, r * 0.36, r * 0.1), {
+                        olw: 0.7,
+                    });
+                    shine(c, S, -r * 0.12, -r * 0.5 + jig, r * 0.12, r * 0.05, 0, 0.9);
+                    P(c, S, p.butter, ell(r * 0.1, -r * 0.08 + jig, r * 0.14, r * 0.05), {
+                        ol: 0,
+                        flat: 1,
+                        a: 0.6,
+                    });
+                }
+            }
+
+            /* ---------- potatoes ---------- */
+            const potatoLabels = {
+                raw: 'Raw',
+                cut: 'Sliced (cut)',
+                boiled: 'Boiled',
+                half: 'Half-mashed',
+                perfect: 'Perfect mash',
+                king: 'Russet King',
+            };
+            function potato(c, S, o, t) {
+                const {kind, r, top, ph = 0} = o,
+                    p = S.pal;
+                const h = Math.abs(Math.sin(t * 3.2 + ph)),
+                    land = Math.pow(1 - h, 4);
+                const sy = 1 - S.sq * land + S.sq * 0.45 * h,
+                    sx = 1 / sy,
+                    dy = -h * r * S.hop,
+                    rot = S.wob * Math.sin(t * 3.1 + ph * 1.3);
+                gsh(c, S, r * 1.2, r * 0.4, r * 0.95, 1 - h * 0.35);
+                c.save();
+                c.translate(0, dy);
+                c.rotate(rot);
+                c.translate(0, r * 0.9);
+                c.scale(sx, sy);
+                c.translate(0, -r * 0.9);
+                const mashy = kind === 'half' || kind === 'perfect';
+                if (kind === 'raw' || kind === 'cut') {
+                    P(c, S, p.raw, blob(r * 1.2, r * 0.9, 0.05, 5, ph), {sh: 1});
+                    shine(c, S, -r * 0.4, -r * 0.4, r * 0.35, r * 0.14);
+                    for (const [
+                        x,
+                        y,
+                    ] of [
+                        [
+                            -0.55,
+                            -0.1,
+                        ],
+                        [
+                            0.45,
+                            0.3,
+                        ],
+                        [
+                            0.2,
+                            -0.5,
+                        ],
+                        [
+                            -0.1,
+                            0.45,
+                        ],
+                    ])
+                        P(c, S, p.rawD, circ(x * r, y * r, Math.max(1.3, r * 0.06)), {
+                            ol: 0,
+                            flat: 1,
+                        });
+                    if (kind === 'cut') {
+                        c.save();
+                        c.beginPath();
+                        blob(r * 1.2, r * 0.9, 0.05, 5, ph)(c);
+                        c.clip();
+                        for (const x of [
+                            -0.4,
+                            0.4,
+                        ]) {
+                            L(c, S, p.cut, Math.max(2.5, r * 0.14), mv(x * r, -r, x * r, r));
+                            L(
+                                c,
+                                S,
+                                p.cutL,
+                                Math.max(1, r * 0.05),
+                                mv(x * r + r * 0.12, -r, x * r + r * 0.12, r),
+                            );
+                        }
+                        c.restore();
+                    }
+                } else if (kind === 'boiled') {
+                    P(c, S, p.boiled, blob(r * 1.2, r * 0.9, 0.03, 4, ph), {sh: 1});
+                    shine(c, S, -r * 0.4, -r * 0.4, r * 0.38, r * 0.15, -0.5, 1.1);
+                    for (const [
+                        x,
+                        y,
+                    ] of [
+                        [
+                            -0.5,
+                            0.35,
+                        ],
+                        [
+                            0.4,
+                            0.2,
+                        ],
+                    ])
+                        P(c, S, p.glue, circ(x * r, y * r, r * 0.07), {ol: 0, flat: 1, a: 0.7});
+                } else if (kind === 'half') {
+                    P(c, S, p.glue, mashBlob(r), {sh: 1});
+                    for (const [
+                        x,
+                        y,
+                        a,
+                    ] of [
+                        [
+                            -0.6,
+                            -0.2,
+                            0.5,
+                        ],
+                        [
+                            0.15,
+                            -0.55,
+                            -0.3,
+                        ],
+                        [
+                            0.55,
+                            0.2,
+                            1,
+                        ],
+                        [
+                            -0.2,
+                            0.35,
+                            0,
+                        ],
+                    ]) {
+                        c.save();
+                        c.translate(x * r, y * r);
+                        c.rotate(a);
+                        P(c, S, p.raw, blob(r * 0.3, r * 0.2, 0.1, 3, x), {olw: 0.55});
+                        c.restore();
+                    }
+                    L(
+                        c,
+                        S,
+                        p.rawD,
+                        Math.max(1.2, r * 0.06),
+                        (c) => {
+                            c.moveTo(-r * 0.6, r * 0.15);
+                            c.quadraticCurveTo(-r * 0.3, r * 0.0, 0, r * 0.15);
+                            c.quadraticCurveTo(r * 0.3, r * 0.3, r * 0.6, r * 0.1);
+                        },
+                        {a: 0.5},
+                    );
+                } else if (kind === 'perfect') {
+                    P(c, S, p.mash, mashBlob(r), {sh: 1});
+                    P(
+                        c,
+                        S,
+                        p.mash,
+                        poly([
+                            [
+                                -r * 0.18,
+                                -r * 0.78,
+                            ],
+                            [
+                                0,
+                                -r * 1.18,
+                            ],
+                            [
+                                r * 0.2,
+                                -r * 0.78,
+                            ],
+                        ]),
+                        {olw: 0.9},
+                    );
+                    P(c, S, p.mash, ell(0, -r * 0.8, r * 0.3, r * 0.14), {ol: 0, flat: 1});
+                    const g = seg((t * 0.4 + ph) % 1, 0, 0.35);
+                    shine(c, S, -r * 0.35, -r * 0.35, r * 0.4, r * 0.17, -0.4, 0.95);
+                    shine(
+                        c,
+                        S,
+                        -r * 0.35 + g * r * 0.8,
+                        -r * 0.3,
+                        r * 0.07,
+                        r * 0.07,
+                        0,
+                        Math.sin(g * PI) * 1.3,
+                    );
+                    L(
+                        c,
+                        S,
+                        p.glue,
+                        Math.max(1, r * 0.05),
+                        (c) => {
+                            c.arc(0, -r * 0.62, r * 0.2, 0.3, PI - 0.3);
+                        },
+                        {a: 0.6},
+                    );
+                } else if (kind === 'king') {
+                    P(c, S, p.russet, blob(r * 1.25, r * 0.95, 0.04, 5, ph), {sh: 1});
+                    shine(c, S, -r * 0.4, -r * 0.45, r * 0.4, r * 0.14);
+                    for (const [
+                        x,
+                        y,
+                    ] of [
+                        [
+                            -0.7,
+                            -0.1,
+                        ],
+                        [
+                            0.6,
+                            0.3,
+                        ],
+                        [
+                            0.3,
+                            -0.55,
+                        ],
+                        [
+                            -0.2,
+                            0.55,
+                        ],
+                        [
+                            0.75,
+                            -0.25,
+                        ],
+                        [
+                            -0.4,
+                            0.15,
+                        ],
+                    ])
+                        P(c, S, p.rawD, circ(x * r, y * r, Math.max(1.5, r * 0.05)), {
+                            ol: 0,
+                            flat: 1,
+                        });
+                }
+                if (mashy) toppings(c, S, r, top, t);
+                face(
+                    c,
+                    S,
+                    r,
+                    t,
+                    kind === 'perfect'
+                        ? 'happy'
+                        : kind === 'half'
+                          ? 'dazed'
+                          : kind === 'king'
+                            ? 'angry'
+                            : kind === 'boiled'
+                              ? 'calm'
+                              : 'calm',
+                    ph,
+                );
+                if (kind === 'boiled')
+                    for (let i = 0; i < 3; i++) {
+                        const u = (t * 0.45 + i / 3) % 1;
+                        c.save();
+                        c.globalAlpha *= (1 - u) * 0.85;
+                        P(
+                            c,
+                            S,
+                            p.steam,
+                            circ(
+                                Math.sin(u * 6 + i * 2) * r * 0.2 + (i - 1) * r * 0.4,
+                                -r * 0.95 - u * r * 1.1,
+                                r * 0.16 * (1 + u),
+                            ),
+                            {ol: 0, flat: 1},
+                        );
+                        c.restore();
+                    }
+                if (kind === 'king') {
+                    c.save();
+                    c.translate(0, -r * 0.82 + Math.sin(t * 3) * 0.8);
+                    c.rotate(0.12 + Math.sin(t * 2) * 0.04);
+                    const q = r;
+                    P(
+                        c,
+                        S,
+                        p.gold,
+                        poly([
+                            [
+                                -0.5 * q,
+                                0.12 * q,
+                            ],
+                            [
+                                -0.58 * q,
+                                -0.55 * q,
+                            ],
+                            [
+                                -0.27 * q,
+                                -0.25 * q,
+                            ],
+                            [
+                                0,
+                                -0.7 * q,
+                            ],
+                            [
+                                0.27 * q,
+                                -0.25 * q,
+                            ],
+                            [
+                                0.58 * q,
+                                -0.55 * q,
+                            ],
+                            [
+                                0.5 * q,
+                                0.12 * q,
+                            ],
+                        ]),
+                        {sh: 1, olw: 0.85},
+                    );
+                    P(c, S, p.goldD, rr(-0.5 * q, -0.02 * q, q, 0.16 * q, q * 0.05), {olw: 0.6});
+                    for (const x of [
+                        -0.58,
+                        0,
+                        0.58,
+                    ])
+                        P(c, S, p.red, circ(x * q, x === 0 ? -0.7 * q : -0.55 * q, q * 0.07), {
+                            olw: 0.5,
+                        });
+                    shine(c, S, -0.2 * q, -0.2 * q, q * 0.1, q * 0.04, -0.5);
+                    c.restore();
+                }
+                c.restore();
+            }
+
+            /* ---------- belt, riding potatoes ---------- */
+            function belt(c, S, x0, y0, x1, y1, w, t) {
+                const p = S.pal,
+                    path = (c2) => {
+                        c2.moveTo(x0, y0);
+                        c2.lineTo(x1, y0);
+                        c2.lineTo(x1, y1);
+                    };
+                c.save();
+                c.lineJoin = 'round';
+                c.lineCap = 'butt';
+                c.beginPath();
+                path(c);
+                if (S.ol > 0) {
+                    c.lineWidth = w + 14 + S.ol * 2;
+                    c.strokeStyle = S.olc;
+                    c.stroke();
+                }
+                c.shadowColor = S.shc;
+                c.shadowBlur = (S.shadow ? S.shadow.b : 0) * S.dpr;
+                c.shadowOffsetY = (S.shadow ? S.shadow.y : 0) * S.dpr;
+                c.lineWidth = w + 14;
+                c.strokeStyle = p.rail;
+                c.stroke();
+                c.shadowColor = 'transparent';
+                c.shadowBlur = 0;
+                c.shadowOffsetY = 0;
+                c.lineWidth = w;
+                c.strokeStyle = p.belt;
+                c.stroke();
+                c.setLineDash([
+                    6,
+                    22,
+                ]);
+                c.lineDashOffset = -t * 40;
+                c.lineWidth = w - 6;
+                c.strokeStyle = p.stripe;
+                c.stroke();
+                c.setLineDash([]);
+                // rivets on the rail
+                c.restore();
+            }
+            function onPath(x0, y0, x1, y1, s) {
+                const L1 = x1 - x0;
+                return s < L1
+                    ? [
+                          x0 + s,
+                          y0,
+                      ]
+                    : [
+                          x1,
+                          y0 + s - L1,
+                      ];
+            }
+
+            /* ---------- towers ---------- */
+            function base(c, S, col) {
+                gsh(c, S, 50, 17, 24);
+                P(c, S, col, ell(0, 8, 46, 34), {sh: 1});
+                P(c, S, '#fff', ell(0, 8, 38, 27), {ol: 0, flat: 1, a: 0.16});
+            }
+            function tKnife(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tKnife);
+                const imp = a < 0 ? 0 : seg(a, 0.55, 0.64) * (1 - seg(a, 0.64, 0.9));
+                let th;
+                if (a < 0) th = -0.35 + Math.sin(t * 2) * 0.05;
+                else if (a < 0.45) th = lerp(-0.35, -1.2, eo(a / 0.45));
+                else if (a < 0.55) th = -1.2 + Math.sin(a * 160) * 0.025;
+                else if (a < 0.62) th = lerp(-1.2, 0.05, ei(seg(a, 0.55, 0.62)));
+                else th = lerp(0.05, -0.35, ebk(seg(a, 0.62, 1)));
+                c.save();
+                c.translate(0, 22);
+                c.scale(1 + 0.06 * imp, 1 - 0.1 * imp);
+                c.translate(0, -22);
+                P(c, S, p.wood, rr(-32, 2, 64, 24, 6), {sh: 1});
+                P(c, S, p.woodD, rr(-32, 18, 64, 8, 4), {ol: 0, flat: 1, a: 0.5});
+                L(c, S, p.woodD, 1.5, mv(-22, 10, -6, 10), {a: 0.5});
+                L(c, S, p.woodD, 1.5, mv(6, 13, 24, 13), {a: 0.5});
+                c.restore();
+                const sp = a < 0 ? 0 : imp * 6;
+                c.save();
+                c.translate(12, 0);
+                P(c, S, p.raw, ell(-sp, 0, 8, 7), {olw: 0.7});
+                P(c, S, p.raw, ell(sp, 0, 8, 7), {olw: 0.7});
+                c.restore();
+                c.save();
+                c.translate(-26, 6);
+                c.rotate(th);
+                P(
+                    c,
+                    S,
+                    p.steel,
+                    poly([
+                        [
+                            2,
+                            -9,
+                        ],
+                        [
+                            46,
+                            -9,
+                        ],
+                        [
+                            58,
+                            0,
+                        ],
+                        [
+                            46,
+                            8,
+                        ],
+                        [
+                            2,
+                            8,
+                        ],
+                    ]),
+                    {sh: 1},
+                );
+                L(c, S, p.steelD, 2, mv(6, 5, 46, 5), {a: 0.7});
+                shine(c, S, 24, -5, 16, 2, 0, 0.9);
+                P(c, S, p.woodD, rr(-20, -6, 24, 11, 4), {olw: 0.8});
+                P(c, S, p.gold, circ(-14, 0, 1.8), {ol: 0, flat: 1});
+                P(c, S, p.gold, circ(-4, 0, 1.8), {ol: 0, flat: 1});
+                c.restore();
+                if (imp > 0) {
+                    c.save();
+                    c.globalAlpha = imp;
+                    for (const k of [
+                        -1,
+                        0,
+                        1,
+                    ])
+                        L(
+                            c,
+                            S,
+                            p.spark,
+                            2.5,
+                            mv(24 + k * 6, 2, 30 + k * 14, -8 - Math.abs(k) * -3),
+                        );
+                    c.restore();
+                }
+            }
+            function tPot(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tBoil);
+                P(c, S, p.steelD, ell(0, 24, 32, 11), {sh: 1});
+                for (let i = -2; i <= 2; i++) {
+                    const f = 5 + 3 * Math.sin(t * 14 + i * 2.1);
+                    P(
+                        c,
+                        S,
+                        i % 2 ? p.fire : p.fire2,
+                        poly([
+                            [
+                                i * 9 - 4,
+                                26,
+                            ],
+                            [
+                                i * 9,
+                                26 - f - 4,
+                            ],
+                            [
+                                i * 9 + 4,
+                                26,
+                            ],
+                        ]),
+                        {olw: 0.5},
+                    );
+                }
+                const k = a < 0 ? 0 : seg(a, 0.1, 0.9),
+                    pop =
+                        a < 0 ? 0 : Math.sin(seg(a, 0.12, 0.4) * PI) * (1 - seg(a, 0.4, 0.45) * 0);
+                const sqy =
+                    a < 0
+                        ? 1 + Math.sin(t * 3) * 0.012
+                        : 1 + 0.1 * pop - 0.05 * Math.sin(seg(a, 0.4, 0.7) * PI);
+                c.save();
+                c.translate(0, 24);
+                c.scale((1 / sqy) * 0.5 + 0.5, sqy);
+                c.translate(0, -24);
+                P(c, S, p.steel, rr(-26, -18, 52, 42, 10), {sh: 1});
+                shine(c, S, -14, -4, 5, 14, 0, 0.8);
+                for (const s of [
+                    -1,
+                    1,
+                ])
+                    P(c, S, p.steelD, rr(s > 0 ? 25 : -35, -8, 10, 7, 3), {olw: 0.8});
+                P(c, S, p.steelD, ell(0, -18, 27, 9));
+                const surge = a < 0 ? 0 : Math.sin(seg(a, 0.1, 0.5) * PI);
+                P(c, S, p.water, ell(0, -18, 22, 6.5 + 4 * surge), {ol: 0});
+                for (let i = 0; i < 4; i++) {
+                    const u = (t * 0.7 + i * 0.27) % 1;
+                    c.save();
+                    c.globalAlpha *= 1 - Math.pow(u, 6);
+                    P(c, S, p.waterL, circ((i - 1.5) * 8, -18 - u * 5, 2 + u * 3), {olw: 0.5});
+                    c.restore();
+                }
+                c.restore();
+                for (let i = 0; i < 3; i++) {
+                    const u = (t * 0.4 + i / 3) % 1;
+                    c.save();
+                    c.globalAlpha *= (1 - u) * 0.7;
+                    P(
+                        c,
+                        S,
+                        p.steam,
+                        circ(Math.sin(u * 5 + i) * 6 + (i - 1) * 9, -28 - u * 26, 5 + u * 5),
+                        {ol: 0, flat: 1},
+                    );
+                    c.restore();
+                }
+                if (a >= 0 && k > 0) {
+                    c.save();
+                    c.globalAlpha *= 1 - k;
+                    c.lineWidth = 4 * (1 - k) + 1;
+                    c.strokeStyle = p.waterL;
+                    c.beginPath();
+                    c.ellipse(0, -14, 24 + k * 44, (24 + k * 44) * 0.45, 0, 0, TAU);
+                    c.stroke();
+                    c.restore();
+                    for (let i = 0; i < 7; i++) {
+                        const ang = (i / 7) * TAU,
+                            u = seg(a, 0.12, 0.8),
+                            rad = u * 46,
+                            hh = Math.sin(u * PI) * 26;
+                        c.save();
+                        c.globalAlpha *= 1 - u * u;
+                        P(
+                            c,
+                            S,
+                            p.waterL,
+                            circ(
+                                Math.cos(ang) * rad,
+                                -14 + Math.sin(ang) * rad * 0.45 - hh,
+                                3.2 - u,
+                            ),
+                            {olw: 0.5},
+                        );
+                        c.restore();
+                    }
+                }
+            }
+            function tMasher(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tMash);
+                P(c, S, p.steelD, ell(0, 20, 34, 14), {sh: 1});
+                P(c, S, p.mash, ell(0, 17, 28, 9.5), {ol: 0});
+                shine(c, S, -8, 15, 9, 2.5, 0, 0.8);
+                let off;
+                if (a < 0) off = -10 + Math.sin(t * 2.4) * 2;
+                else if (a < 0.5) off = lerp(-10, -36, eo(a / 0.5));
+                else if (a < 0.6) off = -36 + Math.sin(a * 100) * 0.6;
+                else if (a < 0.68) off = lerp(-36, 0, ei(seg(a, 0.6, 0.68)));
+                else off = lerp(0, -10, eo(seg(a, 0.68, 1)));
+                const imp = a < 0 ? 0 : seg(a, 0.68, 0.74) * (1 - seg(a, 0.74, 1));
+                const fall = a >= 0.6 && a < 0.68;
+                const sx = 1 + 0.14 * imp - (fall ? 0.06 : 0),
+                    sy =
+                        1 -
+                        0.16 * imp +
+                        (fall ? 0.14 : 0) +
+                        (a >= 0 && a < 0.5 ? 0.06 * Math.sin(seg(a, 0, 0.5) * PI) : 0);
+                c.save();
+                c.translate(0, 18 + off);
+                c.scale(sx, sy);
+                P(c, S, p.woodD, rr(-3.5, -46, 7, 40, 2.5), {olw: 0.8});
+                P(c, S, p.wood, rr(-14, -54, 28, 9, 4.5), {sh: 1, olw: 0.9});
+                P(c, S, p.steel, rr(-22, -8, 44, 10, 4), {sh: 1});
+                for (let i = -2; i <= 2; i++)
+                    P(c, S, p.steelD, circ(i * 8, -3, 1.8), {ol: 0, flat: 1});
+                c.restore();
+                if (imp > 0) {
+                    const k = seg(a, 0.68, 1);
+                    c.save();
+                    c.globalAlpha *= 1 - k;
+                    c.lineWidth = 3;
+                    c.strokeStyle = p.mash;
+                    c.beginPath();
+                    c.ellipse(0, 20, 22 + k * 30, (22 + k * 30) * 0.38, 0, 0, TAU);
+                    c.stroke();
+                    c.restore();
+                    for (const s of [
+                        -1,
+                        1,
+                    ]) {
+                        const u = k;
+                        c.save();
+                        c.globalAlpha *= 1 - u;
+                        P(c, S, p.mash, circ(s * (14 + u * 26), 12 - Math.sin(u * PI) * 22, 3.5), {
+                            olw: 0.5,
+                        });
+                        c.restore();
+                    }
+                }
+            }
+            function tMicro(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tMicro);
+                const on = a >= 0,
+                    shake = on ? Math.sin(t * 70) * 1.1 : 0;
+                c.save();
+                c.translate(-16 + shake, 0);
+                if (on) {
+                    const fade = Math.sin(a * PI);
+                    c.save();
+                    c.globalAlpha *= 0.75 * fade;
+                    const g = c.createLinearGradient(34, 0, 84, 0);
+                    g.addColorStop(0, p.cone);
+                    g.addColorStop(1, p.coneT);
+                    P(
+                        c,
+                        S,
+                        g,
+                        poly([
+                            [
+                                34,
+                                -6,
+                            ],
+                            [
+                                84,
+                                -30,
+                            ],
+                            [
+                                84,
+                                34,
+                            ],
+                            [
+                                34,
+                                10,
+                            ],
+                        ]),
+                        {ol: 0, flat: 1},
+                    );
+                    c.restore();
+                    for (let k = 0; k < 3; k++) {
+                        const u = (a * 2 + k / 3) % 1;
+                        c.save();
+                        c.globalAlpha *= (1 - u) * fade;
+                        c.lineWidth = 3;
+                        c.strokeStyle = p.glow;
+                        c.beginPath();
+                        c.arc(34, 2, 10 + u * 46, -0.65, 0.65);
+                        c.stroke();
+                        c.restore();
+                    }
+                }
+                P(c, S, p.micro, rr(-34, -20, 68, 42, 7), {sh: 1});
+                P(c, S, p.glass, rr(-28, -14, 40, 30, 4), {olw: 0.8});
+                c.save();
+                c.beginPath();
+                rr(-28, -14, 40, 30, 4)(c);
+                c.clip();
+                const gl = on ? 0.95 : 0.4 + 0.15 * Math.sin(t * 2.5);
+                const g2 = c.createRadialGradient(-8, 2, 2, -8, 2, 30);
+                g2.addColorStop(0, p.glow);
+                g2.addColorStop(1, 'rgba(255,140,40,0)');
+                c.globalAlpha = gl;
+                c.fillStyle = g2;
+                c.fillRect(-30, -16, 44, 34);
+                c.globalAlpha = 1;
+                c.fillStyle = p.plate;
+                c.beginPath();
+                c.ellipse(-8, 10, 14, 4, 0, 0, TAU);
+                c.fill();
+                const rot = t * (on ? 5 : 1.2);
+                c.fillStyle = p.raw;
+                c.beginPath();
+                c.ellipse(-8 + Math.cos(rot) * 3, 5, 6, 4.5, 0, 0, TAU);
+                c.fill();
+                c.restore();
+                shine(c, S, -22, -8, 6, 2, -0.6, 0.7);
+                P(c, S, p.steelD, rr(15, -14, 14, 30, 3), {olw: 0.7});
+                for (let i = 0; i < 3; i++)
+                    P(c, S, i === 0 && on ? p.glow : p.steel, circ(22, -8 + i * 7, 2.2), {
+                        olw: 0.4,
+                    });
+                P(c, S, p.steelD, rr(-30, 22, 10, 4, 2), {ol: 0});
+                P(c, S, p.steelD, rr(20, 22, 10, 4, 2), {ol: 0});
+                c.restore();
+            }
+            function cricket(c, S, t, o = {}) {
+                const p = S.pal,
+                    {sq = 1, tilt = 0, ant = 1} = o;
+                c.save();
+                c.rotate(tilt);
+                c.scale(1 / sq, sq);
+                L(
+                    c,
+                    S,
+                    p.cricketD,
+                    2.4,
+                    (c) => {
+                        c.moveTo(-3, 2);
+                        c.lineTo(-9, -6);
+                        c.lineTo(-13, 3);
+                    },
+                    {ol: 1},
+                );
+                L(c, S, p.cricketD, 1.2, mv(7, -4, 12, -12 + Math.sin(t * 12) * ant * 2), {});
+                L(c, S, p.cricketD, 1.2, mv(8, -3, 15, -8 + Math.sin(t * 12 + 1) * ant * 2));
+                P(c, S, p.cricket, ell(0, 0, 10, 5.2), {olw: 0.8});
+                P(c, S, p.cricket, circ(8, -1.5, 4.2), {olw: 0.8});
+                P(c, S, '#fff', circ(9.5, -2.5, 1.5), {ol: 0, flat: 1});
+                P(c, S, p.ink, circ(10, -2.5, 0.8), {ol: 0, flat: 1});
+                L(c, S, p.cricketD, 1.2, mv(-2, -3, 3, -3), {a: 0.7});
+                c.restore();
+            }
+            function tCricket(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tCricket);
+                const n = a < 0 ? 0 : 1;
+                if (a >= 0) {
+                    // cricket hops out then away
+                    const u = a * 3,
+                        f = u % 1,
+                        x = lerp(0, 52, a),
+                        y = -10 - Math.sin(f * PI) * 20,
+                        land = Math.pow(1 - Math.sin(f * PI), 3);
+                    const s = ebk(seg(a, 0, 0.1)),
+                        al = 1 - seg(a, 0.88, 1);
+                    c.save();
+                    c.globalAlpha *= al;
+                    c.translate(x, y);
+                    c.scale(s, s);
+                    cricket(c, S, t, {
+                        sq: 1 + 0.35 * land - 0.15 * Math.sin(f * PI),
+                        tilt: -Math.cos(f * PI) * 0.5,
+                    });
+                    c.restore();
+                } else {
+                    // antennae peeking
+                    for (const s of [
+                        -1,
+                        1,
+                    ])
+                        L(c, S, p.cricketD, 1.6, (c) => {
+                            c.moveTo(s * 4, -4);
+                            c.quadraticCurveTo(
+                                s * 10,
+                                -20,
+                                s * (14 + Math.sin(t * 5 + s) * 4),
+                                -24 + Math.sin(t * 4) * 2,
+                            );
+                        });
+                }
+                P(c, S, p.wood, rr(-30, -2, 60, 30, 5), {sh: 1});
+                for (const y of [
+                    6,
+                    14,
+                    22,
+                ])
+                    L(c, S, p.woodD, 1.6, mv(-28, y, 28, y), {a: 0.55});
+                P(c, S, p.hole, rr(-11, 6, 22, 12, 3), {olw: 0.7, flat: 1});
+                c.save();
+                c.translate(-31, -2);
+                c.rotate(-(0.1 + (a >= 0 ? 0.55 * Math.sin(a * PI) : Math.sin(t * 1.5) * 0.04)));
+                P(c, S, p.woodD, rr(0, -8, 62, 9, 3), {sh: 1, olw: 0.9});
+                c.restore();
+                P(c, S, p.leaf, ell(20, -10, 7, 3.5, 0.4), {olw: 0.6});
+            }
+            function tSwiper(c, S, a, t) {
+                const p = S.pal;
+                base(c, S, p.tSwipe);
+                let ang,
+                    fan = 0;
+                if (a < 0) ang = Math.sin(t * 1.3) * 0.4 - 0.2;
+                else if (a < 0.15) {
+                    ang = lerp(-0.2, -0.7, eo(a / 0.15));
+                } else {
+                    const u = seg(a, 0.15, 1);
+                    ang = lerp(-0.7, -0.7 + TAU * 1.6, eio2(u));
+                    fan = Math.sin(u * PI);
+                }
+                function eio2(x) {
+                    return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+                }
+                c.save();
+                c.translate(0, 8);
+                c.scale(1, 0.72);
+                if (fan > 0.05) {
+                    c.save();
+                    c.globalAlpha = 0.5 * fan;
+                    const g = c.createConicGradient
+                        ? c.createConicGradient(ang - (PI / 2) * 0 - 1.4, 0, 0)
+                        : null;
+                    c.lineWidth = 18;
+                    c.lineCap = 'round';
+                    c.strokeStyle = p.sweep;
+                    c.beginPath();
+                    c.arc(0, 0, 40, ang - 1.5, ang);
+                    c.stroke();
+                    c.restore();
+                }
+                c.rotate(ang);
+                const st = 1 + 0.08 * fan;
+                P(c, S, p.wood, rr(6, -6, 18, 12, 4), {olw: 0.9});
+                P(c, S, p.wood, rr(20 * st, -11, 36 * st, 22, 11), {sh: 1});
+                L(c, S, p.woodD, 1.6, mv(28 * st, -3, 48 * st, -3), {a: 0.5});
+                L(c, S, p.woodD, 1.6, mv(28 * st, 4, 48 * st, 4), {a: 0.5});
+                shine(c, S, 38 * st, -6, 9, 2, 0, 0.7);
+                c.restore();
+                P(c, S, p.steel, circ(0, 8, 11), {sh: 1});
+                P(c, S, p.steelD, circ(0, 8, 4.2), {olw: 0.5});
+            }
+            const towerFns = {
+                Knife: tKnife,
+                'Boiling Pot': tPot,
+                Masher: tMasher,
+                Microwave: tMicro,
+                'Cricket Trap': tCricket,
+                Swiper: tSwiper,
+            };
+
+            /* ---------- seagull (polished from the current design: egg body, swept wings, orange beak and legs) ---------- */
+            function wingPath(s, d) {
+                // d = -1 upper wing, +1 lower wing; s = flap extension 0..1
+                const y = (v) => d * v * s;
+                return withB(
+                    (c) => {
+                        c.moveTo(9, d * 3);
+                        c.bezierCurveTo(9, y(22), 0, y(34), -9, y(38));
+                        c.lineTo(-15, y(33));
+                        c.quadraticCurveTo(-14, y(26), -21, y(26));
+                        c.quadraticCurveTo(-17, y(19), -24, y(17));
+                        c.quadraticCurveTo(-18, y(10), -19, d * 4);
+                        c.closePath();
+                    },
+                    [
+                        -24,
+                        Math.min(0, d * 38 * s),
+                        33,
+                        38 * s,
+                    ],
+                );
+            }
+            function wingTip(s, d) {
+                const y = (v) => d * v * s;
+                return withB(
+                    (c) => {
+                        c.moveTo(-1, y(31));
+                        c.lineTo(-9, y(38));
+                        c.lineTo(-15, y(33));
+                        c.quadraticCurveTo(-14, y(26), -21, y(26));
+                        c.lineTo(-8, y(26));
+                        c.closePath();
+                    },
+                    [
+                        -21,
+                        0,
+                        20,
+                        38 * s,
+                    ],
+                );
+            }
+            function gull(c, S, o, t) {
+                const p = S.pal,
+                    mode = o.mode,
+                    fly = mode !== 'walk';
+                const ph = t * (fly ? 11 : 7),
+                    fl = fly ? 0.25 + 0.75 * Math.abs(Math.sin(ph)) : 0.0;
+                const bob = fly ? -Math.sin(ph) * 2.5 : -Math.abs(Math.sin(ph)) * 2.5,
+                    rot = fly ? Math.sin(ph) * 0.03 : Math.sin(ph) * 0.12;
+                // shadow: flying gull's shadow falls well below and breathes with the flap
+                c.save();
+                c.scale(1.5, 1.5);
+                if (fly) gsh(c, S, 28, 10, 36 + 8 * fl, 0.75 - 0.25 * fl);
+                else gsh(c, S, 24, 7, 20);
+                c.restore();
+                c.save();
+                c.scale(1.5, 1.5);
+                c.save();
+                c.translate(0, bob);
+                c.rotate(rot);
+                if (!fly) {
+                    // waddling legs
+                    for (const [
+                        i,
+                        x,
+                    ] of [
+                        [
+                            0,
+                            -5,
+                        ],
+                        [
+                            1,
+                            5,
+                        ],
+                    ]) {
+                        const sw = Math.sin(ph + i * PI) * 4,
+                            lift = Math.max(0, Math.cos(ph + i * PI)) * 3;
+                        L(c, S, p.beak, 3, mv(x, 7, x + sw * 0.5, 19 - lift), {ol: 1});
+                        P(
+                            c,
+                            S,
+                            p.beak,
+                            poly([
+                                [
+                                    x + sw * 0.5 - 1,
+                                    19 - lift,
+                                ],
+                                [
+                                    x + sw * 0.5 + 9,
+                                    20 - lift,
+                                ],
+                                [
+                                    x + sw * 0.5 - 2,
+                                    22 - lift,
+                                ],
+                            ]),
+                            {olw: 0.5},
+                        );
+                    }
+                } else if (mode === 'carry') {
+                    for (const x of [
+                        -4,
+                        5,
+                    ])
+                        L(c, S, p.beak, 2.6, mv(x, 8, x * 0.8 + 4, 20), {ol: 1});
+                } else {
+                    L(c, S, p.beak, 2.4, mv(-4, 9, -9, 14), {ol: 1});
+                    L(c, S, p.beak, 2.4, mv(4, 9, -4, 15), {ol: 1});
+                }
+                const wf = fly ? fl : 0.0;
+                if (fly) {
+                    for (const d of [
+                        -1,
+                        1,
+                    ]) {
+                        P(c, S, p.gullWing, wingPath(Math.max(0.1, fl), d), {sh: 1, olw: 0.8});
+                        P(c, S, p.gullTip, wingTip(Math.max(0.1, fl), d), {ol: 0, flat: 1});
+                    }
+                }
+                // tail
+                P(
+                    c,
+                    S,
+                    p.gullWing,
+                    poly([
+                        [
+                            -16,
+                            -5,
+                        ],
+                        [
+                            -33,
+                            -3,
+                        ],
+                        [
+                            -34,
+                            3,
+                        ],
+                        [
+                            -16,
+                            6,
+                        ],
+                    ]),
+                    {olw: 0.8},
+                );
+                P(c, S, p.gullTip, rr(-34, -3, 4, 6, 1), {ol: 0, flat: 1});
+                // body + head
+                P(c, S, p.gull, ell(0, 0, 22, 13), {sh: !fly ? 1 : 0, olw: 1});
+                P(c, S, p.gull, circ(14, -5, 9), {olw: 1});
+                P(c, S, p.gull, ell(6, -1, 14, 10), {ol: 0, flat: 1});
+                shine(c, S, -4, -7, 9, 3, -0.2, 0.6);
+                if (!fly) {
+                    // folded wing on the flank
+                    P(
+                        c,
+                        S,
+                        p.gullWing,
+                        withB(
+                            (c) => {
+                                c.moveTo(8, -3);
+                                c.bezierCurveTo(0, -9, -14, -8, -27, -2);
+                                c.lineTo(-19, 5);
+                                c.bezierCurveTo(-8, 8, 2, 6, 8, -3);
+                            },
+                            [
+                                -27,
+                                -9,
+                                35,
+                                17,
+                            ],
+                        ),
+                        {olw: 0.9},
+                    );
+                    P(
+                        c,
+                        S,
+                        p.gullTip,
+                        poly([
+                            [
+                                -27,
+                                -2,
+                            ],
+                            [
+                                -19,
+                                5,
+                            ],
+                            [
+                                -14,
+                                1,
+                            ],
+                            [
+                                -20,
+                                -3,
+                            ],
+                        ]),
+                        {ol: 0, flat: 1},
+                    );
+                }
+                // beak, eye
+                P(
+                    c,
+                    S,
+                    p.beak,
+                    poly([
+                        [
+                            21,
+                            -8,
+                        ],
+                        [
+                            34,
+                            -4,
+                        ],
+                        [
+                            21,
+                            -1,
+                        ],
+                    ]),
+                    {olw: 0.85},
+                );
+                P(c, S, p.red, circ(27, -3.2, 1.3), {ol: 0, flat: 1});
+                const bl = t % 3.1 < 0.1;
+                if (bl) L(c, S, p.ink, 1.5, mv(14, -8, 19, -8));
+                else {
+                    P(c, S, p.ink, circ(17, -8, 2.5), {ol: 0});
+                    P(c, S, '#fff', circ(17.8, -8.8, 0.9), {ol: 0, flat: 1});
+                }
+                if (mode === 'carry') {
+                    // potato held in the feet
+                    c.save();
+                    c.translate(2, 36);
+                    c.rotate(Math.sin(ph * 0.5) * 0.25);
+                    c.translate(0, -0);
+                    potato(
+                        c,
+                        {...S, face: S.face, hop: 0, sq: S.sq * 0.3, wob: 0},
+                        {kind: 'raw', r: 10, ph: 1},
+                        t,
+                    );
+                    c.restore();
+                    L(c, S, p.beak, 2.4, mv(0, 12, 0, 28), {ol: 1});
+                }
+                c.restore();
+                c.restore();
+            }
+
+            /* ---------- restaurant counter + hopper ---------- */
+            function restaurant(c, S, t) {
+                const p = S.pal;
+                gsh(c, S, 130, 18, 62);
+                P(c, S, p.wall, rr(-120, -48, 240, 108, 6), {sh: 1});
+                P(c, S, p.dark, rr(-90, -24, 180, 52, 6), {olw: 0.9});
+                // heat lamp glow behind plate
+                const gl = 0.55 + 0.1 * Math.sin(t * 3) + 0.05 * Math.sin(t * 7.3);
+                c.save();
+                c.beginPath();
+                rr(-90, -24, 180, 52, 6)(c);
+                c.clip();
+                const g = c.createRadialGradient(0, 12, 2, 0, 12, 76);
+                g.addColorStop(0, p.lamp);
+                g.addColorStop(1, 'rgba(255,170,60,0)');
+                c.globalAlpha = gl;
+                c.fillStyle = g;
+                c.fillRect(-90, -24, 180, 52);
+                c.restore();
+                // lamp hood + arm
+                L(
+                    c,
+                    S,
+                    p.steelD,
+                    4,
+                    (c) => {
+                        c.moveTo(-70, -24);
+                        c.lineTo(-70, -12);
+                        c.quadraticCurveTo(-70, -4, -48, -4);
+                    },
+                    {ol: 1},
+                );
+                P(
+                    c,
+                    S,
+                    p.steel,
+                    poly([
+                        [
+                            -58,
+                            -14,
+                        ],
+                        [
+                            -28,
+                            -14,
+                        ],
+                        [
+                            -20,
+                            -2,
+                        ],
+                        [
+                            -66,
+                            -2,
+                        ],
+                    ]),
+                    {sh: 1, olw: 0.9},
+                );
+                P(c, S, p.lamp, ell(-43, -1, 15, 3), {
+                    ol: 0,
+                    flat: 1,
+                    a: 0.6 + 0.4 * Math.sin(t * 7),
+                });
+                c.save();
+                c.globalAlpha = 0.25 * gl;
+                P(
+                    c,
+                    S,
+                    p.lamp,
+                    poly([
+                        [
+                            -62,
+                            0,
+                        ],
+                        [
+                            -24,
+                            0,
+                        ],
+                        [
+                            -8,
+                            26,
+                        ],
+                        [
+                            -78,
+                            26,
+                        ],
+                    ]),
+                    {ol: 0, flat: 1},
+                );
+                c.restore();
+                // plate with perfect mash
+                c.save();
+                c.translate(-43, 16);
+                P(c, S, '#fff', ell(0, 6, 22, 6), {olw: 0.8});
+                c.scale(0.9, 0.9);
+                c.restore();
+                c.save();
+                c.translate(-43, 9);
+                c.scale(0.55, 0.55 * (1 + Math.sin(t * 2) * 0.02));
+                P(c, S, p.mash, mashBlob(14), {olw: 1.4});
+                shine(c, S, -5, -5, 6, 2.5, -0.4, 0.9);
+                c.restore();
+                // steam from mash
+                for (let i = 0; i < 2; i++) {
+                    const u = (t * 0.5 + i / 2) % 1;
+                    c.save();
+                    c.globalAlpha *= (1 - u) * 0.6;
+                    P(c, S, p.steam, circ(-43 + Math.sin(u * 5 + i) * 4, -4 - u * 14, 3 + u * 3), {
+                        ol: 0,
+                        flat: 1,
+                    });
+                    c.restore();
+                }
+                // second plate + bell
+                P(c, S, '#fff', ell(30, 16, 20, 5.5), {olw: 0.8});
+                P(
+                    c,
+                    S,
+                    p.steel,
+                    withB(
+                        (c) => {
+                            c.moveTo(14, 16);
+                            c.bezierCurveTo(14, -2, 46, -2, 46, 16);
+                            c.closePath();
+                        },
+                        [
+                            14,
+                            0,
+                            32,
+                            16,
+                        ],
+                    ),
+                    {olw: 0.9},
+                );
+                P(c, S, p.steelD, circ(30, 3, 2.5), {olw: 0.5});
+                // counter
+                P(c, S, p.wood, rr(-124, 26, 248, 14, 4), {sh: 1});
+                P(c, S, p.woodD, rr(-124, 34, 248, 6, 3), {ol: 0, flat: 1, a: 0.6});
+                // awning
+                const n = 8,
+                    w = 240 / n;
+                for (let i = 0; i < n; i++)
+                    P(
+                        c,
+                        S,
+                        i % 2 ? p.roof2 : p.roof,
+                        withB(
+                            (c) => {
+                                const x = -120 + i * w;
+                                c.moveTo(x, -48);
+                                c.lineTo(x + w, -48);
+                                c.lineTo(x + w + 3, -30);
+                                c.arc(x + w / 2, -30, w / 2 + 3, 0, PI);
+                                c.closePath();
+                            },
+                            [
+                                -123 + i * w,
+                                -48,
+                                w + 6,
+                                30 + w / 2,
+                            ],
+                        ),
+                        {olw: 0.9, sh: i === 0 ? 1 : 0},
+                    );
+                P(c, S, p.roof, rr(-124, -62, 248, 16, 5), {sh: 1});
+                txt(c, S, 'MASH BAR', 0, -54, 12, p.ink);
+                P(c, S, p.red, rr(70, 40, 0, 0, 0), {ol: 0});
+            }
+            function hopper(c, S, t) {
+                const p = S.pal;
+                gsh(c, S, 40, 10, 50);
+                const T = (t * 0.55) % 1;
+                let y = lerp(-72, 60, ei(T * 1.0)),
+                    vis = true;
+                const sy = 1 + 0.25 * T,
+                    sx = 1 / sy;
+                // back wall of funnel
+                P(c, S, p.dark, ell(0, -30, 34, 9), {olw: 0.8});
+                const drawPot = () => {
+                    c.save();
+                    c.translate(0, y);
+                    c.scale(sx, sy);
+                    potato(c, {...S, hop: 0, wob: 0, sq: 0}, {kind: 'raw', r: 9, ph: 2}, 0);
+                    c.restore();
+                };
+                if (y < -30) drawPot();
+                P(
+                    c,
+                    S,
+                    p.steel,
+                    poly([
+                        [
+                            -34,
+                            -30,
+                        ],
+                        [
+                            34,
+                            -30,
+                        ],
+                        [
+                            10,
+                            0,
+                        ],
+                        [
+                            10,
+                            28,
+                        ],
+                        [
+                            -10,
+                            28,
+                        ],
+                        [
+                            -10,
+                            0,
+                        ],
+                    ]),
+                    {sh: 1, olw: 1},
+                );
+                shine(c, S, -20, -18, 4, 10, 0.5, 0.8);
+                P(c, S, p.steelD, rr(-14, 22, 28, 8, 3), {olw: 0.8});
+                P(c, S, p.steel, ell(0, -30, 34, 9), {ol: 0, flat: 1, a: 0.0});
+                L(
+                    c,
+                    S,
+                    p.steelD,
+                    3,
+                    (c) => {
+                        c.ellipse(0, -30, 34, 9, 0, PI, TAU);
+                    },
+                    {ol: 1},
+                );
+                if (y >= -30 && y < 30) {
+                    /* hidden inside the chute */
+                }
+                if (y >= 30) drawPot();
+                if (T > 0.88) {
+                    const u = seg(T, 0.88, 1);
+                    c.save();
+                    c.globalAlpha *= 1 - u;
+                    P(c, S, p.mash, ell(0, 66, 14 + u * 8, 4 + u * 2), {ol: 0, flat: 1});
+                    c.restore();
+                }
+            }
+
+            /* ---------- icons ---------- */
+            function coin(c, S, t) {
+                const p = S.pal,
+                    sx = Math.max(0.3, Math.abs(Math.cos(t * 2.2))),
+                    bob = Math.sin(t * 3) * 3;
+                gsh(c, S, 20, 6, 34, 0.8);
+                c.save();
+                c.translate(0, bob);
+                c.scale(sx, 1);
+                P(c, S, p.gold, circ(0, 0, 22), {sh: 1, olw: 1});
+                P(c, S, p.goldD, circ(0, 0, 16), {olw: 0.55, flat: 1});
+                P(c, S, p.gold, circ(0, 0, 14), {ol: 0});
+                txt(c, S, 'C', 0, 1, 20, p.goldD);
+                shine(c, S, -8, -9, 7, 3, -0.7, 1);
+                c.restore();
+            }
+            function star(c, S, t) {
+                const p = S.pal,
+                    s = 1 + Math.sin(t * 3) * 0.1;
+                gsh(c, S, 22, 6, 34, 0.8);
+                c.save();
+                c.translate(0, Math.sin(t * 2.4) * 2);
+                c.rotate(Math.sin(t * 2) * 0.18);
+                c.scale(s, s);
+                P(c, S, p.gold, starPath(26, 12), {sh: 1, olw: 1});
+                P(c, S, '#fff', starPath(10, 5), {ol: 0, flat: 1, a: 0.28});
+                shine(c, S, -7, -9, 5, 2, -0.8, 0.9);
+                c.restore();
+                for (let i = 0; i < 3; i++) {
+                    const u = (t * 0.8 + i / 3) % 1;
+                    c.save();
+                    c.globalAlpha *= Math.sin(u * PI);
+                    P(c, S, '#fff', starPath(5 * u + 2, 1.5), {ol: 0, flat: 1});
+                    c.restore();
+                }
+            }
+            function wrench(c, S, t) {
+                const p = S.pal;
+                gsh(c, S, 28, 6, 34, 0.8);
+                c.save();
+                c.rotate(-0.78 + Math.sin(t * 3) * 0.22);
+                c.translate(0, 2);
+                P(c, S, p.steelD, rr(-5.5, -8, 11, 44, 5.5), {sh: 1, olw: 0.9});
+                P(c, S, p.dark, circ(0, 30, 2.3), {ol: 0, flat: 1});
+                P(
+                    c,
+                    S,
+                    p.steel,
+                    withB(
+                        (c) => {
+                            c.moveTo(5, -15);
+                            c.lineTo(5, -33);
+                            c.arc(0, -22, 13, -1.176, 4.317);
+                            c.lineTo(-5, -15);
+                            c.closePath();
+                        },
+                        [
+                            -13,
+                            -35,
+                            26,
+                            26,
+                        ],
+                    ),
+                    {sh: 1, olw: 0.9},
+                );
+                shine(c, S, -8, -24, 2.5, 6, 0, 0.9);
+                c.restore();
+            }
+
+            /* ---------- styles ---------- */
+            const mkPal = (o) => o;
+            const STYLES = {
+                cozy: {
+                    id: 'cozy',
+                    tab: 'Cozy Farmhouse',
+                    desc: 'Warm earth tones, thick dark-brown outlines, soft blurred drop shadows and a gentle top-left highlight with warm bottom shading. Bobbing is slow and soft (low squash), faces are tiny dot eyes and blush. Reads like a storybook farm kitchen.',
+                    paletteNote:
+                        'Custom 20-colour earthy palette in the spirit of Lospec palettes (not an exact Lospec import). Outline = Bark.',
+                    swatches: [
+                        [
+                            'Bark',
+                            '#2b1a12',
+                        ],
+                        [
+                            'Walnut',
+                            '#4d2f1f',
+                        ],
+                        [
+                            'Oak',
+                            '#7a4a2b',
+                        ],
+                        [
+                            'Caramel',
+                            '#a8693a',
+                        ],
+                        [
+                            'Toffee',
+                            '#cf9456',
+                        ],
+                        [
+                            'Sand',
+                            '#ecc88a',
+                        ],
+                        [
+                            'Wheat',
+                            '#f2dca6',
+                        ],
+                        [
+                            'Cream',
+                            '#fff3da',
+                        ],
+                        [
+                            'Moss',
+                            '#5d6b2a',
+                        ],
+                        [
+                            'Grass',
+                            '#7f9040',
+                        ],
+                        [
+                            'Meadow',
+                            '#a3b254',
+                        ],
+                        [
+                            'Tomato',
+                            '#b8472f',
+                        ],
+                        [
+                            'Pumpkin',
+                            '#e07b3f',
+                        ],
+                        [
+                            'Butter',
+                            '#efc04a',
+                        ],
+                        [
+                            'Sage',
+                            '#8f9f98',
+                        ],
+                        [
+                            'Pond',
+                            '#5f7b7a',
+                        ],
+                        [
+                            'Stone',
+                            '#cfc6b0',
+                        ],
+                        [
+                            'Slate',
+                            '#6e655b',
+                        ],
+                        [
+                            'Pine',
+                            '#3f5a52',
+                        ],
+                        [
+                            'Sky',
+                            '#7fa6b0',
+                        ],
+                    ],
+                    ol: 2.6,
+                    olc: '#2b1a12',
+                    shadow: {b: 7, y: 4},
+                    shc: 'rgba(43,26,18,.4)',
+                    gshadow: 'soft',
+                    shadeC: '60,30,10',
+                    hl: 0.26,
+                    shade: 0.2,
+                    shine: 0.4,
+                    sq: 0.07,
+                    hop: 0.1,
+                    wob: 0.07,
+                    face: 1,
+                    font: 'Georgia, "Times New Roman", serif',
+                    fontW: 'bold',
+                    text: '#fff3da',
+                    cell: 'rgba(43,26,18,.16)',
+                    cellLine: 'rgba(43,26,18,.25)',
+                    chip: 'rgba(43,26,18,.75)',
+                    grass: [
+                        '#7f9040',
+                        '#6f8035',
+                        '#a3b254',
+                    ],
+                    pal: mkPal({
+                        ink: '#2b1a12',
+                        blush: '#e07b3f',
+                        dark: '#4d2f1f',
+                        raw: '#cf9456',
+                        rawD: '#a8693a',
+                        cut: '#7a4a2b',
+                        cutL: '#ecc88a',
+                        boiled: '#f2dca6',
+                        glue: '#ecc88a',
+                        mash: '#fff3da',
+                        russet: '#a8693a',
+                        butter: '#efc04a',
+                        butterD: '#cf9456',
+                        scal: '#a3b254',
+                        scalD: '#5d6b2a',
+                        cab: '#a3b254',
+                        cabD: '#5d6b2a',
+                        gravy: '#7a4a2b',
+                        gravyL: '#a8693a',
+                        belt: '#6e655b',
+                        rail: '#4d2f1f',
+                        stripe: '#8a8073',
+                        steam: '#fff3da',
+                        steel: '#cfc6b0',
+                        steelD: '#8f9f98',
+                        wood: '#cf9456',
+                        woodD: '#a8693a',
+                        water: '#5f7b7a',
+                        waterL: '#7fa6b0',
+                        fire: '#efc04a',
+                        fire2: '#e07b3f',
+                        micro: '#fff3da',
+                        glass: '#3f5a52',
+                        glow: '#efc04a',
+                        plate: '#cfc6b0',
+                        cone: '#e07b3f',
+                        coneT: 'rgba(224,123,63,0)',
+                        spark: '#fff3da',
+                        cricket: '#5d6b2a',
+                        cricketD: '#3f5a52',
+                        hole: '#2b1a12',
+                        leaf: '#a3b254',
+                        sweep: '#fff3da',
+                        gull: '#fff3da',
+                        gullWing: '#8f9f98',
+                        gullTip: '#4d2f1f',
+                        beak: '#e07b3f',
+                        red: '#b8472f',
+                        roof: '#b8472f',
+                        roof2: '#fff3da',
+                        wall: '#ecc88a',
+                        lamp: '#ffd47a',
+                        gold: '#efc04a',
+                        goldD: '#a8693a',
+                        tKnife: '#8f9f98',
+                        tBoil: '#5f7b7a',
+                        tMash: '#e0a050',
+                        tMicro: '#a8693a',
+                        tCricket: '#7a4a2b',
+                        tSwipe: '#6f8b6a',
+                    }),
+                },
+                bright: {
+                    id: 'bright',
+                    tab: 'Bright Cartoon',
+                    desc: 'Saturated Sweetie-16 colours, very thick near-black outlines, hard offset shadows and big white eye-shines. Squash-and-stretch is cranked up: potatoes hop, stretch in the air and splat on landing; faces have big googly eyes and moods (angry King, dazed half-mash).',
+                    paletteNote:
+                        'Sweetie 16 by GrafxKid (Lospec) plus 4 derived potato tints (marked *). Outline = Ink.',
+                    swatches: [
+                        [
+                            'Ink',
+                            '#1a1c2c',
+                        ],
+                        [
+                            'Plum',
+                            '#5d275d',
+                        ],
+                        [
+                            'Red',
+                            '#b13e53',
+                        ],
+                        [
+                            'Orange',
+                            '#ef7d57',
+                        ],
+                        [
+                            'Yellow',
+                            '#ffcd75',
+                        ],
+                        [
+                            'Lime',
+                            '#a7f070',
+                        ],
+                        [
+                            'Green',
+                            '#38b764',
+                        ],
+                        [
+                            'Teal',
+                            '#257179',
+                        ],
+                        [
+                            'Navy',
+                            '#29366f',
+                        ],
+                        [
+                            'Blue',
+                            '#3b5dc9',
+                        ],
+                        [
+                            'Sky',
+                            '#41a6f6',
+                        ],
+                        [
+                            'Cyan',
+                            '#73eff7',
+                        ],
+                        [
+                            'White',
+                            '#f4f4f4',
+                        ],
+                        [
+                            'Steel',
+                            '#94b0c2',
+                        ],
+                        [
+                            'Slate',
+                            '#566c86',
+                        ],
+                        [
+                            'Charcoal',
+                            '#333c57',
+                        ],
+                        [
+                            '*Cream',
+                            '#fff1c9',
+                        ],
+                        [
+                            '*Tan',
+                            '#e9a95b',
+                        ],
+                        [
+                            '*Russet',
+                            '#c9783f',
+                        ],
+                        [
+                            '*Gravy',
+                            '#8c4a2f',
+                        ],
+                    ],
+                    ol: 5.5,
+                    olc: '#1a1c2c',
+                    shadow: {b: 0, x: 3, y: 4},
+                    shc: 'rgba(26,28,44,.45)',
+                    gshadow: 'hard',
+                    shadeC: '26,28,44',
+                    hl: 0.0,
+                    shade: 0.0,
+                    shine: 0.85,
+                    sq: 0.28,
+                    hop: 0.32,
+                    wob: 0.16,
+                    face: 2,
+                    font: '"Trebuchet MS","Comic Sans MS",sans-serif',
+                    fontW: '900',
+                    text: '#f4f4f4',
+                    cell: 'rgba(26,28,44,.22)',
+                    cellLine: '#1a1c2c',
+                    chip: '#1a1c2c',
+                    grass: [
+                        '#38b764',
+                        '#2fa45a',
+                        '#a7f070',
+                    ],
+                    pal: mkPal({
+                        ink: '#1a1c2c',
+                        blush: '#ef7d57',
+                        dark: '#333c57',
+                        raw: '#e9a95b',
+                        rawD: '#c9783f',
+                        cut: '#c9783f',
+                        cutL: '#ffcd75',
+                        boiled: '#fff1c9',
+                        glue: '#ffcd75',
+                        mash: '#fff1c9',
+                        russet: '#c9783f',
+                        butter: '#ffcd75',
+                        butterD: '#ef7d57',
+                        scal: '#a7f070',
+                        scalD: '#257179',
+                        cab: '#a7f070',
+                        cabD: '#257179',
+                        gravy: '#8c4a2f',
+                        gravyL: '#ef7d57',
+                        belt: '#566c86',
+                        rail: '#333c57',
+                        stripe: '#94b0c2',
+                        steam: '#f4f4f4',
+                        steel: '#94b0c2',
+                        steelD: '#566c86',
+                        wood: '#e9a95b',
+                        woodD: '#c9783f',
+                        water: '#3b5dc9',
+                        waterL: '#73eff7',
+                        fire: '#ffcd75',
+                        fire2: '#ef7d57',
+                        micro: '#f4f4f4',
+                        glass: '#29366f',
+                        glow: '#ffcd75',
+                        plate: '#94b0c2',
+                        cone: '#ff6fd0',
+                        coneT: 'rgba(255,111,208,0)',
+                        spark: '#f4f4f4',
+                        cricket: '#38b764',
+                        cricketD: '#257179',
+                        hole: '#1a1c2c',
+                        leaf: '#a7f070',
+                        sweep: '#f4f4f4',
+                        gull: '#f4f4f4',
+                        gullWing: '#94b0c2',
+                        gullTip: '#333c57',
+                        beak: '#ffcd75',
+                        red: '#b13e53',
+                        roof: '#b13e53',
+                        roof2: '#f4f4f4',
+                        wall: '#ffcd75',
+                        lamp: '#ffcd75',
+                        gold: '#ffcd75',
+                        goldD: '#ef7d57',
+                        tKnife: '#94b0c2',
+                        tBoil: '#41a6f6',
+                        tMash: '#ef7d57',
+                        tMicro: '#b13e53',
+                        tCricket: '#e9a95b',
+                        tSwipe: '#38b764',
+                    }),
+                },
+                flat: {
+                    id: 'flat',
+                    tab: 'Clean Flat',
+                    desc: 'Minimal flat shapes with no outlines, a faint top-light gradient and a soft diffuse shadow for depth. Mild squash and wobble, no faces, so state is read purely from colour and silhouette. The modern mobile-game look; lightest to draw and cheapest in Pixi.',
+                    paletteNote:
+                        'Custom 22-colour modern palette (mint grass, desaturated slate belt, clean pastel accents).',
+                    swatches: [
+                        [
+                            'Mint',
+                            '#7bc67b',
+                        ],
+                        [
+                            'Mint 2',
+                            '#6bb96e',
+                        ],
+                        [
+                            'Mint 3',
+                            '#92d392',
+                        ],
+                        [
+                            'Belt',
+                            '#4b5563',
+                        ],
+                        [
+                            'Rail',
+                            '#374151',
+                        ],
+                        [
+                            'Stripe',
+                            '#6b7280',
+                        ],
+                        [
+                            'Raw',
+                            '#d9a35f',
+                        ],
+                        [
+                            'Raw D',
+                            '#bf8844',
+                        ],
+                        [
+                            'Boiled',
+                            '#f6e2a6',
+                        ],
+                        [
+                            'Glue',
+                            '#e8cf8a',
+                        ],
+                        [
+                            'Mash',
+                            '#fff3c4',
+                        ],
+                        [
+                            'Russet',
+                            '#a86a3c',
+                        ],
+                        [
+                            'Butter',
+                            '#ffd34d',
+                        ],
+                        [
+                            'Scallion',
+                            '#4cc66b',
+                        ],
+                        [
+                            'Cabbage',
+                            '#8ad477',
+                        ],
+                        [
+                            'Gravy',
+                            '#8b5a3c',
+                        ],
+                        [
+                            'Steel',
+                            '#cbd5e1',
+                        ],
+                        [
+                            'Steel D',
+                            '#94a3b8',
+                        ],
+                        [
+                            'Blue',
+                            '#4f9cf5',
+                        ],
+                        [
+                            'Orange',
+                            '#fb923c',
+                        ],
+                        [
+                            'Purple',
+                            '#a855f7',
+                        ],
+                        [
+                            'Teal',
+                            '#2dd4bf',
+                        ],
+                    ],
+                    ol: 0,
+                    olc: '#000',
+                    shadow: {b: 10, y: 6},
+                    shc: 'rgba(20,50,30,.28)',
+                    gshadow: 'subtle',
+                    shadeC: '10,40,20',
+                    hl: 0.09,
+                    shade: 0.13,
+                    shine: 0.22,
+                    sq: 0.1,
+                    hop: 0.1,
+                    wob: 0.06,
+                    face: 0,
+                    font: 'system-ui,"Segoe UI",sans-serif',
+                    fontW: '700',
+                    text: '#ffffff',
+                    cell: 'rgba(255,255,255,.14)',
+                    cellLine: 'rgba(255,255,255,.2)',
+                    chip: 'rgba(31,41,55,.7)',
+                    grass: [
+                        '#7bc67b',
+                        '#6bb96e',
+                        '#92d392',
+                    ],
+                    pal: mkPal({
+                        ink: '#1f2937',
+                        blush: '#fb923c',
+                        dark: '#374151',
+                        raw: '#d9a35f',
+                        rawD: '#bf8844',
+                        cut: '#a86a3c',
+                        cutL: '#f0c98f',
+                        boiled: '#f6e2a6',
+                        glue: '#e8cf8a',
+                        mash: '#fff3c4',
+                        russet: '#a86a3c',
+                        butter: '#ffd34d',
+                        butterD: '#f0b429',
+                        scal: '#4cc66b',
+                        scalD: '#2f9e4f',
+                        cab: '#8ad477',
+                        cabD: '#4cc66b',
+                        gravy: '#8b5a3c',
+                        gravyL: '#b07a56',
+                        belt: '#4b5563',
+                        rail: '#374151',
+                        stripe: '#6b7280',
+                        steam: '#ffffff',
+                        steel: '#cbd5e1',
+                        steelD: '#94a3b8',
+                        wood: '#d9a35f',
+                        woodD: '#bf8844',
+                        water: '#4f9cf5',
+                        waterL: '#93c5fd',
+                        fire: '#fbbf24',
+                        fire2: '#fb923c',
+                        micro: '#f1f5f9',
+                        glass: '#334155',
+                        glow: '#fbbf24',
+                        plate: '#cbd5e1',
+                        cone: '#a855f7',
+                        coneT: 'rgba(168,85,247,0)',
+                        spark: '#ffffff',
+                        cricket: '#4cc66b',
+                        cricketD: '#2f9e4f',
+                        hole: '#374151',
+                        leaf: '#8ad477',
+                        sweep: '#ffffff',
+                        gull: '#ffffff',
+                        gullWing: '#aeb8c4',
+                        gullTip: '#475569',
+                        beak: '#fb923c',
+                        red: '#ef5350',
+                        roof: '#ef5350',
+                        roof2: '#ffffff',
+                        wall: '#f6e2a6',
+                        lamp: '#fcd34d',
+                        gold: '#fbbf24',
+                        goldD: '#d99a0b',
+                        tKnife: '#94a3b8',
+                        tBoil: '#4f9cf5',
+                        tMash: '#fb923c',
+                        tMicro: '#a855f7',
+                        tCricket: '#a86a3c',
+                        tSwipe: '#2dd4bf',
+                    }),
+                },
+            };
+
+            /* ---------- layout of the sheet ---------- */
+            const U = 150,
+                W = 1200,
+                CH = 172;
+            function sheet(S) {
+                const pot = (kind, r, top, ph) => (c, t) => potato(c, S, {kind, r, top, ph}, t);
+                const pair = (fn) => (c, t) => {
+                    c.save();
+                    c.translate(-U / 2, 6);
+                    c.scale(1.1, 1.1);
+                    fn(c, -1, t);
+                    c.restore();
+                    txt(c, S, 'idle', -U / 2, -80, 11, S.text);
+                    c.save();
+                    c.translate(U / 2, 6);
+                    c.scale(1.1, 1.1);
+                    fn(c, (t % 1.3) / 1.3, t);
+                    c.restore();
+                    txt(c, S, 'attack', U / 2, -80, 11, S.text);
+                };
+                const tw = (name) => ({
+                    l: name,
+                    w: 2,
+                    h: 196,
+                    d: pair((c, a, t) => towerFns[name](c, S, a, t)),
+                });
+                return [
+                    {sec: 'Potatoes: cooking states and sizes (each hops, squashes and wobbles)'},
+                    {l: 'Raw (small)', d: pot('raw', 13, 0, 0)},
+                    {l: 'Raw (medium)', d: pot('raw', 19, 0, 1.1)},
+                    {l: 'Raw (large)', d: pot('raw', 26, 0, 2.2)},
+                    {l: 'Sliced (cut)', d: pot('cut', 20, 0, 0.7)},
+                    {l: 'Boiled (steaming)', d: pot('boiled', 20, 0, 1.6)},
+                    {l: 'Half-mashed blob', d: pot('half', 20, 0, 2.6)},
+                    {l: 'Perfect mash', d: pot('perfect', 20, 0, 0.3)},
+                    {l: 'Russet King (boss)', d: pot('king', 36, 0, 0)},
+                    {sec: 'Conveyor belt corner with potatoes riding and wobbling'},
+                    {
+                        l: 'Belt (moving stripes, one corner)',
+                        w: 8,
+                        h: 196,
+                        d: (c, t) => {
+                            const x0 = -U * 3.9,
+                                x1 = U * 2.7,
+                                y0 = -30,
+                                y1 = 110;
+                            belt(c, S, x0, y0, x1, y1, 46, t);
+                            const kinds = [
+                                [
+                                    'raw',
+                                    15,
+                                ],
+                                [
+                                    'cut',
+                                    17,
+                                ],
+                                [
+                                    'boiled',
+                                    17,
+                                ],
+                                [
+                                    'half',
+                                    17,
+                                ],
+                                [
+                                    'perfect',
+                                    17,
+                                ],
+                                [
+                                    'raw',
+                                    22,
+                                ],
+                                [
+                                    'perfect',
+                                    13,
+                                ],
+                                [
+                                    'boiled',
+                                    20,
+                                ],
+                                [
+                                    'half',
+                                    15,
+                                ],
+                                [
+                                    'cut',
+                                    20,
+                                ],
+                            ];
+                            const total = x1 - x0 + (y1 - y0);
+                            kinds.forEach((k, i) => {
+                                const s =
+                                    ((t * 38 + (i * (total + 60)) / kinds.length) % (total + 60)) -
+                                    30;
+                                if (s < 0) return;
+                                const [
+                                    x,
+                                    y,
+                                ] = onPath(x0, y0, x1, y1, s);
+                                c.save();
+                                c.translate(x, y - 4);
+                                potato(
+                                    c,
+                                    {...S, hop: S.hop * 0.5},
+                                    {kind: k[0], r: k[1], ph: i * 1.3},
+                                    t,
+                                );
+                                c.restore();
+                            });
+                        },
+                    },
+                    {sec: 'Toppings on a perfect mash'},
+                    {
+                        l: 'Butter pat',
+                        d: (c, t) =>
+                            potato(c, S, {kind: 'perfect', r: 30, top: {butter: 1}, ph: 0}, t),
+                    },
+                    {
+                        l: 'Scallions',
+                        d: (c, t) =>
+                            potato(c, S, {kind: 'perfect', r: 30, top: {scallion: 1}, ph: 1}, t),
+                    },
+                    {
+                        l: 'Cabbage leaves',
+                        d: (c, t) =>
+                            potato(c, S, {kind: 'perfect', r: 30, top: {cabbage: 1}, ph: 2}, t),
+                    },
+                    {
+                        l: 'Gravy pool',
+                        d: (c, t) =>
+                            potato(c, S, {kind: 'perfect', r: 30, top: {gravy: 1}, ph: 3}, t),
+                    },
+                    {
+                        l: 'Fully loaded',
+                        d: (c, t) =>
+                            potato(
+                                c,
+                                S,
+                                {
+                                    kind: 'perfect',
+                                    r: 30,
+                                    top: {gravy: 1, cabbage: 1, scallion: 1, butter: 1},
+                                    ph: 4,
+                                },
+                                t,
+                            ),
+                    },
+                    {sec: 'Towers: idle (left) and looping attack (right)'},
+                    tw('Knife'),
+                    tw('Boiling Pot'),
+                    tw('Masher'),
+                    tw('Microwave'),
+                    tw('Cricket Trap'),
+                    tw('Swiper'),
+                    {sec: 'Seagulls (polished from the current design)'},
+                    {l: 'Gull walking', d: (c, t) => gull(c, S, {mode: 'walk'}, t)},
+                    {l: 'Gull flying', d: (c, t) => gull(c, S, {mode: 'fly'}, t)},
+                    {
+                        l: 'Gull carrying potato',
+                        h: CH + 14,
+                        d: (c, t) => {
+                            c.save();
+                            c.translate(0, -14);
+                            gull(c, S, {mode: 'carry'}, t);
+                            c.restore();
+                        },
+                    },
+                    {sec: 'Restaurant, hopper and icons'},
+                    {
+                        l: 'Restaurant counter + heat lamp',
+                        w: 3,
+                        d: (c, t) => {
+                            c.translate(0, -4);
+                            c.scale(1.1, 1.1);
+                            restaurant(c, S, t);
+                        },
+                    },
+                    {l: 'Drop-chute hopper', d: (c, t) => hopper(c, S, t)},
+                    {l: 'Coin', d: (c, t) => coin(c, S, t)},
+                    {l: 'Star', d: (c, t) => star(c, S, t)},
+                    {l: 'Wrench', d: (c, t) => wrench(c, S, t)},
+                ];
+            }
+            function layout(items) {
+                let x = 0,
+                    y = 0,
+                    rowH = 0;
+                const out = [];
+                for (const it of items) {
+                    if (it.sec) {
+                        if (x > 0) {
+                            y += rowH + 10;
+                        }
+                        x = 0;
+                        rowH = 0;
+                        out.push({sec: it.sec, y: y + 6});
+                        y += 38;
+                        continue;
+                    }
+                    const w = (it.w || 1) * U,
+                        h = it.h || CH;
+                    if (x + w > W + 1) {
+                        y += rowH + 10;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    out.push({...it, x, y, pw: w, ph: h});
+                    x += w + 0;
+                    rowH = Math.max(rowH, h);
+                    x += 0;
+                }
+                return {cells: out, height: y + rowH + 16};
+            }
+            function grassTex(S, w, h, dpr) {
+                const g = document.createElement('canvas');
+                g.width = w * dpr;
+                g.height = h * dpr;
+                const c = g.getContext('2d');
+                c.scale(dpr, dpr);
+                const [
+                    base,
+                    dk,
+                    lt,
+                ] = S.grass;
+                c.fillStyle = base;
+                c.fillRect(0, 0, w, h);
+                let sd = 7;
+                const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+                if (S.id === 'bright') {
+                    c.fillStyle = dk;
+                    for (let y = 0; y < h; y += 60) c.fillRect(0, y, w, 30);
+                }
+                if (S.id === 'flat') {
+                    c.fillStyle = lt;
+                    c.globalAlpha = 0.35;
+                    for (let i = 0; i < 60; i++) {
+                        c.beginPath();
+                        c.arc(rnd() * w, rnd() * h, 6 + rnd() * 14, 0, TAU);
+                        c.fill();
+                    }
+                    c.globalAlpha = 1;
+                } else
+                    for (let i = 0; i < 900; i++) {
+                        const x = rnd() * w,
+                            y = rnd() * h;
+                        c.strokeStyle = rnd() < 0.5 ? dk : lt;
+                        c.lineWidth = S.id === 'bright' ? 3 : 1.6;
+                        c.lineCap = 'round';
+                        c.beginPath();
+                        c.moveTo(x, y);
+                        c.lineTo(x - 2, y - 6);
+                        c.moveTo(x, y);
+                        c.lineTo(x + 3, y - 5);
+                        c.stroke();
+                    }
+                return g;
+            }
+
+            /* ---------- boot ---------- */
+            const tabs = document.getElementById('tabs'),
+                main = document.getElementById('main');
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            const views = {};
+            let active = null,
+                paused = false,
+                tPause = 0,
+                t0 = performance.now();
+            for (const id in STYLES) {
+                const S = STYLES[id];
+                S.dpr = dpr;
+                const sec = document.createElement('section');
+                sec.className = 'sty';
+                sec.id = 's-' + id;
+                sec.innerHTML = `<p class="desc"><b>${S.tab}.</b> ${S.desc}</p><div style="color:#a89c88;font-size:12px">${S.paletteNote}</div><div class="pal">${S.swatches
+                    .map(
+                        ([
+                            n,
+                            h,
+                        ]) => `<div class="sw"><i style="background:${h}"></i>${n}<br>${h}</div>`,
+                    )
+                    .join('')}</div>`;
+                const cv = document.createElement('canvas');
+                sec.appendChild(cv);
+                main.appendChild(sec);
+                const lay = layout(sheet(S));
+                cv.width = W * dpr;
+                cv.height = lay.height * dpr;
+                cv.style.width = W + 'px';
+                cv.style.height = lay.height + 'px';
+                views[id] = {S, cv, lay, grass: grassTex(S, W, lay.height, dpr), sec};
+                const b = document.createElement('button');
+                b.textContent = S.tab;
+                b.onclick = () => show(id);
+                tabs.appendChild(b);
+                b.dataset.id = id;
+            }
+            const sp = document.createElement('span');
+            sp.className = 'sp';
+            tabs.appendChild(sp);
+            const pb = document.createElement('button');
+            pb.id = 'pause';
+            pb.textContent = 'Pause';
+            pb.onclick = () => {
+                paused = !paused;
+                pb.textContent = paused ? 'Play' : 'Pause';
+                if (!paused) t0 = performance.now() - tPause * 1000;
+            };
+            tabs.appendChild(pb);
+            function show(id) {
+                active = id;
+                location.hash = id;
+                for (const k in views) views[k].sec.classList.toggle('on', k === id);
+                [...tabs.querySelectorAll('button[data-id]')].forEach((b) =>
+                    b.classList.toggle('on', b.dataset.id === id),
+                );
+            }
+            window.showStyle = show;
+            function render(v, t) {
+                const {S, cv, lay, grass} = v,
+                    c = cv.getContext('2d');
+                c.setTransform(dpr, 0, 0, dpr, 0, 0);
+                c.clearRect(0, 0, W, lay.height);
+                c.drawImage(grass, 0, 0, W, lay.height);
+                for (const it of lay.cells) {
+                    if (it.sec) {
+                        txt(c, S, it.sec, 6, it.y + 14, 17, S.text, 'left');
+                        c.fillStyle = S.cellLine;
+                        c.fillRect(6, it.y + 27, W - 12, 2);
+                        continue;
+                    }
+                    const x = it.x + 3,
+                        y = it.y,
+                        w = it.pw - 6,
+                        h = it.ph;
+                    c.fillStyle = S.cell;
+                    c.beginPath();
+                    c.roundRect(x, y, w, h, 12);
+                    c.fill();
+                    c.strokeStyle = S.cellLine;
+                    c.lineWidth = S.id === 'bright' ? 3 : 1;
+                    c.stroke();
+                    c.save();
+                    c.beginPath();
+                    c.roundRect(x, y, w, h, 12);
+                    c.clip();
+                    c.save();
+                    c.translate(x + w / 2, y + (h - 26) / 2 + 6);
+                    try {
+                        it.d(c, t);
+                    } catch (e) {
+                        console.error(it.l, e);
+                    }
+                    c.restore();
+                    c.restore();
+                    const tw = c.measureText(it.l).width;
+                    c.font = `${S.fontW} 12px ${S.font}`;
+                    const lw = c.measureText(it.l).width + 16;
+                    c.fillStyle = S.chip;
+                    c.beginPath();
+                    c.roundRect(x + w / 2 - lw / 2, y + h - 23, lw, 18, 9);
+                    c.fill();
+                    txt(c, S, it.l, x + w / 2, y + h - 14, 12, '#fff');
+                }
+            }
+            function frame(now) {
+                const t = paused ? tPause : (now - t0) / 1000;
+                if (!paused) tPause = t;
+                if (active) render(views[active], t);
+                requestAnimationFrame(frame);
+            }
+            show(
+                (location.hash || '#cozy').slice(1) in STYLES
+                    ? (location.hash || '#cozy').slice(1)
+                    : 'cozy',
+            );
+            window.addEventListener('hashchange', () => {
+                const h = location.hash.slice(1);
+                if (h in STYLES && h !== active) show(h);
+            });
+            requestAnimationFrame(frame);
+        </script>
+    </body>
+</html>
