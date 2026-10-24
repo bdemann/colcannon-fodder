@@ -29,6 +29,15 @@ Each potato has a mash meter, and the Masher empties it. The other towers set it
 -   Cut and cooked together make a **x3 SMASH!**, shown as a floating hit number and status icons
     on the potato.
 
+Not every potato is a plain Russet. Reds are soft, Yukons and sweet potatoes are beefier, and some
+have traits (Yams have two):
+
+-   **Tough skin** (tough-skinned potatoes, Yams): Cut it first. Every hit does x0.4 damage until
+    the potato is Cut.
+-   **Dense** (sweet potatoes, Yams): soften it first. Masher hits do x0.5 damage until the potato
+    is Soft.
+-   **Eyes** (any potato): blades struggle. Knife and Laser hits do x0.5 damage.
+
 ### The seven towers
 
 | Key | Tower        | What it does                                                                                      |

@@ -8,6 +8,7 @@ import {
 } from '../config/game-config.js';
 import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
+import {type PotatoVariety} from '../potato/potato-variety.js';
 import {type TowerType} from '../tower/tower-type.js';
 
 /** Campaign has a fixed list of waves; endless generates waves forever. */
@@ -38,6 +39,10 @@ export type PotatoProcessing = {
     /** Mash left to do. 0 = fully mashed. */
     mashHp: number;
     maxMashHp: number;
+    /** Omitted means Russet (no traits). */
+    variety?: PotatoVariety;
+    /** Eyes weaken Knife and Laser hits. Omitted means none. */
+    hasEyes?: boolean;
 };
 
 /** The most recent serving, kept so the HUD can show a short result popup. */

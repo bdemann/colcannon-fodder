@@ -15,6 +15,24 @@ export const endlessConfig = {
     largeWeightMax: 0.7,
     smallWeightStart: 0.5,
     smallWeightPerWave: 0.05,
+    /** Tough share of the variety mix is 0 until this wave, then rises by `toughSharePerWave`. */
+    toughFromWave: 2,
+    toughSharePerWave: 0.07,
+    toughShareMax: 0.85,
+    /** How the soft share splits among Red, Russet and Yukon. */
+    softMix: {
+        red: 0.25,
+        russet: 0.45,
+        yukon: 0.3,
+    },
+    /** How the tough share splits among tough-skinned, sweet potato and yam. */
+    toughMix: {
+        toughSkinned: 0.4,
+        sweet: 0.3,
+        yam: 0.3,
+    },
+    eyesChancePerWave: 0.03,
+    eyesChanceMax: 0.4,
     /** A seagull for every this many waves. */
     wavesPerSeagull: 2,
     chuteSharePerWave: 0.05,

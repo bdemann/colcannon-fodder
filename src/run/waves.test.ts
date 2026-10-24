@@ -97,6 +97,8 @@ describe(advanceWaves.name, () => {
         assert.deepEquals(advanceWaves(runState, timer, 16), [
             {
                 sizeWeights: wave1.sizeWeights,
+                varietyWeights: wave1.varietyWeights,
+                eyesChance: wave1.eyesChance,
                 bossHp: getBossHp(0),
                 bossCount: 0,
                 chuteShare: wave1.chuteShare,

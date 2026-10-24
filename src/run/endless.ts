@@ -2,6 +2,11 @@ import {getBossHp} from '../config/boss-config.js';
 import {endlessConfig} from '../config/endless-config.js';
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {Dish} from '../order/dish.js';
+import {
+    createVarietyWeights,
+    PotatoVariety,
+    type PotatoVarietyWeights,
+} from '../potato/potato-variety.js';
 import {type RunState} from './run-state.js';
 
 /** Settings for the orders of one wave. */
@@ -28,8 +33,34 @@ export type WaveSettings = {
     spawnIntervalMs: number;
     speedPxPerMs: number;
     sizeWeights: {small: number; medium: number; large: number};
+    /** Chance of each potato variety. */
+    varietyWeights: PotatoVarietyWeights;
+    /** Chance a potato has eyes (blades struggle). */
+    eyesChance: number;
     orders: OrderSettings;
 };
+
+/**
+ * Endless variety weights for wave `n`: the soft group (Red, Russet, Yukon) gives way to the tough
+ * group (tough-skinned, sweet potato, yam) as `n` grows, up to a cap.
+ */
+export function generateEndlessVarietyWeights(n: number): PotatoVarietyWeights {
+    const c = endlessConfig;
+    const tough = Math.min(
+        c.toughShareMax,
+        Math.max(0, c.toughSharePerWave * (n - c.toughFromWave)),
+    );
+    const soft = 1 - tough;
+
+    return createVarietyWeights({
+        [PotatoVariety.Red]: soft * c.softMix.red,
+        [PotatoVariety.Russet]: soft * c.softMix.russet,
+        [PotatoVariety.Yukon]: soft * c.softMix.yukon,
+        [PotatoVariety.ToughSkinned]: tough * c.toughMix.toughSkinned,
+        [PotatoVariety.Sweet]: tough * c.toughMix.sweet,
+        [PotatoVariety.Yam]: tough * c.toughMix.yam,
+    });
+}
 
 /** The settings of endless wave `n` (1-based). Pure. */
 export function generateEndlessWave(n: number): WaveSettings {
@@ -50,6 +81,8 @@ export function generateEndlessWave(n: number): WaveSettings {
             medium: Math.max(0, 1 - large - small),
             large,
         },
+        varietyWeights: generateEndlessVarietyWeights(n),
+        eyesChance: Math.min(c.eyesChanceMax, c.eyesChancePerWave * n),
         seagullCount: Math.floor(n / c.wavesPerSeagull),
         chuteShare: Math.min(c.chuteShareMax, c.chuteSharePerWave * n),
         clumpChance: Math.min(c.clumpChanceMax, c.clumpChancePerWave * n),

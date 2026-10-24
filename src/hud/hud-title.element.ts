@@ -1,5 +1,6 @@
 import {createFullDateInUserTimezone, toFormattedString} from 'date-vir';
 import {css, defineElement, html, nothing, svg} from 'element-vir';
+import {potatoTraitLines} from '../config/potato-variety-config.js';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getPositionAlongPath, type LevelDefinition} from '../level/level.js';
 import {getLevel, getLevelsForPlayerCount} from '../level/levels.js';
@@ -144,6 +145,7 @@ function renderHall(snapshot: HudSnapshot) {
 export const rules = [
     comboHintText,
     'Every tower mashes. The Knife cuts a short line straight across the belt. The late-game Laser is the aimable long line: aim it when you build it (scroll or [ ]) and it chops everything on that line, fast. Pots soften everything in range, so Mashers hit twice as hard.',
+    `Potato varieties: ${potatoTraitLines.join(' ')}`,
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Potatoes are judged the instant they arrive, so get them done done done first. Fully mashed ones make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
