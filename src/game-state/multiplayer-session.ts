@@ -6,6 +6,7 @@ import {createInitialRunState} from '../run/run-state.js';
 import {DeployEnv, deployEnv} from './deploy-env.js';
 import {GameCommandType, sendGameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
+import {getMultiplayerGameId} from './multiplayer-game-id.js';
 
 /** Which full-screen panel the player is on before (or instead of) the game. */
 export enum SessionScreen {
@@ -47,7 +48,10 @@ export function getMultiplayerBackendOrigin(env: DeployEnv, hostname: string): s
 
 /** Whether this build has a multiplayer backend to talk to. */
 export function isMultiplayerEnabled(): boolean {
-    return !!getMultiplayerBackendOrigin(deployEnv, globalThis.location.hostname);
+    return (
+        !!getMultiplayerGameId(globalThis.location.origin) &&
+        !!getMultiplayerBackendOrigin(deployEnv, globalThis.location.hostname)
+    );
 }
 
 /**

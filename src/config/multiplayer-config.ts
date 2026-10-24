@@ -1,11 +1,11 @@
 /** Tunables for co-op multiplayer rooms (see `src/game-state/multiplayer-session.ts`). */
 export const multiplayerConfig = {
-    /**
-     * The production multiplayer backend origin, for example `https://backend.example.com`. Empty
-     * until the server owner provides one: an empty value hides the co-op UI in production builds
-     * and boots straight into singleplayer, exactly as before multiplayer existed.
-     */
-    prodBackendOrigin: '',
+    /** The production multiplayer backend (electrovir's server). */
+    prodBackendOrigin: 'https://backend.mp.electrovir.com',
+    /** The game id registered on the backend. The server only allows it from `prodOrigin`. */
+    gameId: 'colcannon-fodder',
+    /** The only deployed origin that gets multiplayer (GitHub Pages). */
+    prodOrigin: 'https://bdemann.github.io',
     /** The development backend (`npm start` runs it) listens on this port of the page's host. */
     devBackendPort: 9348,
     /** STUN servers for WebRTC. There is no TURN, so some strict networks cannot connect. */
