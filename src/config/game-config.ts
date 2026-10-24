@@ -443,3 +443,11 @@ export const speedConfig = {
     /** The speed "fast until income" jumps to when the run is at normal speed. */
     untilIncomeSpeed: 2,
 } as const;
+
+/** One color per player slot (4 slots), for towers, potatoes and the co-op score column. */
+export const slotColors = [
+    '#e0533d',
+    '#4a90c8',
+    '#6aa84f',
+    '#9b59b6',
+];

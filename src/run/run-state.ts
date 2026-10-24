@@ -116,6 +116,8 @@ export type RunState = {
     nextCoinEventId: number;
     /** Score earned per player slot. Has an entry for every slot the level defines. */
     scoreBySlot: Record<number, number>;
+    /** Perfect servings per player slot, for the co-op contribution ranking. */
+    perfectBySlot: Record<number, number>;
     /**
      * Which player slot each client id owns. Lives in synced state because client ids are random
      * per page load. Empty in singleplayer, where every command resolves to slot 0.
@@ -229,6 +231,7 @@ export function createInitialRunState(
         coinEvents: [],
         nextCoinEventId: 1,
         scoreBySlot: createInitialScoreBySlot(levelId),
+        perfectBySlot: {},
         slotByClientId: {},
         slotNames: {},
         connected: {},
