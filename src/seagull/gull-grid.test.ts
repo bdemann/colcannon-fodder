@@ -6,6 +6,7 @@ import {
     getCellAt,
     getCellCenter,
     isWalkableEdge,
+    refreshGullGrid,
     type GridCell,
     type GullGrid,
 } from './gull-grid.js';
@@ -212,6 +213,104 @@ describe(isWalkableEdge.name, () => {
                 },
             }),
             3,
+        );
+    });
+});
+
+describe('refreshGullGrid', () => {
+    const towerA = {
+        x: 400,
+        y: 300,
+    };
+    const towerB = {
+        x: 700,
+        y: 500,
+    };
+
+    it('reuses the grid while the towers stay put, in any order', () => {
+        const first = refreshGullGrid({
+            level: testLevel,
+            towers: [
+                towerA,
+                towerB,
+            ],
+        });
+
+        assert.strictEquals(
+            refreshGullGrid({
+                level: testLevel,
+                towers: [
+                    towerA,
+                    towerB,
+                ],
+            }),
+            first,
+        );
+        assert.strictEquals(
+            refreshGullGrid({
+                level: testLevel,
+                towers: [
+                    towerB,
+                    towerA,
+                ],
+            }),
+            first,
+        );
+        assert.strictEquals(
+            refreshGullGrid({
+                level: testLevel,
+                towers: [
+                    towerA,
+                    towerB,
+                ],
+            }),
+            first,
+        );
+    });
+
+    it('rebuilds when a tower is added, moved or removed', () => {
+        const first = refreshGullGrid({
+            level: testLevel,
+            towers: [
+                towerA,
+                towerB,
+            ],
+        });
+        const added = refreshGullGrid({
+            level: testLevel,
+            towers: [
+                towerA,
+                towerB,
+                {
+                    x: 900,
+                    y: 200,
+                },
+            ],
+        });
+        const moved = refreshGullGrid({
+            level: testLevel,
+            towers: [
+                towerA,
+                {
+                    x: 701,
+                    y: 500,
+                },
+            ],
+        });
+        const removed = refreshGullGrid({
+            level: testLevel,
+            towers: [towerA],
+        });
+
+        assert.notStrictEquals(added, first);
+        assert.notStrictEquals(moved, added);
+        assert.notStrictEquals(removed, moved);
+        assert.deepEquals(
+            removed.blocked,
+            buildGullGrid({
+                level: testLevel,
+                towers: [towerA],
+            }).blocked,
         );
     });
 });

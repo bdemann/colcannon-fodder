@@ -123,7 +123,7 @@ export function distanceToEdgeCells({
     return Math.min(cell.col, cell.row, grid.cols - 1 - cell.col, grid.rows - 1 - cell.row);
 }
 
-let cached: {level: unknown; key: string; grid: GullGrid} | undefined;
+let cached: {level: unknown; key: string; grid: GullGrid; xs: number[]; ys: number[]} | undefined;
 
 /**
  * Keeps the shared grid in step with the towers. Called every frame by the spawner (which can see
@@ -137,6 +137,17 @@ export function refreshGullGrid({
     level: Readonly<LevelDefinition>;
     towers: ReadonlyArray<Readonly<Coords>>;
 }>): GullGrid {
+    // Fast path (nearly every frame): the same towers in the same order as last time.
+    if (
+        cached?.level === level &&
+        cached.xs.length === towers.length &&
+        towers.every(
+            (tower, index) => tower.x === cached?.xs[index] && tower.y === cached.ys[index],
+        )
+    ) {
+        return cached.grid;
+    }
+
     const key = towers
         .map((tower) => `${tower.x},${tower.y}`)
         .sort()
@@ -150,8 +161,12 @@ export function refreshGullGrid({
                 level,
                 towers,
             }),
+            xs: [],
+            ys: [],
         };
     }
+    cached.xs = towers.map((tower) => tower.x);
+    cached.ys = towers.map((tower) => tower.y);
 
     return cached.grid;
 }

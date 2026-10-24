@@ -202,6 +202,13 @@ export const towerArtConfig = {
         'cricket-trap': 400,
         swiper: 500,
     },
+    /**
+     * Towers are redrawn at most this often, because every redraw makes Pixi rebuild the geometry:
+     * an idle tower (slow loop) every `idleRedrawMs`, an attacking or turning one every
+     * `activeRedrawMs` (about 30 per second).
+     */
+    idleRedrawMs: 50,
+    activeRedrawMs: 33,
 } as const;
 
 /** Thrown projectiles (render-only): towers visibly lob their attacks at the target. */
