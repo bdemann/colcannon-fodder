@@ -1,0 +1,41 @@
+tower,wave,avg_potato_hp,damage_per_pass_alone,can_finish_alone,dps_per_coin_effective
+Knife,1,40.0,20.6,no,0.1078
+Knife,2,190.0,19.0,no,0.1445
+Knife,3,212.0,17.4,no,0.1931
+Knife,4,248.0,16.5,no,0.2547
+Knife,5,270.0,15.5,no,0.3589
+Boiling Pot,1,40.0,20.0,no,0.0730
+Boiling Pot,2,190.0,17.1,no,0.0922
+Boiling Pot,3,212.0,14.9,no,0.1185
+Boiling Pot,4,248.0,13.1,no,0.1474
+Boiling Pot,5,270.0,11.6,no,0.2005
+Masher,1,40.0,122.6,yes,0.5000
+Masher,2,190.0,107.2,no,0.5000
+Masher,3,212.0,95.3,no,0.5000
+Masher,4,248.0,85.8,no,0.5000
+Masher,5,270.0,78.0,no,0.5000
+Microwave,1,40.0,102.1,yes,0.3409
+Microwave,2,190.0,89.3,no,0.4310
+Microwave,3,212.0,79.4,no,0.5538
+Microwave,4,248.0,71.4,no,0.6888
+Microwave,5,270.0,64.9,no,0.9368
+Cricket Trap,1,40.0,0.0,no,0.0000
+Cricket Trap,2,190.0,0.0,no,0.0000
+Cricket Trap,3,212.0,0.0,no,0.0000
+Cricket Trap,4,248.0,0.0,no,0.0000
+Cricket Trap,5,270.0,0.0,no,0.0000
+Swiper,1,40.0,0.0,no,0.0000
+Swiper,2,190.0,0.0,no,0.0000
+Swiper,3,212.0,0.0,no,0.0000
+Swiper,4,248.0,0.0,no,0.0000
+Swiper,5,270.0,0.0,no,0.0000
+Laser,1,40.0,73.4,yes,0.0958
+Laser,2,190.0,64.0,no,0.1211
+Laser,3,212.0,56.7,no,0.1556
+Laser,4,248.0,50.8,no,0.1935
+Laser,5,270.0,46.0,no,0.2632
+Laser (across belt),1,40.0,20.6,no,0.0287
+Laser (across belt),2,190.0,19.0,no,0.0385
+Laser (across belt),3,212.0,17.4,no,0.0515
+Laser (across belt),4,248.0,16.5,no,0.0679
+Laser (across belt),5,270.0,15.5,no,0.0957
