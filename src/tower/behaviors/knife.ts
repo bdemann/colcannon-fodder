@@ -8,6 +8,7 @@ import {
 import {applyTowerHit} from '../../potato/mash.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {SeagullEntity} from '../../seagull/seagull.entity.js';
+import {isTargetablePotato} from '../tower-targeting.js';
 import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
 import {addWear, getWearPerUse} from '../wear.js';
@@ -112,9 +113,7 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
     let hitSomething = false;
     for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
         if (
-            potato.params.served ||
-            potato.params.carriedBySeagull ||
-            potato.params.dropInMs > 0 ||
+            !isTargetablePotato(potato.params) ||
             !isOnSlice({
                 point: potato.params,
                 radius: potatoSizeConfig[potato.params.size].radius,

@@ -27,6 +27,7 @@ import {
     chooseTargetIndex,
     getGullsInRange,
     isInRangeBox,
+    isTargetablePotato,
     type GullCandidate,
     type TargetCandidate,
 } from './tower-targeting.js';
@@ -235,12 +236,7 @@ export class TowerEntity extends defineEntity({
         const potatoes: PotatoEntity[] = [];
         const potatoCandidates: TargetCandidate[] = [];
         for (const potato of this.state.entityStore.getEntities(PotatoEntity)) {
-            if (
-                !potato.params.served &&
-                !potato.params.carriedBySeagull &&
-                potato.params.dropInMs <= 0 &&
-                isInRangeBox(towerCircle, potato.params)
-            ) {
+            if (isTargetablePotato(potato.params) && isInRangeBox(towerCircle, potato.params)) {
                 potatoes.push(potato);
                 potatoCandidates.push({
                     x: potato.params.x,
