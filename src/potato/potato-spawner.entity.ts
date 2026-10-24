@@ -159,7 +159,11 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
      */
     protected async spawnPotato(
         path: Readonly<PathDefinition>,
-        spawn: Readonly<{sizeWeights: PotatoSizeWeights; chuteShare: number}>,
+        spawn: Readonly<{
+            sizeWeights: PotatoSizeWeights;
+            chuteShare: number;
+            hpMultiplier: number;
+        }>,
         laneRoll?: number,
     ) {
         const {runState} = this.state;
@@ -170,7 +174,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         }
 
         const size = pickPotatoSize(spawn.sizeWeights, this.state.seededRandom.next());
-        const mashHp = potatoSizeConfig[size].mashHp;
+        const mashHp = Math.round(potatoSizeConfig[size].mashHp * spawn.hpMultiplier);
         // Only roll on paths with chutes, so other levels keep their random sequence.
         const chute = path.chutes?.length
             ? pickChute({

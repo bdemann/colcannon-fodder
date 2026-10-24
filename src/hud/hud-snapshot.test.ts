@@ -30,6 +30,7 @@ describe(createHudSnapshot.name, () => {
             servedAtMs: 5000,
             scoreDelta: 100,
             satisfactionDelta: 2,
+            prestigeDelta: 3,
             progress: 1,
         };
 
@@ -47,6 +48,7 @@ describe(createHudSnapshot.name, () => {
             id: 4,
             scoreDelta: 100,
             satisfactionDelta: 2,
+            prestigeDelta: 3,
             progress: 1,
         });
         assert.deepEquals(popupAt(5000 + hudConfig.servingPopupMs - 1), {
@@ -54,6 +56,7 @@ describe(createHudSnapshot.name, () => {
             id: 4,
             scoreDelta: 100,
             satisfactionDelta: 2,
+            prestigeDelta: 3,
             progress: 1,
         });
         assert.isUndefined(popupAt(5000 + hudConfig.servingPopupMs));

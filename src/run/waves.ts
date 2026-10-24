@@ -12,6 +12,7 @@ export type WaveSpawn = {
     bossCount: number;
     bossHp: number;
     chuteShare: number;
+    hpMultiplier: number;
 };
 
 /** The spawner's countdown to its next spawn. It lives in the spawner entity's params. */
@@ -73,6 +74,7 @@ export function advanceWaves(
                         : 0,
                 bossHp: wave.bossHp,
                 chuteShare: wave.chuteShare,
+                hpMultiplier: wave.hpMultiplier,
             });
             runState.spawnedInWave++;
             timer.msUntilNextSpawn += wave.spawnIntervalMs;

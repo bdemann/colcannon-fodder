@@ -8,8 +8,6 @@ export const qualityConfig = {
     microwaveConeHalfAngleDeg: 25,
     /** The cone wedge shows for this long after the last firing update. */
     microwaveFlashMs: 200,
-    /** Prestige = average quality of this many most recent Perfect servings. */
-    prestigeWindow: 10,
     /** Orders refuse potatoes below this quality. */
     minOrderQuality: 50,
     /** Stars needed (with a win) for the Mash Champ title. */

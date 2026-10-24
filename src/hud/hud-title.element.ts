@@ -144,7 +144,8 @@ export const rules = [
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Potatoes are judged the instant they arrive, so get them done done done first. Fully mashed ones make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
-    'The Microwave is fast and cheap, but rubbery potatoes hurt your prestige.',
+    'You start at zero stars with only the Knife. Serve quality mash to earn prestige: stars unlock new towers and upgrades. Poor potatoes (rubbery Microwave mash, raw or half-mashed ones, stolen ones, missed orders) cost stars, and towers lock again if you slip.',
+    'The Microwave is fast and cheap, but rubbery potatoes cost you prestige.',
     'Towers wear out with use. Click one and press S to service it.',
     'Keep satisfaction above zero through every wave to become the Mash Champ.',
 ];

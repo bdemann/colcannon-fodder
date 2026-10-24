@@ -1,5 +1,6 @@
 import {assertWrap} from '@augment-vir/assert';
 import {orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {applyPrestigeEvent} from '../progression/progression.js';
 import {getWaveSettings} from '../run/endless.js';
 import {type RunState, RunStatus} from '../run/run-state.js';
 import {Dish} from './dish.js';
@@ -53,6 +54,9 @@ export function advanceOrders({
             dish: order.dish,
             atMs: runState.elapsedMs,
             scoreDelta: 0,
+            prestigeDelta: applyPrestigeEvent(runState, {
+                kind: 'order-expired',
+            }),
             satisfactionDelta: newSatisfaction - runState.satisfaction,
         };
         runState.satisfaction = newSatisfaction;

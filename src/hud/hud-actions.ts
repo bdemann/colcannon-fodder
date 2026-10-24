@@ -5,6 +5,7 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
+import {getStarsFromPoints, isTowerUnlocked} from '../progression/progression.js';
 import {type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
@@ -57,6 +58,12 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
 
     const actions: HudActions = {
         selectTowerType(towerType) {
+            if (
+                towerType &&
+                !isTowerUnlocked(towerType, getStarsFromPoints(state.runState?.prestigePoints ?? 0))
+            ) {
+                return;
+            }
             if (state.ui) {
                 state.ui.selectedTowerType = towerType;
                 state.ui.selectedTowerId = undefined;

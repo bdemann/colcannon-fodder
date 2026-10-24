@@ -100,6 +100,7 @@ describe(advanceWaves.name, () => {
                 bossHp: getBossHp(0),
                 bossCount: 0,
                 chuteShare: wave1.chuteShare,
+                hpMultiplier: wave1.hpMultiplier,
             },
         ]);
         assert.strictEquals(runState.spawnedInWave, 1);

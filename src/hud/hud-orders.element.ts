@@ -3,6 +3,7 @@ import {cozyPalette} from '../art/cozy.js';
 import {dishDefinitions} from '../order/dish.js';
 import {toppingDefinitions} from '../order/topping.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {prestigeText} from './hud-stats.element.js';
 import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
 
 /** Time bar color: green, turning red under this fraction of time left. */
@@ -157,8 +158,8 @@ export const HudOrders = defineElement<{
                                   : '#ff8f73'}"
                           >
                               ${orderPopup.kind === 'fulfilled'
-                                  ? `${dishDefinitions[orderPopup.dish].label} served! +${orderPopup.scoreDelta}`
-                                  : `${dishDefinitions[orderPopup.dish].label} order expired! ${orderPopup.satisfactionDelta}`}
+                                  ? `${dishDefinitions[orderPopup.dish].label} served! +${orderPopup.scoreDelta}${prestigeText(orderPopup.prestigeDelta)}`
+                                  : `${dishDefinitions[orderPopup.dish].label} order expired! ${orderPopup.satisfactionDelta}${prestigeText(orderPopup.prestigeDelta)}`}
                           </div>
                       `,
                   )

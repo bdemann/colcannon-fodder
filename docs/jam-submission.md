@@ -35,7 +35,7 @@ Earn the title of **Mash Champ**.
     from the towers. Purely visual.
 -   Hand-applied toppings and customer orders: Buttered Mash, Champ, Colcannon, Bangers & Mash.
 -   Potatoes are judged the instant they reach the restaurant: no queue, no second chances.
--   Thieving seagulls, tower wear and servicing, upgrades, and restaurant prestige.
+-   Thieving seagulls, tower wear and servicing, upgrades, and restaurant prestige: you start at zero stars with only the Knife, quality mash unlocks towers and upgrades, and poor potatoes (rubbery Microwave mash, raw ones) cost stars and lock them again.
 -   Four maps, including the branching Fork, in Campaign (ending with the Russet King) or Endless.
 -   Best scores and a Hall of Mash Champs, saved in your browser.
 

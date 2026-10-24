@@ -81,9 +81,14 @@ of satisfaction. Knock a gull out with your towers or feed it with a Cricket Tra
 
 ### Prestige and quality
 
-Every potato has a quality that the Microwave wears down. **Prestige** (0 to 5
-stars) is the average quality of your last ten perfect servings. To earn **Mash Champ** you need to
-win with 3 or more stars, so shortcuts have a price.
+Every potato has a quality that the Microwave wears down. **Prestige** is the
+campaign's spine: you start every run at zero stars with only the Knife, and serving quality mash
+(and filling orders) raises prestige points (20 points per star, 5 stars at most). Stars unlock
+towers (Boiling Pot at half a star up to the Laser at four) and the second and third tower upgrade
+levels (2.5 and 4 stars). Poor potatoes cost stars: rubbery Microwave mash, raw or half-mashed
+potatoes, missed orders and stolen potatoes. If your rating slips, towers lock again and built
+ones go dormant until you earn the stars back. To earn **Mash Champ** you need to win with 3 or
+more stars, so shortcuts have a price.
 
 ### Coins and scoring
 

@@ -8,6 +8,7 @@ import {
     type SeededRandomState,
 } from '@augment-vir/common';
 import {RunStatus, type RunState} from '../run/run-state.js';
+import {payWaveBonuses} from '../run/serving.js';
 import {stepsForFrame} from '../run/speed.js';
 import {gameCommandHandlers} from './game-command-handlers.js';
 import {type GameCommand} from './game-command.js';
@@ -117,6 +118,7 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
             }
             state.runState.elapsedMs += frameUpdateParams.msSinceLastExecute;
             await state.entityStore?.updateAllEntities(frameUpdateParams);
+            payWaveBonuses(state.runState);
         }
     },
 });

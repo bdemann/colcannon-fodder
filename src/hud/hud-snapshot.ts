@@ -2,11 +2,18 @@ import {isMuted} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
 import {bossConfig} from '../config/boss-config.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {progressionConfig} from '../config/progression-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {levels} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
-import {getPrestigeStars} from '../quality/quality.js';
+import {
+    getNextUnlockProgress,
+    getStarsFromPoints,
+    getUpgradeStars,
+    isTowerUnlocked,
+} from '../progression/progression.js';
 import {getRecords, saveFinishedRun, type Records} from '../records/records.js';
 import {getWaveSettings, getWavesReached} from '../run/endless.js';
 import {
@@ -16,7 +23,13 @@ import {
     type ServingResult,
 } from '../run/run-state.js';
 import {hasTowerIcons} from '../tower/tower-icons.js';
-import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
+import {
+    getSellValue,
+    getTowerStats,
+    getUpgradeCost,
+    TowerType,
+    towerTypes,
+} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getServiceCost} from '../tower/wear.js';
 
@@ -78,12 +91,13 @@ export type HudSnapshot = {
               id: number;
               scoreDelta: number;
               satisfactionDelta: number;
+              prestigeDelta: number;
               /** Mash progress when served, 0 to 1. */
               progress: number;
           }
         | undefined;
     /** Set while the latest seagull steal is recent enough to show; `id` changes for each one. */
-    stealPopup: {satisfactionDelta: number; id: number} | undefined;
+    stealPopup: {satisfactionDelta: number; prestigeDelta: number; id: number} | undefined;
     /** Potatoes seagulls got away with this run. */
     potatoesStolen: number;
     /** True once the toolbar's tower icon images exist, so the toolbar re-renders with them. */
@@ -98,6 +112,8 @@ export type HudSnapshot = {
               level: number;
               /** `undefined` at the max level. */
               upgradeCost: number | undefined;
+              /** Stars needed for the next level when the rating is too low, else `undefined`. */
+              upgradeNeedsStars: number | undefined;
               sellValue: number;
               /** Wear 0 to 100, rounded so the HUD re-renders only on whole steps. */
               wear: number;
@@ -114,6 +130,7 @@ export type HudSnapshot = {
               dish: Dish;
               scoreDelta: number;
               satisfactionDelta: number;
+              prestigeDelta: number;
               id: number;
           }
         | undefined;
@@ -121,6 +138,18 @@ export type HudSnapshot = {
     bossBanner: {id: number} | undefined;
     /** Restaurant prestige, 0 to 5 in half steps. */
     prestigeStars: number;
+    /** Prestige points to one decimal, shown as the live value. */
+    prestigePoints: number;
+    /** Progress to the next unlock (tower or upgrade level), `undefined` when none is left. */
+    unlockProgress: {nextStars: number; fraction: number} | undefined;
+    /** Tower types the current stars let the player build. */
+    unlockedTowers: TowerType[];
+    /** The unlock or lock banner while it is recent. `id` restarts it. */
+    prestigeBanner: {id: number; text: string} | undefined;
+    /** Toolbar buttons glowing because they just unlocked. */
+    glowTowers: TowerType[];
+    /** The one-time wave-1 hint on the first map. */
+    tutorialHint: string | undefined;
     /** Whether sound effects are muted. */
     muted: boolean;
     /** Music and sound effect volumes, 0 to 1. */
@@ -128,7 +157,10 @@ export type HudSnapshot = {
 };
 
 /** Describes the selected built tower for the tower panel, if one is selected and still exists. */
-function getSelectedTower(state: Partial<FullGameState>): HudSnapshot['selectedTower'] {
+function getSelectedTower(
+    state: Partial<FullGameState>,
+    stars: number,
+): HudSnapshot['selectedTower'] {
     const selectedId = state.ui?.selectedTowerId;
     if (selectedId == undefined || !state.entityStore) {
         return undefined;
@@ -141,6 +173,10 @@ function getSelectedTower(state: Partial<FullGameState>): HudSnapshot['selectedT
                 towerId,
                 towerType,
                 level,
+                upgradeNeedsStars:
+                    level < upgradeConfig.maxLevel && stars < getUpgradeStars(level + 1)
+                        ? getUpgradeStars(level + 1)
+                        : undefined,
                 upgradeCost:
                     level < upgradeConfig.maxLevel
                         ? getUpgradeCost(towerType, (level + 1) as 2 | 3)
@@ -162,7 +198,12 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const lastOrderEvent = runState.lastOrderEvent;
     const lastSteal = runState.lastSteal;
     const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
-    const prestigeStars = getPrestigeStars(runState.recentQualities);
+    const prestigeStars = getStarsFromPoints(runState.prestigePoints);
+    const notice = runState.prestigeNotice;
+    const noticeRecent =
+        notice && runState.elapsedMs - notice.atMs < progressionConfig.noticeMs
+            ? notice
+            : undefined;
     // Saves the finished run exactly once (UI side), before `records` is read below.
     const newBest = saveFinishedRun(runState, {
         score: totalScore,
@@ -215,6 +256,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       id: runState.potatoesServed,
                       scoreDelta: lastServing.scoreDelta,
                       satisfactionDelta: lastServing.satisfactionDelta,
+                      prestigeDelta: lastServing.prestigeDelta,
                       progress: lastServing.progress,
                   }
                 : undefined,
@@ -222,6 +264,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
             lastSteal && runState.elapsedMs - lastSteal.atMs < hudConfig.servingPopupMs
                 ? {
                       satisfactionDelta: lastSteal.satisfactionDelta,
+                      prestigeDelta: lastSteal.prestigeDelta,
                       id: lastSteal.atMs,
                   }
                 : undefined,
@@ -229,7 +272,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         towerIconsReady: hasTowerIcons(),
         selectedTowerType: state.ui?.selectedTowerType,
         selectedTopping: state.ui?.selectedTopping,
-        selectedTower: getSelectedTower(state),
+        selectedTower: getSelectedTower(state, prestigeStars),
         orders: runState.orders.map((order) => {
             const totalMs = Math.max(1, order.expiresAtMs - order.createdAtMs);
             const leftMs = Math.max(0, order.expiresAtMs - runState.elapsedMs);
@@ -248,6 +291,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       dish: lastOrderEvent.dish,
                       scoreDelta: lastOrderEvent.scoreDelta,
                       satisfactionDelta: lastOrderEvent.satisfactionDelta,
+                      prestigeDelta: lastOrderEvent.prestigeDelta,
                       id: lastOrderEvent.atMs,
                   }
                 : undefined,
@@ -259,6 +303,29 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   }
                 : undefined,
         prestigeStars,
+        prestigePoints: Math.round(runState.prestigePoints * 10) / 10,
+        unlockProgress: getNextUnlockProgress(runState.prestigePoints),
+        unlockedTowers: Object.values(TowerType).filter((towerType) => {
+            return isTowerUnlocked(towerType, prestigeStars);
+        }),
+        prestigeBanner: noticeRecent
+            ? {
+                  id: noticeRecent.id,
+                  text:
+                      noticeRecent.kind === 'unlocked'
+                          ? `🔓 ${noticeRecent.towerTypes.map((type) => towerTypes[type].label).join(', ')} unlocked!`
+                          : `🔒 ${noticeRecent.towerTypes.map((type) => towerTypes[type].label).join(', ')} locked: prestige too low`,
+              }
+            : undefined,
+        glowTowers: noticeRecent?.kind === 'unlocked' ? noticeRecent.towerTypes : [],
+        tutorialHint:
+            runState.status === 'playing' &&
+            runState.waveIndex === 0 &&
+            prestigeStars === 0 &&
+            runState.elapsedMs < progressionConfig.tutorialHintMs &&
+            runState.levelId === levels[0]?.levelId
+                ? progressionConfig.tutorialHint
+                : undefined,
         muted: isMuted(),
         volumes: {
             ...getVolumes(),

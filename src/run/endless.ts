@@ -15,6 +15,8 @@ export type OrderSettings = {
 /** Everything the spawner, waves, orders, seagulls, chutes, clumps and boss read about a wave. */
 export type WaveSettings = {
     potatoCount: number;
+    /** Multiplies the mash HP of this wave's potatoes. */
+    hpMultiplier: number;
     chuteShare: number;
     seagullCount: number;
     clumpChance: number;
@@ -37,6 +39,7 @@ export function generateEndlessWave(n: number): WaveSettings {
 
     return {
         potatoCount: c.potatoBase + c.potatoPerWave * n,
+        hpMultiplier: 1,
         spawnIntervalMs: Math.max(
             c.spawnIntervalMinMs,
             c.spawnIntervalBaseMs - c.spawnIntervalPerWaveMs * n,

@@ -8,6 +8,7 @@ import {
     seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
+import {progressionConfig} from '../config/progression-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {Dish} from '../order/dish.js';
 import {createNoToppings, Topping} from '../order/topping.js';
@@ -147,6 +148,7 @@ describe(servePotato.name, () => {
             servedAtMs: 1234,
             scoreDelta: servingConfig.perfect.score,
             satisfactionDelta: servingConfig.perfect.satisfaction,
+            prestigeDelta: progressionConfig.perfectMax,
             progress: 1,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);
@@ -369,6 +371,7 @@ describe('servePotato order filling', () => {
             atMs: 777,
             scoreDelta: orderConfig.fulfilled.score,
             satisfactionDelta: orderConfig.fulfilled.satisfaction,
+            prestigeDelta: progressionConfig.orderFilled,
         });
     });
 
@@ -567,6 +570,7 @@ describe(stealPotato.name, () => {
         );
         assert.deepEquals(runState.lastSteal, {
             atMs: 999,
+            prestigeDelta: 0,
             satisfactionDelta: seagullConfig.stolenSatisfaction,
         });
     });
@@ -650,18 +654,16 @@ describe('servePotato quality', () => {
         );
     });
 
-    it('records perfect qualities, capped at the prestige window', () => {
+    it('moves prestige with each serving result', () => {
         const runState = createInitialRunState();
-        for (let i = 0; i < qualityConfig.prestigeWindow + 2; i++) {
-            serveAt(runState, i);
-        }
-
-        assert.strictEquals(runState.recentQualities.length, qualityConfig.prestigeWindow);
-        assert.strictEquals(runState.recentQualities[0], 2);
-    });
-
-    it('does not record non-perfect servings', () => {
-        const runState = createInitialRunState();
+        runState.prestigePoints = 50;
+        serveAt(runState, 100);
+        assert.strictEquals(runState.prestigePoints, 50 + progressionConfig.perfectMax);
+        serveAt(runState, 30);
+        assert.strictEquals(
+            runState.prestigePoints,
+            50 + progressionConfig.perfectMax + progressionConfig.rubberyPenalty,
+        );
         servePotato(runState, {
             processing: raw,
             ownerSlot: 0,
@@ -669,8 +671,13 @@ describe('servePotato quality', () => {
             toppings: createNoToppings(),
             quality: 100,
         });
-
-        assert.deepEquals(runState.recentQualities, []);
+        assert.strictEquals(
+            runState.prestigePoints,
+            50 +
+                progressionConfig.perfectMax +
+                progressionConfig.rubberyPenalty +
+                progressionConfig.rawPenalty,
+        );
     });
 
     it('only fills an order at or above the minimum quality', () => {

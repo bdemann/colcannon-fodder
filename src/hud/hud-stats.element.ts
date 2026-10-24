@@ -4,6 +4,16 @@ import {RunStatus, ServingResult} from '../run/run-state.js';
 import {coinIcon, starRow} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
+import {starLabel} from './hud-tower-toolbar.element.js';
+
+/** Appends the prestige change to a popup, like ` ★ +2.4`. Empty when prestige did not move. */
+export function prestigeText(delta: number): string {
+    if (!delta) {
+        return '';
+    }
+
+    return `  ★ ${delta > 0 ? '+' : ''}${Math.round(delta * 10) / 10}`;
+}
 
 const popupContent: Record<
     ServingResult,
@@ -11,7 +21,7 @@ const popupContent: Record<
 > = {
     [ServingResult.Perfect]: {
         getText(popup) {
-            return `Perfect mash! +${popup.scoreDelta}`;
+            return `Perfect mash! +${popup.scoreDelta}${prestigeText(popup.prestigeDelta)}`;
         },
         color: '#c4e07a',
     },
@@ -25,13 +35,13 @@ const popupContent: Record<
                       ? 'Half-mashed'
                       : 'Barely touched';
 
-            return `${label}... ${popup.satisfactionDelta}`;
+            return `${label}... ${popup.satisfactionDelta}${prestigeText(popup.prestigeDelta)}`;
         },
         color: '#f6cf6a',
     },
     [ServingResult.Raw]: {
         getText(popup) {
-            return `RAW POTATO! ${popup.satisfactionDelta}`;
+            return `RAW POTATO! ${popup.satisfactionDelta}${prestigeText(popup.prestigeDelta)}`;
         },
         color: '#ff8f73',
     },
@@ -90,6 +100,35 @@ export const HudStats = defineElement<{
             color: var(--hud-caramel);
             font-size: 30px;
             font-weight: 700;
+        }
+
+        .points {
+            font-size: 22px;
+            opacity: 0.7;
+        }
+
+        .unlock-bar {
+            background: var(--hud-sand);
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+            width: 330px;
+        }
+
+        .unlock-fill {
+            background: var(--hud-pumpkin);
+            height: 100%;
+        }
+
+        .hint {
+            ${hudFloatingTextStyles}
+            color: var(--hud-cream);
+            font-size: 36px;
+            left: 888px;
+            position: absolute;
+            top: 800px;
+            transform: translateX(-50%);
+            white-space: nowrap;
         }
 
         .wave {
@@ -179,7 +218,23 @@ export const HudStats = defineElement<{
                     </div>
                     <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
                 </div>
-                <div class="prestige">Prestige ${starRow(snapshot.prestigeStars)}</div>
+                <div class="prestige">
+                    Prestige ${starRow(snapshot.prestigeStars)}
+                    <span class="points">${snapshot.prestigePoints}</span>
+                </div>
+                ${snapshot.unlockProgress
+                    ? html`
+                          <div
+                              class="unlock-bar"
+                              title="Progress to ${starLabel(snapshot.unlockProgress.nextStars)}"
+                          >
+                              <div
+                                  class="unlock-fill"
+                                  style="width: ${snapshot.unlockProgress.fraction * 100}%"
+                              ></div>
+                          </div>
+                      `
+                    : nothing}
                 <div class="wave">
                     Wave
                     ${snapshot.waveNumber}${snapshot.mode === 'endless'
@@ -198,12 +253,20 @@ export const HudStats = defineElement<{
                       </div>
                   `
                 : nothing}
+            ${snapshot.tutorialHint
+                ? html`
+                      <div class="hint">${snapshot.tutorialHint}</div>
+                  `
+                : nothing}
             ${snapshot.stealPopup
                 ? keyed(
                       snapshot.stealPopup.id,
                       html`
                           <div class="popup" style="color: #ff8f73">
-                              A seagull stole a potato! ${snapshot.stealPopup.satisfactionDelta}
+                              A seagull stole a potato!
+                              ${snapshot.stealPopup.satisfactionDelta}${prestigeText(
+                                  snapshot.stealPopup.prestigeDelta,
+                              )}
                           </div>
                       `,
                   )
