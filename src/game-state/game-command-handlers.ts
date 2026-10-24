@@ -1,5 +1,5 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
-import {type MaybePromise} from '@augment-vir/common';
+import {SeededRandom, type MaybePromise} from '@augment-vir/common';
 import {doorConfig} from '../config/door-config.js';
 import {economyConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
@@ -39,6 +39,13 @@ export function getCommandSlot(): number {
     return 0;
 }
 
+/** Restores `state.level` from `state.runState.levelId`, e.g. after a state sync. */
+export function syncLevelWithRunState(state: Partial<FullGameState>) {
+    if (state.runState) {
+        state.level = getLevel(state.runState.levelId);
+    }
+}
+
 /**
  * Applies commands to the simulation. Handlers run inside lockstep frames, so they may change
  * entities and `state.runState`, must only use `state.seededRandom` for randomness, and must never
@@ -55,6 +62,7 @@ export const gameCommandHandlers: {
         state.entityStore.destroyAllEntities();
         const level = getLevel(detail.packet.levelId);
         state.level = level;
+        state.seededRandom = SeededRandom.fromSeed(detail.packet.seed);
         state.runState = createInitialRunState(level.levelId, detail.packet.mode);
 
         if (detail.packet.ready) {
