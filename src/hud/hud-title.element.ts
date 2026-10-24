@@ -25,6 +25,7 @@ export const rules = [
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
+    'The Microwave is fast and cheap, but rubbery potatoes hurt your prestige.',
     'Keep satisfaction above zero through every wave to become the Mash Champ.',
 ];
 

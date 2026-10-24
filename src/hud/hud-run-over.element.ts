@@ -1,4 +1,6 @@
 import {css, defineElement, html, nothing} from 'element-vir';
+import {qualityConfig} from '../config/quality-config.js';
+import {formatStars} from '../quality/quality.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
@@ -48,6 +50,13 @@ export const HudRunOver = defineElement<{
             margin-bottom: 24px;
         }
 
+        .stars {
+            color: #ffd700;
+            font-size: 40px;
+            font-weight: bold;
+            margin-bottom: 24px;
+        }
+
         .summary {
             font-size: 30px;
             margin-bottom: 32px;
@@ -74,23 +83,35 @@ export const HudRunOver = defineElement<{
         }
 
         const won = snapshot.status === RunStatus.Won;
+        const champ = won && snapshot.prestigeStars >= qualityConfig.mashChampStars;
+        const survived = won && !champ;
 
         return html`
             <div class="layer">
                 <div class="panel">
-                    ${won
+                    ${champ
                         ? html`
                               <div class="trophy">🏆</div>
                           `
                         : nothing}
-                    <div class="title" style="color: ${won ? '#ffd700' : '#ff5252'}">
-                        ${won ? 'MASH CHAMP!' : 'Restaurant Closed'}
+                    <div
+                        class="title"
+                        style="color: ${champ
+                            ? '#ffd700'
+                            : survived
+                              ? '#ffc107'
+                              : '#ff5252'}; ${survived ? 'font-size: 64px' : ''}"
+                    >
+                        ${champ ? 'MASH CHAMP!' : survived ? 'Survived!' : 'Restaurant Closed'}
                     </div>
                     <div class="subtitle">
-                        ${won
+                        ${champ
                             ? 'Every customer went home full.'
-                            : 'The customers have had enough of your potatoes.'}
+                            : survived
+                              ? '...but the critics found it a little rubbery.'
+                              : 'The customers have had enough of your potatoes.'}
                     </div>
+                    <div class="stars">Prestige ${formatStars(snapshot.prestigeStars)}</div>
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
                         <div>Perfect mashes ${snapshot.servingCounts[ServingResult.Perfect]}</div>

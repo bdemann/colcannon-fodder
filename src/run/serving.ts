@@ -8,7 +8,9 @@ import {
 } from '../config/game-config.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {matchDish} from '../order/toppings.js';
+import {qualityConfig} from '../config/quality-config.js';
 import {getMashProgress} from '../potato/mash.js';
+import {pushRecentQuality} from '../quality/quality.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
 /** Which result a potato earns: fully mashed is Perfect, untouched is Raw, anything else Incomplete. */
@@ -42,8 +44,16 @@ export function getSatisfactionDelta(
 /** Fills the oldest open order matching the potato's toppings, if any, with the bonus rewards. */
 function fillOrder(
     runState: RunState,
-    serving: Readonly<{ownerSlot: number; value: number; toppings: PotatoToppings}>,
+    serving: Readonly<{
+        ownerSlot: number;
+        value: number;
+        toppings: PotatoToppings;
+        quality: number;
+    }>,
 ) {
+    if (serving.quality < qualityConfig.minOrderQuality) {
+        return;
+    }
     const dish = matchDish(serving.toppings);
     const index = runState.orders.findIndex((order) => order.dish === dish);
     const order = runState.orders[index];
@@ -122,6 +132,8 @@ export function servePotato(
         toppings: PotatoToppings;
         /** How many times this potato was already sent back. */
         timesSentBack: number;
+        /** The potato's quality, 0 to 100. Scales a perfect serving's score and coins. */
+        quality: number;
     }>,
 ): {result: ServingResult; sentBack: boolean} {
     const result = evaluatePotato(serving.processing);
@@ -134,12 +146,16 @@ export function servePotato(
 
     const isPerfect = result === ServingResult.Perfect;
     const sentBack = !isPerfect && serving.timesSentBack < doorConfig.maxSendBacks;
+    const qualityFactor = serving.quality / 100;
     const score = isPerfect
-        ? Math.round(servingConfig.perfect.score * serving.value)
+        ? Math.round(servingConfig.perfect.score * serving.value * qualityFactor)
         : servingConfig[result].score;
     const coins = isPerfect
-        ? Math.round(economyConfig.servingCoins.perfect * serving.value)
+        ? Math.round(economyConfig.servingCoins.perfect * serving.value * qualityFactor)
         : economyConfig.servingCoins[result];
+    if (isPerfect) {
+        pushRecentQuality(runState.recentQualities, serving.quality);
+    }
     const satisfactionDelta = isPerfect
         ? getSatisfactionDelta(result, serving.processing)
         : getSatisfactionDelta(result, serving.processing) -

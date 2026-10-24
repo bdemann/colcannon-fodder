@@ -1,4 +1,5 @@
 import {css, defineElement, html, keyed, nothing} from 'element-vir';
+import {formatStars} from '../quality/quality.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 
@@ -74,6 +75,12 @@ export const HudStats = defineElement<{
         .coins {
             color: #ffd700;
             font-size: 36px;
+            font-weight: bold;
+        }
+
+        .prestige {
+            color: #ffd700;
+            font-size: 30px;
             font-weight: bold;
         }
 
@@ -165,6 +172,7 @@ export const HudStats = defineElement<{
                 </div>
                 <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
             </div>
+            <div class="prestige">Prestige ${formatStars(snapshot.prestigeStars)}</div>
             <div class="wave">Wave ${snapshot.waveNumber} / ${snapshot.waveCount}</div>
             <div class="label">
                 Potatoes served ${snapshot.potatoesServed} / ${snapshot.potatoesPerRun}

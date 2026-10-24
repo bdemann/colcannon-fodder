@@ -3,6 +3,7 @@ import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.j
 import {type FullGameState} from '../game-state/game-state.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
+import {getPrestigeStars} from '../quality/quality.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -60,6 +61,8 @@ export type HudSnapshot = {
               id: number;
           }
         | undefined;
+    /** Restaurant prestige, 0 to 5 in half steps. */
+    prestigeStars: number;
     /** Whether sound effects are muted. */
     muted: boolean;
 };
@@ -131,6 +134,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       id: lastOrderEvent.atMs,
                   }
                 : undefined,
+        prestigeStars: getPrestigeStars(runState.recentQualities),
         muted: isMuted(),
     };
 }

@@ -130,6 +130,8 @@ export type RunState = {
     lastSteal: LastSteal | undefined;
     /** Consecutive bad servings since the last perfect one. Each makes the next penalty worse. */
     sendBackStreak: number;
+    /** Quality of the most recent Perfect servings, most recent last (see `prestigeWindow`). */
+    recentQualities: number[];
 };
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
@@ -170,5 +172,6 @@ export function createInitialRunState(): RunState {
         msUntilNextSeagull: 0,
         lastSteal: undefined,
         sendBackStreak: 0,
+        recentQualities: [],
     };
 }

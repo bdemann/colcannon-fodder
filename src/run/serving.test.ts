@@ -9,6 +9,7 @@ import {
     seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
+import {qualityConfig} from '../config/quality-config.js';
 import {Dish} from '../order/dish.js';
 import {createNoToppings, Topping} from '../order/topping.js';
 import {
@@ -129,6 +130,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
 
         assert.strictEquals(result.result, ServingResult.Perfect);
@@ -155,6 +157,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 2,
+            quality: 100,
         });
         assert.strictEquals(runState.servingCounts[ServingResult.Incomplete], 1);
         // partial is 50% mashed: round(-15 * 0.5) = -7, worse than the incomplete penalty -5.
@@ -170,6 +173,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.satisfaction, satisfactionConfig.max);
     });
@@ -183,6 +187,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.satisfaction, 0);
     });
@@ -195,6 +200,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.scoreBySlot[1], servingConfig.perfect.score);
         assert.strictEquals(runState.scoreBySlot[0], 0);
@@ -209,6 +215,7 @@ describe(servePotato.name, () => {
                 value: 1,
                 toppings: createNoToppings(),
                 timesSentBack: 0,
+                quality: 100,
             });
         }
         assert.strictEquals(runState.status, RunStatus.Lost);
@@ -220,6 +227,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(result.result, ServingResult.Perfect);
         assert.deepEquals(runState, before);
@@ -234,6 +242,7 @@ describe(servePotato.name, () => {
                 value: 1,
                 toppings: createNoToppings(),
                 timesSentBack: 0,
+                quality: 100,
             });
             assert.strictEquals(runState.status, RunStatus.Playing);
         }
@@ -243,6 +252,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Won);
         assert.strictEquals(runState.potatoesServed, runState.potatoesPerRun);
@@ -258,6 +268,7 @@ describe(servePotato.name, () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Lost);
     });
@@ -272,6 +283,7 @@ describe('servePotato size value', () => {
             value: potatoSizeConfig.large.value,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(large.scoreBySlot[0], 180);
         assert.strictEquals(large.lastServing?.scoreDelta, 180);
@@ -284,6 +296,7 @@ describe('servePotato size value', () => {
             value: potatoSizeConfig.small.value,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(small.scoreBySlot[0], 60);
         assert.strictEquals(small.coins, economyConfig.startingCoins + 12);
@@ -297,6 +310,7 @@ describe('servePotato size value', () => {
             value: 1.8,
             toppings: createNoToppings(),
             timesSentBack: 2,
+            quality: 100,
         });
         assert.strictEquals(runState.scoreBySlot[0], 0);
         assert.strictEquals(runState.coins, economyConfig.startingCoins + 5);
@@ -328,6 +342,7 @@ describe('servePotato order filling', () => {
             value: overrides.value ?? 1,
             toppings: butter,
             timesSentBack: 0,
+            quality: 100,
         });
     }
 
@@ -449,6 +464,7 @@ describe('servePotato coins', () => {
                 value: 1,
                 toppings: createNoToppings(),
                 timesSentBack: 2,
+                quality: 100,
             });
 
             assert.strictEquals(
@@ -468,6 +484,7 @@ describe('servePotato coins', () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
 
         assert.strictEquals(runState.coins, economyConfig.startingCoins);
@@ -488,6 +505,7 @@ describe('win check with stolen potatoes', () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Won);
     });
@@ -501,6 +519,7 @@ describe('win check with stolen potatoes', () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         stealPotato(runState);
         assert.strictEquals(runState.potatoesStolen, 1);
@@ -588,6 +607,7 @@ describe('servePotato send-backs', () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack: 0,
+            quality: 100,
         });
         assert.strictEquals(runState.sendBackStreak, 0);
     });
@@ -601,5 +621,71 @@ describe('servePotato send-backs', () => {
         serve(runState, doorConfig.maxSendBacks);
         const finalStatus = [runState][0]?.status;
         assert.strictEquals(finalStatus, RunStatus.Won);
+    });
+});
+
+describe('servePotato quality', () => {
+    const butter = {
+        ...createNoToppings(),
+        [Topping.Butter]: true,
+    };
+
+    function serveAt(runState: ReturnType<typeof createInitialRunState>, quality: number) {
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: 1,
+            toppings: butter,
+            timesSentBack: 0,
+            quality,
+        });
+    }
+
+    it('scales perfect score and coins by quality', () => {
+        const runState = createInitialRunState();
+        serveAt(runState, 50);
+
+        assert.strictEquals(runState.scoreBySlot[0], Math.round(servingConfig.perfect.score * 0.5));
+        assert.strictEquals(
+            runState.coins,
+            economyConfig.startingCoins + Math.round(economyConfig.servingCoins.perfect * 0.5),
+        );
+    });
+
+    it('records perfect qualities, capped at the prestige window', () => {
+        const runState = createInitialRunState();
+        for (let i = 0; i < qualityConfig.prestigeWindow + 2; i++) {
+            serveAt(runState, i);
+        }
+
+        assert.strictEquals(runState.recentQualities.length, qualityConfig.prestigeWindow);
+        assert.strictEquals(runState.recentQualities[0], 2);
+    });
+
+    it('does not record non-perfect servings', () => {
+        const runState = createInitialRunState();
+        servePotato(runState, {
+            processing: raw,
+            ownerSlot: 0,
+            value: 1,
+            toppings: createNoToppings(),
+            timesSentBack: 0,
+            quality: 100,
+        });
+
+        assert.deepEquals(runState.recentQualities, []);
+    });
+
+    it('only fills an order at or above the minimum quality', () => {
+        const order = {orderId: 1, dish: Dish.ButteredMash, createdAtMs: 0, expiresAtMs: 99_999};
+        const low = createInitialRunState();
+        low.orders.push(order);
+        serveAt(low, qualityConfig.minOrderQuality - 1);
+        assert.strictEquals(low.orders.length, 1);
+
+        const ok = createInitialRunState();
+        ok.orders.push(order);
+        serveAt(ok, qualityConfig.minOrderQuality);
+        assert.strictEquals(ok.orders.length, 0);
     });
 });

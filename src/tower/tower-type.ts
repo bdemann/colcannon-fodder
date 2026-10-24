@@ -13,13 +13,15 @@ export enum TowerType {
  * How a tower acts each update. `mash` is the shared damage path (single target or area of effect).
  * The others live in `src/tower/behaviors/`.
  */
-export type TowerBehavior = 'mash' | 'gull-trap' | 'swipe';
+export type TowerBehavior = 'mash' | 'gull-trap' | 'swipe' | 'cone';
 
 /** Everything that differs between tower types. Shared behavior lives in the tower entity. */
 export type TowerTypeDefinition = {
     towerType: TowerType;
     /** Shown on the toolbar button and next to the tower. */
     label: string;
+    /** Short mark drawn on the tower itself. */
+    glyph: string;
     /** Keyboard key (`KeyboardEvent.key`) that selects this tower. */
     hotkey: string;
     /** Fill color for the tower circle and its toolbar button. */
@@ -38,6 +40,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     [TowerType.Knife]: {
         towerType: TowerType.Knife,
         label: 'Knife',
+        glyph: 'K',
         hotkey: '1',
         color: '#b8c4cc',
         appliesEffect: 'cut',
@@ -48,6 +51,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     [TowerType.Boiler]: {
         towerType: TowerType.Boiler,
         label: 'Boiling Pot',
+        glyph: 'B',
         hotkey: '2',
         color: '#3a8ee6',
         appliesEffect: 'cooked',
@@ -58,6 +62,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     [TowerType.Masher]: {
         towerType: TowerType.Masher,
         label: 'Masher',
+        glyph: 'M',
         hotkey: '3',
         color: '#e6a23a',
         appliesEffect: undefined,
@@ -68,16 +73,18 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     [TowerType.Microwave]: {
         towerType: TowerType.Microwave,
         label: 'Microwave',
+        glyph: 'µ',
         hotkey: '4',
         color: '#ab47bc',
         appliesEffect: undefined,
         areaOfEffect: false,
-        behavior: 'mash',
+        behavior: 'cone',
         ...towerTypeConfig.microwave,
     },
     [TowerType.CricketTrap]: {
         towerType: TowerType.CricketTrap,
         label: 'Cricket Trap',
+        glyph: 'C',
         hotkey: '5',
         color: '#8d6e63',
         appliesEffect: undefined,
@@ -88,6 +95,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
     [TowerType.Swiper]: {
         towerType: TowerType.Swiper,
         label: 'Swiper',
+        glyph: 'S',
         hotkey: '6',
         color: '#26a69a',
         appliesEffect: undefined,
