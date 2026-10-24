@@ -5,6 +5,7 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
+import {qualityConfig} from '../config/quality-config.js';
 import {swiperConfig} from '../config/swiper-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
@@ -12,6 +13,7 @@ import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
+import {updateMicrowave} from './behaviors/microwave.js';
 import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {
@@ -159,7 +161,7 @@ export class TowerEntity extends defineEntity({
         }
 
         const letter = new Text({
-            text: definition.label.slice(0, 1),
+            text: definition.glyph,
             style: {
                 fill: '#1a1a1a',
                 fontSize: 30,
@@ -192,6 +194,9 @@ export class TowerEntity extends defineEntity({
 
         if (behavior === 'gull-trap') {
             updateGullTrap(this, msSinceLastExecute);
+            return;
+        } else if (behavior === 'cone') {
+            updateMicrowave(this, msSinceLastExecute);
             return;
         } else if (behavior === 'swipe') {
             updateSwiper(this);
@@ -350,7 +355,20 @@ export class TowerEntity extends defineEntity({
         splash.clear();
         const definition = towerTypes[towerType];
         const sinceMs = this.state.runState.elapsedMs - lastProcessedAtMs;
-        if (definition.areaOfEffect) {
+        if (definition.behavior === 'cone') {
+            if (lastProcessedAtMs >= 0 && sinceMs < qualityConfig.microwaveFlashMs) {
+                const aim = Math.atan2(lastTargetY - y, lastTargetX - x);
+                const half = (qualityConfig.microwaveConeHalfAngleDeg * Math.PI) / 180;
+                splash
+                    .moveTo(0, 0)
+                    .arc(0, 0, definition.rangePx, aim - half, aim + half)
+                    .closePath()
+                    .fill({
+                        color: definition.color,
+                        alpha: 0.24 + 0.06 * Math.sin(this.state.runState.elapsedMs / 60),
+                    });
+            }
+        } else if (definition.areaOfEffect) {
             if (lastProcessedAtMs >= 0 && sinceMs < towerFeedbackConfig.splashMs) {
                 const t = sinceMs / towerFeedbackConfig.splashMs;
                 splash.circle(0, 0, definition.rangePx * (0.3 + 0.7 * t)).stroke({

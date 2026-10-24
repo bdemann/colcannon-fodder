@@ -15,7 +15,7 @@ import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {getMashProgress} from './mash.js';
 import {PotatoSize} from './potato-size.js';
-import {drawPotato} from './potato-view.js';
+import {drawPotato, getRubberyStep} from './potato-view.js';
 
 /** A potato walking along a path toward the restaurant. Served (and removed) when it arrives. */
 export class PotatoEntity extends defineEntity({
@@ -83,6 +83,7 @@ export class PotatoEntity extends defineEntity({
                 processing: this.getProcessing(),
                 radius: this.getRadius(),
                 toppings: this.getToppings(),
+                quality: this.params.quality,
             }),
         };
     }
@@ -110,7 +111,7 @@ export class PotatoEntity extends defineEntity({
     protected getLookKey(): string {
         const progress = getMashProgress(this.getProcessing());
         const {butter, scallions, cabbage, gravy} = this.params;
-        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}${butter}${scallions}${cabbage}${gravy}`;
+        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}${butter}${scallions}${cabbage}${gravy}${getRubberyStep(this.params.quality)}`;
     }
 
     protected redrawIfChanged() {
@@ -124,6 +125,7 @@ export class PotatoEntity extends defineEntity({
             processing: this.getProcessing(),
             radius: this.getRadius(),
             toppings: this.getToppings(),
+            quality: this.params.quality,
         });
     }
 
@@ -184,6 +186,7 @@ export class PotatoEntity extends defineEntity({
             value: potatoSizeConfig[this.params.size].value,
             toppings: this.getToppings(),
             timesSentBack: this.params.timesSentBack,
+            quality: this.params.quality,
         });
 
         if (sentBack) {

@@ -1,4 +1,5 @@
 import {type Graphics} from '@antha/graphics-2d';
+import {qualityConfig} from '../config/quality-config.js';
 import {Topping, toppingDefinitions, type PotatoToppings} from '../order/topping.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {getMashProgress} from './mash.js';
@@ -33,6 +34,7 @@ const potatoColors = {
     gravyPool: toppingDefinitions[Topping.Gravy].color,
     sliceLine: '#5a3d1e',
     steam: '#ffffff',
+    rubbery: '#9e9e9e',
 } as const;
 
 /** Eye dot positions, relative to the potato's center. */
@@ -62,19 +64,22 @@ const meter = {
  * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
  * whole potato (raw, boiled and steaming, or cut) below 50%, a mashed blob from 50%, and a blob
  * with a shine when fully mashed. Hand-applied `toppings` are drawn on top at any stage. A meter
- * bar floats above it while it is partly mashed. `radius` is the potato's size (see
- * `potatoSizeConfig`).
+ * bar floats above it while it is partly mashed. Quality below 100 greys the potato over (rubbery).
+ * `radius` is the potato's size (see `potatoSizeConfig`).
  */
 export function drawPotato({
     graphics,
     processing,
     radius,
     toppings,
+    quality = 100,
 }: Readonly<{
     graphics: Graphics;
     processing: Readonly<PotatoProcessing>;
     radius: number;
     toppings: Readonly<PotatoToppings>;
+    /** 0 to 100. */
+    quality?: number;
 }>): Graphics {
     const progress = getMashProgress(processing);
     graphics.clear();
@@ -131,6 +136,12 @@ export function drawPotato({
             });
         }
 
+        drawRubbery({
+            graphics,
+            radius,
+            quality,
+            blob: true,
+        });
         drawToppings(graphics, radius, toppings);
 
         return graphics;
@@ -179,6 +190,12 @@ export function drawPotato({
         }
     }
 
+    drawRubbery({
+        graphics,
+        radius,
+        quality,
+        blob: false,
+    });
     drawToppings(graphics, radius, toppings);
 
     return graphics;
@@ -235,5 +252,43 @@ function drawToppings(graphics: Graphics, radius: number, toppings: Readonly<Pot
                 color: potatoColors.cabbageLeaf,
             });
         }
+    }
+}
+
+/** Quality rounded to steps, so the potato only redraws when the grey changes visibly. */
+export function getRubberyStep(quality: number): number {
+    return Math.round(quality / qualityConfig.rubberyStep) * qualityConfig.rubberyStep;
+}
+
+/** Greys the potato shape over when quality is below 100. */
+function drawRubbery({
+    graphics,
+    radius,
+    quality,
+    blob,
+}: Readonly<{graphics: Graphics; radius: number; quality: number; blob: boolean}>) {
+    const alpha = (1 - getRubberyStep(quality) / 100) * qualityConfig.rubberyMaxAlpha;
+    if (alpha <= 0) {
+        return;
+    }
+    if (blob) {
+        for (const x of [
+            -radius * 0.45,
+            radius * 0.45,
+        ]) {
+            graphics.circle(x, 0, radius * 0.8).fill({
+                color: potatoColors.rubbery,
+                alpha,
+            });
+        }
+        graphics.circle(0, -radius * 0.35, radius * 0.8).fill({
+            color: potatoColors.rubbery,
+            alpha,
+        });
+    } else {
+        graphics.ellipse(0, 0, radius * 1.2, radius * 0.9).fill({
+            color: potatoColors.rubbery,
+            alpha,
+        });
     }
 }
