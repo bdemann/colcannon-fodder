@@ -1,7 +1,8 @@
-import {css, defineElement, html, nothing} from 'element-vir';
+import {css, defineElement, html, nothing, unsafeCSS} from 'element-vir';
 import {multiplayerConfig} from '../config/multiplayer-config.js';
 import {SessionScreen} from '../game-state/multiplayer-session.js';
 import {type HudActions} from './hud-actions.js';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {
     hudButtonStyles,
@@ -142,23 +143,30 @@ export const HudSession = defineElement<{
             text-align: left;
         }
 
+        /* One slim row under the stats panel. */
         .leave {
-            bottom: 16px;
-            left: 16px;
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            left: ${unsafeCSS(hudLayout.leaveRoom.x)}px;
             pointer-events: auto;
             position: absolute;
+            top: ${unsafeCSS(hudLayout.leaveRoom.y)}px;
         }
 
         .leave button {
-            font-size: 24px;
-            padding: 6px 20px;
+            font-size: 22px;
+            padding: 4px 16px;
         }
 
         .leave-room-name {
             ${hudPanelStyles}
-            font-size: 22px;
-            margin-bottom: 8px;
-            padding: 4px 12px;
+            font-size: 20px;
+            max-width: 250px;
+            overflow: hidden;
+            padding: 6px 12px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     `,
     render({inputs, state, updateState}) {
@@ -173,8 +181,7 @@ export const HudSession = defineElement<{
             return html`
                 <div class="leave">
                     <div class="leave-room-name">
-                        Room: ${session.roomName}
-                        ${inputs.snapshot.isSpectator ? '(spectating: no free kitchen)' : ''}
+                        ${session.roomName}${inputs.snapshot.isSpectator ? ' (spectating)' : ''}
                     </div>
                     <button
                         @click=${() => {

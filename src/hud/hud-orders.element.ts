@@ -1,7 +1,9 @@
-import {css, defineElement, html, keyed, nothing} from 'element-vir';
+import {css, defineElement, html, keyed, nothing, unsafeCSS} from 'element-vir';
 import {cozyPalette} from '../art/cozy.js';
+import {hudConfig} from '../config/game-config.js';
 import {dishDefinitions} from '../order/dish.js';
 import {toppingDefinitions} from '../order/topping.js';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {prestigeText} from './hud-stats.element.js';
 import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
@@ -18,20 +20,20 @@ export const HudOrders = defineElement<{
         :host {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
+            left: ${unsafeCSS(hudLayout.orders.x)}px;
             position: absolute;
-            right: 24px;
             text-shadow: none;
-            top: 24px;
-            width: 300px;
+            top: ${unsafeCSS(hudLayout.orders.y)}px;
+            width: ${unsafeCSS(hudLayout.orders.width)}px;
         }
 
         .title {
             ${hudPanelStyles}
-            border-radius: 14px;
-            font-size: 28px;
+            border-radius: 12px;
+            font-size: 24px;
             font-weight: 700;
-            padding: 2px 0;
+            padding: 0;
             text-align: center;
         }
 
@@ -40,47 +42,48 @@ export const HudOrders = defineElement<{
             border: 3px solid var(--hud-bark);
             border-left: 10px solid var(--hud-tomato);
             border-radius: 6px 12px 12px 6px;
-            box-shadow: 0 4px 0 rgba(43, 26, 18, 0.35);
+            box-shadow: 0 3px 0 rgba(43, 26, 18, 0.35);
             box-sizing: border-box;
             color: var(--hud-walnut);
-            padding: 8px 14px 10px;
-            width: 300px;
+            padding: 4px 12px 6px;
+            width: 100%;
         }
 
         .dish {
-            font-size: 30px;
+            font-size: 26px;
             font-weight: 700;
+            line-height: 1.15;
             white-space: nowrap;
         }
 
         .recipe {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px 12px;
+            gap: 0 10px;
         }
 
         .ingredient {
             align-items: center;
             display: flex;
-            font-size: 20px;
-            gap: 6px;
+            font-size: 18px;
+            gap: 4px;
         }
 
         .swatch {
             border: 2px solid var(--hud-bark);
             border-radius: 50%;
             box-sizing: border-box;
-            height: 24px;
-            width: 24px;
+            height: 18px;
+            width: 18px;
         }
 
         .time-bar {
             background: var(--hud-sand);
             border: 2px solid var(--hud-bark);
-            border-radius: 6px;
+            border-radius: 5px;
             box-sizing: border-box;
-            height: 14px;
-            margin-top: 8px;
+            height: 10px;
+            margin-top: 4px;
             overflow: hidden;
             width: 100%;
         }
@@ -89,13 +92,25 @@ export const HudOrders = defineElement<{
             height: 100%;
         }
 
+        .more {
+            ${hudPanelStyles}
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            padding: 0;
+            text-align: center;
+        }
+
+        /* Floats left of the board so it never pushes the tickets around. */
         .popup {
-            align-self: flex-end;
             animation: order-popup-rise 1.2s linear forwards;
             ${hudFloatingTextStyles}
-            font-size: 34px;
+            font-size: 26px;
+            left: ${unsafeCSS(hudLayout.orderPopup.x - hudLayout.orders.x)}px;
+            position: absolute;
             text-align: right;
-            white-space: nowrap;
+            top: ${unsafeCSS(hudLayout.orderPopup.y - hudLayout.orders.y)}px;
+            width: ${unsafeCSS(hudLayout.orderPopup.width)}px;
         }
 
         @keyframes order-popup-rise {
@@ -105,7 +120,7 @@ export const HudOrders = defineElement<{
             }
             to {
                 opacity: 0;
-                transform: translateY(-40px);
+                transform: translateY(-16px);
             }
         }
     `,
@@ -114,7 +129,7 @@ export const HudOrders = defineElement<{
 
         return html`
             <div class="title">ORDERS</div>
-            ${orders.map((order) => {
+            ${orders.slice(0, hudConfig.maxVisibleOrders).map((order) => {
                 const dish = dishDefinitions[order.dish];
 
                 return html`
@@ -147,6 +162,11 @@ export const HudOrders = defineElement<{
                     </div>
                 `;
             })}
+            ${orders.length > hudConfig.maxVisibleOrders
+                ? html`
+                      <div class="more">+${orders.length - hudConfig.maxVisibleOrders} more</div>
+                  `
+                : nothing}
             ${orderPopup
                 ? keyed(
                       orderPopup.id,

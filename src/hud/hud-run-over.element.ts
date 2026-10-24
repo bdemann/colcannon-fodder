@@ -36,13 +36,13 @@ export const HudRunOver = defineElement<{
             ${hudPanelStyles}
             border-radius: 28px;
             border-width: 6px;
-            padding: 48px;
+            padding: 32px 48px;
             text-align: center;
             width: 900px;
         }
 
         .trophy {
-            font-size: 140px;
+            font-size: 100px;
         }
 
         .title {

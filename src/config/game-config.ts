@@ -385,9 +385,11 @@ export const comboDisplayConfig = {
 
 /** HUD timings. */
 export const hudConfig = {
-    servingPopupMs: 1200,
+    servingPopupMs: 1000,
+    /** The order board shows this many tickets, then "+N more". */
+    maxVisibleOrders: 3,
     /** How long a floating coin popup stays visible. */
-    coinPopupMs: 1600,
+    coinPopupMs: 1200,
     /** How far a coin popup floats up while it fades. */
     coinPopupRisePx: 50,
     /** Vertical gap between popups that appear at the same spot. */

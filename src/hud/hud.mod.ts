@@ -82,7 +82,18 @@ export const hudMod = defineAnthaMod<FullGameState>({
             getHudActions(state).restartRun();
         }
 
-        if (inGame && state.runState?.status === RunStatus.Playing && state.ui) {
+        const helpWasOpen = !!state.ui?.helpOpen;
+        if (inGame && state.ui) {
+            const helpKey = state.ui.keys.some((key) => key === 'h' || key === 'H');
+
+            if (state.ui.helpOpen && (helpKey || state.ui.keys.includes('Escape'))) {
+                getHudActions(state).closeHelp();
+            } else if (helpKey && !state.ui.helpOpen) {
+                getHudActions(state).openHelp();
+            }
+        }
+
+        if (inGame && !helpWasOpen && state.runState?.status === RunStatus.Playing && state.ui) {
             const pausePressed = state.ui.keys.some((key) => key === 'p' || key === 'P');
             const escapePressed = state.ui.keys.includes('Escape') && !hadSelectionLastTick;
 

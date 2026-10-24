@@ -1,12 +1,4 @@
 import {css, defineElement, html, nothing} from 'element-vir';
-import {
-    economyConfig,
-    orderConfig,
-    potatoSizeConfig,
-    seagullConfig,
-} from '../config/game-config.js';
-import {progressionConfig} from '../config/progression-config.js';
-import {upgradeConfig} from '../config/upgrade-config.js';
 import {RunStatus} from '../run/run-state.js';
 import {formatSpeed} from '../run/speed.js';
 import {type HudActions} from './hud-actions.js';
@@ -19,30 +11,6 @@ import {
     hudScrimStyles,
     hudSelectedStyles,
 } from './hud-theme.js';
-import {controlsText, rules} from './hud-title.element.js';
-
-/** The "How you earn" lines, built from the config so they never go stale. */
-function getEarnLines(): string[] {
-    const sizes = Object.entries(potatoSizeConfig)
-        .map(
-            ([
-                size,
-                config,
-            ]) => `${size} ×${config.value}`,
-        )
-        .join(', ');
-    return [
-        `Perfect mash: ${economyConfig.servingCoins.perfect} coins × size (${sizes})`,
-        'Quality scales the pay',
-        `Wave cleared: bonus coins (wave 1: ${progressionConfig.waveEndBonusCoins[0]})`,
-        'Prestige: great mash earns stars that unlock towers and upgrades; poor potatoes cost stars',
-        `Filled order: +${orderConfig.fulfilled.coins} coins × size`,
-        `Eaten anyway: ${economyConfig.servingCoins.incomplete} coins`,
-        `Seagull knocked out or fed: ${seagullConfig.bountyCoins} coins`,
-        'Towers wear out with use. Click one and press S to service it.',
-        `Selling a tower refunds ${Math.round(upgradeConfig.sellRefund * 100)}%`,
-    ];
-}
 
 /** The pause button (top center) while playing, and the full-screen pause panel while paused. */
 export const HudPause = defineElement<{
@@ -105,42 +73,14 @@ export const HudPause = defineElement<{
             border-width: 6px;
             padding: 24px 48px 28px;
             text-align: center;
-            width: 1500px;
+            width: 1100px;
         }
 
         .title {
             color: var(--hud-oak);
             font-size: 60px;
             font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .rules {
-            font-size: 24px;
-            line-height: 1.3;
             margin-bottom: 16px;
-        }
-
-        .earn-title {
-            color: var(--hud-oak);
-            font-size: 30px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .earn {
-            display: flex;
-            flex-wrap: wrap;
-            font-size: 22px;
-            gap: 2px 32px;
-            justify-content: center;
-            margin-bottom: 14px;
-        }
-
-        .controls {
-            font-size: 20px;
-            margin-bottom: 16px;
-            opacity: 0.8;
         }
 
         .volume {
@@ -168,15 +108,17 @@ export const HudPause = defineElement<{
         }
 
         .buttons {
-            margin-top: 14px;
+            margin-top: 20px;
             display: flex;
-            gap: 32px;
+            flex-wrap: wrap;
+            gap: 20px;
             justify-content: center;
         }
 
         .buttons button {
             ${hudPrimaryButtonStyles}
-            padding: 8px 40px;
+            font-size: 32px;
+            padding: 8px 28px;
         }
 
         .buttons button.secondary {
@@ -206,22 +148,6 @@ export const HudPause = defineElement<{
                                       ? ` by ${snapshot.pausedByName}`
                                       : ''}
                               </div>
-                              <div class="rules">
-                                  ${rules.map((rule) => {
-                                      return html`
-                                          <div>${rule}</div>
-                                      `;
-                                  })}
-                              </div>
-                              <div class="earn-title">How you earn ${coinIcon()}</div>
-                              <div class="earn">
-                                  ${getEarnLines().map((line) => {
-                                      return html`
-                                          <div>${line}</div>
-                                      `;
-                                  })}
-                              </div>
-                              <div class="controls">${controlsText}</div>
                               ${(
                                   [
                                       [
@@ -270,6 +196,14 @@ export const HudPause = defineElement<{
                                       }}
                                   >
                                       Resume (P)
+                                  </button>
+                                  <button
+                                      class="secondary"
+                                      @click=${() => {
+                                          inputs.actions.openHelp();
+                                      }}
+                                  >
+                                      Help (H)
                                   </button>
                                   <button
                                       class="secondary"

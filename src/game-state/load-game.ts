@@ -78,6 +78,8 @@ export async function bootstrapGame({
         keys: [],
         wheelSteps: 0,
         placementAngleDeg: 0,
+        helpOpen: false,
+        helpPausedRun: false,
         session: createSessionUi(),
     };
 

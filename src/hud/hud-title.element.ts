@@ -1,6 +1,5 @@
 import {createFullDateInUserTimezone, toFormattedString} from 'date-vir';
 import {css, defineElement, html, nothing, svg} from 'element-vir';
-import {potatoTraitLines} from '../config/potato-variety-config.js';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getPositionAlongPath, type LevelDefinition} from '../level/level.js';
 import {getLevel, getLevelsForPlayerCount} from '../level/levels.js';
@@ -17,6 +16,9 @@ import {
     hudScrimStyles,
     hudSelectedStyles,
 } from './hud-theme.js';
+
+/** The title shows only the best few runs; the rest are not worth the screen space. */
+const hallEntryCount = 3;
 
 /** The title screen starts singleplayer runs, so it only offers 1-player maps. */
 const singleplayerCount = 1;
@@ -36,10 +38,6 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
         verb: 'mash',
     },
 ];
-
-/** The combo explained in one line. Shown in the toolbar hint and the title rules. */
-export const comboHintText =
-    'Combo: the Knife cuts (×1.5), the Pot softens (Mashers hit ×2), then the Masher smashes (×3)';
 
 const previewSize = {
     width: 192,
@@ -120,7 +118,7 @@ function renderHall(snapshot: HudSnapshot) {
         <div class="hall">
             <div class="hall-title">Hall of Mash Champs</div>
             <div class="hall-list">
-                ${snapshot.records.hall.map((entry, index) => {
+                ${snapshot.records.hall.slice(0, hallEntryCount).map((entry, index) => {
                     return html`
                         <div class="hall-entry">
                             <div>
@@ -141,23 +139,6 @@ function renderHall(snapshot: HudSnapshot) {
         </div>
     `;
 }
-
-export const rules = [
-    comboHintText,
-    'Every tower mashes. The Knife cuts a short line straight across the belt. The late-game Laser is the aimable long line: aim it when you build it (scroll or [ ]) and it chops everything on that line, fast. Pots soften everything in range, so Mashers hit twice as hard.',
-    `Potato varieties: ${potatoTraitLines.join(' ')}`,
-    'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
-    'Potatoes are judged the instant they arrive, so get them done done done first. Fully mashed ones make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
-    'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
-    'You start at zero stars with only the Knife. Serve quality mash to earn prestige: stars unlock new towers and upgrades. Poor potatoes (rubbery Microwave mash, raw or half-mashed ones, stolen ones, missed orders) cost stars, and towers lock again if you slip.',
-    'The Microwave is fast and cheap, but rubbery potatoes cost you prestige.',
-    'Towers wear out with use. Click one and press S to service it.',
-    'Keep satisfaction above zero through every wave to become the Mash Champ.',
-];
-
-/** Controls reminder shown on the title and pause panels. */
-export const controlsText =
-    '1 / 2 / 3 or click a button to pick a tower · Q/W/E/R pick a topping · Click to build · Right click / Esc to cancel · P / Esc pause · F fast-forward speed · G fast-forward until the next income (volume sliders are in the pause menu) · R to restart after a run';
 
 /** Full-screen title panel with how-to-play, shown while the run is `Ready`. */
 export const HudTitle = defineElement<{
@@ -184,7 +165,7 @@ export const HudTitle = defineElement<{
             ${hudPanelStyles}
             border-radius: 28px;
             border-width: 6px;
-            padding: 16px 48px;
+            padding: 20px 48px 28px;
             text-align: center;
             width: 1500px;
         }
@@ -207,7 +188,7 @@ export const HudTitle = defineElement<{
             font-size: 30px;
             gap: 24px;
             justify-content: center;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             white-space: nowrap;
         }
 
@@ -223,18 +204,6 @@ export const HudTitle = defineElement<{
             box-sizing: border-box;
             height: 36px;
             width: 36px;
-        }
-
-        .rules {
-            font-size: 24px;
-            line-height: 1.2;
-            margin-bottom: 10px;
-        }
-
-        .controls {
-            font-size: 20px;
-            margin-bottom: 12px;
-            opacity: 0.8;
         }
 
         .levels {
@@ -302,7 +271,7 @@ export const HudTitle = defineElement<{
         }
 
         .hall {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .hall-title {
@@ -326,8 +295,18 @@ export const HudTitle = defineElement<{
             width: 290px;
         }
 
+        .buttons {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+        }
+
         .start {
             ${hudPrimaryButtonStyles}
+        }
+
+        .start.help {
+            background: var(--hud-wheat);
         }
     `,
     render({inputs}) {
@@ -360,14 +339,6 @@ export const HudTitle = defineElement<{
                             `;
                         })}
                     </div>
-                    <div class="rules">
-                        ${rules.map((rule) => {
-                            return html`
-                                <div>${rule}</div>
-                            `;
-                        })}
-                    </div>
-                    <div class="controls">${controlsText}</div>
                     <div class="modes">
                         ${(
                             [
@@ -409,14 +380,24 @@ export const HudTitle = defineElement<{
                         })}
                     </div>
                     ${renderHall(inputs.snapshot)}
-                    <button
-                        class="start"
-                        @click=${() => {
-                            inputs.actions.beginRun();
-                        }}
-                    >
-                        Start cooking (Space)
-                    </button>
+                    <div class="buttons">
+                        <button
+                            class="start"
+                            @click=${() => {
+                                inputs.actions.beginRun();
+                            }}
+                        >
+                            Start cooking (Space)
+                        </button>
+                        <button
+                            class="start help"
+                            @click=${() => {
+                                inputs.actions.openHelp();
+                            }}
+                        >
+                            How to play (H)
+                        </button>
+                    </div>
                 </div>
             </div>
         `;

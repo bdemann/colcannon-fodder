@@ -140,6 +140,8 @@ export type HudSnapshot = {
     towerIconsReady: boolean;
     selectedTowerType: TowerType | undefined;
     selectedTopping: Topping | undefined;
+    /** Whether the Help panel is open. */
+    helpOpen: boolean;
     /** The built tower selected for upgrade or sale, for the tower panel. */
     selectedTower:
         | {
@@ -352,6 +354,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         towerIconsReady: hasTowerIcons(),
         selectedTowerType: state.ui?.selectedTowerType,
         selectedTopping: state.ui?.selectedTopping,
+        helpOpen: state.ui?.helpOpen ?? false,
         selectedTower: getSelectedTower(state, prestigeStars),
         orders: runState.orders.map((order) => {
             const totalMs = Math.max(1, order.expiresAtMs - order.createdAtMs);

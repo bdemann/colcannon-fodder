@@ -1,4 +1,4 @@
-import {css, defineElement, html, keyed, listen, nothing} from 'element-vir';
+import {css, defineElement, html, keyed, listen, unsafeCSS} from 'element-vir';
 import {economyConfig} from '../config/game-config.js';
 import {toppingDefinitions} from '../order/topping.js';
 import {getTowerUnlockStars} from '../progression/progression.js';
@@ -7,9 +7,13 @@ import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
 import {coinIcon} from './hud-icons.js';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {hudButtonStyles, hudPanelStyles, hudSelectedStyles} from './hud-theme.js';
-import {comboHintText} from './hud-title.element.js';
+
+/** The combo explained in one line. Shown in the toolbar hint and the Help panel. */
+export const comboHintText =
+    'Combo: the Knife cuts (×1.5), the Pot softens (Mashers hit ×2), then the Masher smashes (×3)';
 
 /** Stars as text for an unlock requirement, like `★★½`. */
 export function starLabel(stars: number): string {
@@ -27,23 +31,32 @@ export const HudTowerToolbar = defineElement<{
     styles: css`
         :host {
             align-items: center;
-            bottom: 24px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            left: 50%;
+            gap: 8px;
+            height: ${unsafeCSS(hudLayout.toolbar.height)}px;
+            justify-content: flex-end;
+            left: ${unsafeCSS(hudLayout.toolbar.x)}px;
             pointer-events: auto;
             position: absolute;
-            transform: translateX(-50%);
+            top: ${unsafeCSS(hudLayout.toolbar.y)}px;
+            width: ${unsafeCSS(hudLayout.toolbar.width)}px;
         }
 
         .hint {
             ${hudPanelStyles}
             border-radius: 14px;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 500;
-            padding: 4px 22px;
+            height: 42px;
+            line-height: 34px;
+            padding: 0 22px;
             white-space: nowrap;
+        }
+
+        .hint.banner {
+            font-size: 26px;
+            font-weight: 700;
         }
 
         .row {
@@ -54,37 +67,36 @@ export const HudTowerToolbar = defineElement<{
         button {
             ${hudButtonStyles}
             border-radius: 16px;
-            height: 110px;
-            width: 176px;
+            height: 84px;
+            width: 150px;
         }
 
         button.selected {
             ${hudSelectedStyles}
-            transform: translateY(-8px);
+            transform: translateY(-4px);
         }
 
         .content {
             align-items: center;
             display: flex;
-            gap: 4px;
-            justify-content: center;
+            flex-direction: column;
+        }
+
+        .details {
+            align-items: center;
+            display: flex;
+            gap: 6px;
         }
 
         .icon {
             flex-shrink: 0;
-            height: 36px;
+            height: 30px;
             margin: 0;
-            width: 36px;
-        }
-
-        .text {
-            align-items: flex-start;
-            display: flex;
-            flex-direction: column;
+            width: 30px;
         }
 
         .label {
-            font-size: 21px;
+            font-size: 19px;
             font-weight: 700;
             white-space: nowrap;
         }
@@ -114,27 +126,18 @@ export const HudTowerToolbar = defineElement<{
             }
         }
 
-        .banner {
-            ${hudPanelStyles}
-            border-radius: 14px;
-            font-size: 34px;
-            font-weight: 700;
-            padding: 6px 26px;
-            white-space: nowrap;
-        }
-
         button.unaffordable {
             opacity: 0.45;
         }
 
         .cost {
             color: var(--hud-oak);
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
         }
 
         .hotkey {
-            font-size: 24px;
+            font-size: 20px;
             opacity: 0.7;
         }
     `,
@@ -152,17 +155,21 @@ export const HudTowerToolbar = defineElement<{
               : comboHintText;
 
         const banner = inputs.snapshot.prestigeBanner;
+        const tutorialHint = inputs.snapshot.tutorialHint;
 
         return html`
             ${banner
                 ? keyed(
                       banner.id,
                       html`
-                          <div class="banner">${banner.text}</div>
+                          <div class="hint banner">${banner.text}</div>
                       `,
                   )
-                : nothing}
-            <div class="hint">${hint}</div>
+                : html`
+                      <div class="hint">
+                          ${!selected && !selectedTopping && tutorialHint ? tutorialHint : hint}
+                      </div>
+                  `}
             <div class="row">
                 ${Object.values(TowerType).map((towerType) => {
                     const definition = towerTypes[towerType];
@@ -186,30 +193,26 @@ export const HudTowerToolbar = defineElement<{
                             })}
                         >
                             <div class="content">
+                                <span class="label">${locked ? '🔒 ' : ''}${definition.label}</span>
                                 ${locked
-                                    ? nothing
+                                    ? html`
+                                          <span class="unlock-text">
+                                              ${starLabel(getTowerUnlockStars(towerType))}
+                                          </span>
+                                      `
                                     : html`
-                                          <img class="icon" src=${getTowerIcon(towerType) ?? ''} />
-                                      `}
-                                <div class="text">
-                                    <span class="label">
-                                        ${locked ? '🔒 ' : ''}${definition.label}
-                                    </span>
-                                    ${locked
-                                        ? html`
-                                              <span class="unlock-text">
-                                                  Unlocks at
-                                                  ${starLabel(getTowerUnlockStars(towerType))}
-                                              </span>
-                                          `
-                                        : html`
+                                          <span class="details">
+                                              <img
+                                                  class="icon"
+                                                  src=${getTowerIcon(towerType) ?? ''}
+                                              />
                                               <span class="hotkey">[${definition.hotkey}]</span>
                                               <span class="cost">
                                                   ${coinIcon()}
                                                   ${economyConfig.towerCost[towerType]}
                                               </span>
-                                          `}
-                                </div>
+                                          </span>
+                                      `}
                             </div>
                         </button>
                     `;

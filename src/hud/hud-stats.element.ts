@@ -1,7 +1,8 @@
-import {css, defineElement, html, keyed, nothing} from 'element-vir';
+import {css, defineElement, html, keyed, nothing, unsafeCSS} from 'element-vir';
 import {cozyPalette} from '../art/cozy.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {coinIcon, starRow} from './hud-icons.js';
+import {hudLayout} from './hud-layout.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
 import {starLabel} from './hud-tower-toolbar.element.js';
@@ -57,6 +58,9 @@ function getBarColor(ratio: number): string {
     }
 }
 
+const noticeCenterX = hudLayout.noticeStrip.x + hudLayout.noticeStrip.width / 2;
+const noticeCenterY = hudLayout.noticeStrip.y + hudLayout.noticeStrip.height / 2;
+
 /** Top-left panel: score, restaurant satisfaction, run progress, plus the serving popup. */
 export const HudStats = defineElement<{
     snapshot: HudSnapshot;
@@ -65,9 +69,9 @@ export const HudStats = defineElement<{
     styles: css`
         :host {
             display: block;
-            left: 72px;
+            left: ${unsafeCSS(hudLayout.stats.x)}px;
             position: absolute;
-            top: 16px;
+            top: ${unsafeCSS(hudLayout.stats.y)}px;
         }
 
         .panel {
@@ -75,18 +79,19 @@ export const HudStats = defineElement<{
             display: flex;
             flex-direction: column;
             gap: 4px;
-            padding: 12px 22px 14px;
-            width: 520px;
+            padding: 8px 18px 10px;
+            width: ${unsafeCSS(hudLayout.stats.width)}px;
         }
 
-        .title {
-            color: var(--hud-oak);
-            font-size: 30px;
-            font-weight: 700;
+        .row {
+            align-items: baseline;
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
         }
 
         .score {
-            font-size: 40px;
+            font-size: 36px;
             font-weight: 700;
         }
 
@@ -98,21 +103,20 @@ export const HudStats = defineElement<{
 
         .prestige {
             color: var(--hud-caramel);
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 700;
         }
 
         .points {
-            font-size: 22px;
+            font-size: 20px;
             opacity: 0.7;
         }
 
         .unlock-bar {
             background: var(--hud-sand);
-            border-radius: 4px;
-            height: 8px;
+            border-radius: 3px;
+            height: 6px;
             overflow: hidden;
-            width: 330px;
         }
 
         .unlock-fill {
@@ -120,66 +124,52 @@ export const HudStats = defineElement<{
             height: 100%;
         }
 
-        .hint {
-            ${hudFloatingTextStyles}
-            color: var(--hud-cream);
-            font-size: 36px;
-            left: 888px;
-            position: absolute;
-            top: 800px;
-            transform: translateX(-50%);
-            white-space: nowrap;
-        }
-
+        /* One slim row of colored chips, one per cook. */
         .players {
-            border-top: 3px solid var(--hud-sand);
             display: flex;
-            flex-direction: column;
-            font-size: 26px;
-            gap: 2px;
-            margin-top: 4px;
-            padding-top: 6px;
+            flex-wrap: wrap;
+            font-size: 20px;
+            gap: 4px 10px;
         }
 
         .player {
-            align-items: center;
-            border-left: 10px solid var(--slot-color);
+            border-left: 8px solid var(--slot-color);
             display: flex;
-            gap: 12px;
-            padding-left: 10px;
+            gap: 6px;
+            padding-left: 6px;
         }
 
         .player .name {
-            flex: 1;
             font-weight: 600;
         }
 
         .wave {
-            font-size: 30px;
+            font-size: 24px;
             font-weight: 700;
         }
 
-        /* The host is at (72, 16), so these offsets put the banner's center at world (960, 200). */
+        .served {
+            font-size: 22px;
+            font-weight: 400;
+        }
+
+        /* Centered in the notice strip under the pause buttons. */
         .banner {
             ${hudFloatingTextStyles}
             color: var(--hud-cream);
-            font-size: 56px;
-            left: 888px;
+            font-size: 40px;
+            left: ${unsafeCSS(noticeCenterX - hudLayout.stats.x)}px;
             position: absolute;
-            top: 184px;
+            top: ${unsafeCSS(noticeCenterY - hudLayout.stats.y)}px;
             transform: translate(-50%, -50%);
             white-space: nowrap;
-        }
-
-        .label {
-            font-size: 26px;
         }
 
         .bar-row {
             align-items: center;
             display: flex;
-            font-size: 26px;
-            gap: 16px;
+            font-size: 22px;
+            gap: 12px;
         }
 
         .bar {
@@ -187,23 +177,23 @@ export const HudStats = defineElement<{
             border: 3px solid var(--hud-bark);
             border-radius: 10px;
             box-sizing: border-box;
-            height: 30px;
+            flex: 1;
+            height: 24px;
             overflow: hidden;
-            width: 330px;
         }
 
         .bar-fill {
             height: 100%;
         }
 
-        /* The host is at (72, 16), so these offsets put the popup's center at world (960, 380). */
+        /* Serving and steal popups share the notice strip, then fade out quickly. */
         .popup {
             ${hudFloatingTextStyles}
-            animation: popup-rise 1.2s linear forwards;
-            font-size: 44px;
-            left: 888px;
+            animation: popup-rise 1s linear forwards;
+            font-size: 34px;
+            left: ${unsafeCSS(noticeCenterX - hudLayout.stats.x)}px;
             position: absolute;
-            top: 364px;
+            top: ${unsafeCSS(noticeCenterY - hudLayout.stats.y)}px;
             transform: translate(-50%, -50%);
             white-space: nowrap;
         }
@@ -215,7 +205,7 @@ export const HudStats = defineElement<{
             }
             to {
                 opacity: 0;
-                transform: translate(-50%, calc(-50% - 60px));
+                transform: translate(-50%, calc(-50% - 16px));
             }
         }
     `,
@@ -227,11 +217,12 @@ export const HudStats = defineElement<{
 
         return html`
             <div class="panel">
-                <div class="title">Colcannon Fodder</div>
-                <div class="score">Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
-                <div class="coins">${coinIcon()} ${snapshot.coins}</div>
-                <div class="label">Customer satisfaction</div>
-                <div class="bar-row">
+                <div class="row">
+                    <span class="score">Score ${snapshot.totalScore.toLocaleString('en-US')}</span>
+                    <span class="coins">${coinIcon()} ${snapshot.coins}</span>
+                </div>
+                <div class="bar-row" title="Customer satisfaction">
+                    <span>Customers</span>
                     <div class="bar">
                         <div
                             class="bar-fill"
@@ -239,24 +230,10 @@ export const HudStats = defineElement<{
                             100}%; background: ${getBarColor(ratio)}"
                         ></div>
                     </div>
-                    <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
+                    <span>${snapshot.satisfaction}/${snapshot.maxSatisfaction}</span>
                 </div>
-                ${snapshot.playerCount > 1
-                    ? html`
-                          <div class="players">
-                              ${snapshot.contributions.map((entry) => {
-                                  return html`
-                                      <div class="player" style="--slot-color: ${entry.color}">
-                                          <span class="name">${entry.name}</span>
-                                          <span>${entry.points.toLocaleString('en-US')}</span>
-                                      </div>
-                                  `;
-                              })}
-                          </div>
-                      `
-                    : nothing}
-                <div class="prestige">
-                    Prestige ${starRow(snapshot.prestigeStars)}
+                <div class="row prestige">
+                    <span>Prestige ${starRow(snapshot.prestigeStars)}</span>
                     <span class="points">${snapshot.prestigePoints}</span>
                 </div>
                 ${snapshot.unlockProgress
@@ -272,13 +249,29 @@ export const HudStats = defineElement<{
                           </div>
                       `
                     : nothing}
-                <div class="wave">
-                    Wave
-                    ${snapshot.waveNumber}${snapshot.mode === 'endless'
-                        ? ''
-                        : ` / ${snapshot.waveCount}`}${snapshot.isBossWave ? ' 👑' : ''}
+                <div class="row wave">
+                    <span>
+                        Wave
+                        ${snapshot.waveNumber}${snapshot.mode === 'endless'
+                            ? ''
+                            : ` / ${snapshot.waveCount}`}${snapshot.isBossWave ? ' 👑' : ''}
+                    </span>
+                    <span class="served">Served ${snapshot.potatoesServed}</span>
                 </div>
-                <div class="label">Potatoes served ${snapshot.potatoesServed}</div>
+                ${snapshot.playerCount > 1
+                    ? html`
+                          <div class="players">
+                              ${snapshot.contributions.map((entry) => {
+                                  return html`
+                                      <div class="player" style="--slot-color: ${entry.color}">
+                                          <span class="name">${entry.name}</span>
+                                          <span>${entry.points.toLocaleString('en-US')}</span>
+                                      </div>
+                                  `;
+                              })}
+                          </div>
+                      `
+                    : nothing}
             </div>
             ${snapshot.wavePhase === 'break' && snapshot.status !== RunStatus.Ready
                 ? html`
@@ -288,11 +281,6 @@ export const HudStats = defineElement<{
                               : `Wave ${snapshot.waveNumber} incoming in`}
                           ${snapshot.breakSecondsLeft}...
                       </div>
-                  `
-                : nothing}
-            ${snapshot.tutorialHint
-                ? html`
-                      <div class="hint">${snapshot.tutorialHint}</div>
                   `
                 : nothing}
             ${snapshot.stealPopup
