@@ -5,6 +5,7 @@ import {isMuted, playSfx, setMuted, Sfx} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
+import {ensureTowerIcons} from '../tower/tower-icons.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getHudActions} from './hud-actions.js';
 import {createHudSnapshot} from './hud-snapshot.js';
@@ -101,6 +102,11 @@ export const hudMod = defineAnthaMod<FullGameState>({
             setMuted(!isMuted());
         }
         playHudSounds(state);
+
+        const renderer = state.pixi?.pixiApplication?.renderer;
+        if (renderer) {
+            ensureTowerIcons(renderer);
+        }
 
         const volumes = getVolumes();
         if (state.audioChannelVolume?.channels?.[GameAudioChannel.Music] !== volumes.music) {

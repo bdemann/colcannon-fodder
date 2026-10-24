@@ -1,12 +1,14 @@
 import {defineAnthaMod} from '@antha/engine';
 import {Graphics} from '@antha/graphics-2d';
 import {Text} from 'pixi.js';
+import {cozyPalette} from '../art/cozy.js';
 import {towerConfig} from '../config/game-config.js';
 import {knifeConfig} from '../config/knife-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus} from '../run/run-state.js';
 import {getKnifeLine} from './behaviors/knife.js';
+import {drawTower} from './tower-art.js';
 import {canAfford, canPlaceTower} from './tower-placement.js';
 import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
 import {TowerEntity} from './tower.entity.js';
@@ -18,6 +20,8 @@ function normalizeAngleDeg(angleDeg: number): number {
 
 /** The ghost tower. Owned by this mod, not an entity, because it is UI only. */
 let preview: Graphics | undefined;
+/** The tower art drawn at half transparency under the pointer. */
+let ghost: Graphics | undefined;
 /** Explains why the ghost is red. */
 let reasonLabel: Text | undefined;
 
@@ -42,6 +46,13 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             stage.addChild(preview);
         }
 
+        if (!ghost || ghost.destroyed) {
+            ghost = new Graphics();
+            ghost.zIndex = 1000;
+            ghost.alpha = 0.5;
+            stage.addChild(ghost);
+        }
+
         if (!reasonLabel || reasonLabel.destroyed) {
             reasonLabel = new Text({
                 text: '',
@@ -61,6 +72,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
         preview.clear();
         reasonLabel.visible = false;
+        ghost.visible = false;
 
         if (state.runState.status !== RunStatus.Playing || state.runState.paused) {
             ui.selectedTowerType = undefined;
@@ -179,7 +191,6 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             return;
         }
 
-        const definition = towerTypes[ui.selectedTowerType];
         const {x, y} = ui.pointerWorld;
         const placement = canPlaceTower({
             level: state.level,
@@ -223,15 +234,20 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             });
         }
 
-        preview
-            .circle(x, y, towerConfig.radius)
-            .fill({
-                color: definition.color,
-                alpha: 0.5,
-            })
-            .stroke({
-                color: valid ? '#3cff6e' : '#ff3c3c',
-                width: 5,
-            });
+        ghost.visible = true;
+        ghost.position.set(x, y);
+        drawTower(ghost, {
+            towerType: ui.selectedTowerType,
+            attack: -1,
+            timeSec: state.runState.elapsedMs / 1000,
+            aimX: 0,
+            aimY: 0,
+            rangePx,
+            swiperAngle: 0,
+        });
+        preview.circle(x, y, towerConfig.radius).stroke({
+            color: valid ? cozyPalette.meadow : cozyPalette.tomato,
+            width: 5,
+        });
     },
 });

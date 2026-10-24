@@ -3,11 +3,10 @@ import {position2dParamsShape, type ViewCreation2d} from '@antha/entity-2d';
 import {Graphics} from '@antha/graphics-2d';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
+import {cozyPalette, drawCozyLine, drawCozyShape, ellipsePath, roundRectPath} from '../art/cozy.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
-import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
+import {towerArtConfig, towerConfig} from '../config/game-config.js';
 import {knifeConfig} from '../config/knife-config.js';
-import {qualityConfig} from '../config/quality-config.js';
-import {swiperConfig} from '../config/swiper-config.js';
 import {wearConfig} from '../config/wear-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
@@ -17,7 +16,8 @@ import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
 import {getKnifeLine, updateKnife} from './behaviors/knife.js';
 import {updateMicrowave} from './behaviors/microwave.js';
-import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
+import {getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
+import {drawTower} from './tower-art.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {
     chooseAreaTargetIndexes,
@@ -47,11 +47,6 @@ const selectionGapPx = 8;
 /** The wear bar under the pips. */
 const wearBarWidthPx = 44;
 const wearBarHeightPx = 6;
-
-const trapBoxPx = 44;
-/** How long the thrown cricket is drawn in flight, and how high its arc peaks. */
-const trapThrowMs = 400;
-const trapArcHeightPx = 30;
 
 /** A built tower. Placed by the `PlaceTower` command; processes potatoes in range. */
 export class TowerEntity extends defineEntity({
@@ -91,80 +86,26 @@ export class TowerEntity extends defineEntity({
     /** Presentation-only handles, set in `createView`. */
     protected rangeView: Graphics | undefined;
     protected body: Graphics | undefined;
-    protected letter: Text | undefined;
     protected beam: Graphics | undefined;
-    /** Swiper only: the rotating paddle. */
-    protected paddle: Graphics | undefined;
-    protected splash: Graphics | undefined;
     protected pips: Graphics | undefined;
     protected selection: Graphics | undefined;
     /** Wear bar under the pips, cracks over the body, and the bobbing wrench. */
     protected wearBar: Graphics | undefined;
     protected cracks: Graphics | undefined;
     protected wrench: Text | undefined;
-    /** The level the range ring, paddle and pips were last drawn for. */
+    /** The level the range ring and pips were last drawn for. */
     protected drawnLevel = 0;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
     protected lastSeenProcessedAtMs: number | undefined;
 
     public override createView(): ViewCreation2d {
-        const definition = towerTypes[this.params.towerType];
         const view = new Container();
 
         const rangeView = new Graphics();
         view.addChild(rangeView);
-        const isTrap = definition.behavior === 'gull-trap';
+        // The tower art is redrawn every frame in `render` (idle loop and attack animation).
         const body = new Graphics();
-        if (isTrap) {
-            // A wooden box with a little cricket on top.
-            body.roundRect(-trapBoxPx / 2, -trapBoxPx / 2, trapBoxPx, trapBoxPx, 6)
-                .fill({
-                    color: '#8d6e63',
-                })
-                .stroke({
-                    color: '#5d4037',
-                    width: 4,
-                })
-                .ellipse(0, 0, 9, 4.5)
-                .fill({
-                    color: '#1b5e20',
-                })
-                .moveTo(-4, 3)
-                .lineTo(-9, 9)
-                .moveTo(4, 3)
-                .lineTo(9, 9)
-                .stroke({
-                    color: '#1b5e20',
-                    width: 2,
-                });
-        } else {
-            body.circle(0, 0, towerConfig.radius)
-                .fill({
-                    color: definition.color,
-                })
-                .stroke({
-                    color: '#222222',
-                    width: 4,
-                });
-        }
         view.addChild(body);
-
-        if (definition.behavior === 'swipe') {
-            this.paddle = new Graphics();
-            view.addChild(this.paddle);
-        }
-
-        const letter = new Text({
-            text: definition.glyph,
-            style: {
-                fill: '#1a1a1a',
-                fontSize: 30,
-                fontWeight: 'bold',
-            },
-        });
-        letter.anchor.set(0.5);
-        letter.visible = !isTrap;
-        view.addChild(letter);
 
         const selection = new Graphics();
         view.addChild(selection);
@@ -176,7 +117,7 @@ export class TowerEntity extends defineEntity({
         view.addChild(wearBar);
 
         const cracks = new Graphics();
-        const crackRadius = isTrap ? trapBoxPx / 2 : towerConfig.radius;
+        const crackRadius = towerConfig.radius;
         cracks
             .moveTo(-crackRadius * 0.6, -crackRadius * 0.7)
             .lineTo(-crackRadius * 0.1, -crackRadius * 0.1)
@@ -186,8 +127,10 @@ export class TowerEntity extends defineEntity({
             .lineTo(crackRadius * 0.2, -crackRadius * 0.05)
             .lineTo(crackRadius * 0.5, crackRadius * 0.4)
             .stroke({
-                color: '#1a1a1a',
+                color: cozyPalette.bark,
                 width: 3,
+                cap: 'round',
+                join: 'round',
             });
         cracks.visible = false;
         view.addChild(cracks);
@@ -205,14 +148,9 @@ export class TowerEntity extends defineEntity({
         const beam = new Graphics();
         view.addChild(beam);
 
-        const splash = new Graphics();
-        view.addChild(splash);
-
         this.rangeView = rangeView;
         this.body = body;
-        this.letter = letter;
         this.beam = beam;
-        this.splash = splash;
         this.pips = pips;
         this.wearBar = wearBar;
         this.cracks = cracks;
@@ -382,25 +320,42 @@ export class TowerEntity extends defineEntity({
         if (!wearBar || !cracks || !wrench || !body) {
             return;
         }
-        const {wear, towerType} = this.params;
+        const {wear} = this.params;
         const worn = wear >= wearConfig.maxWear;
-        const bodyRadius =
-            towerTypes[towerType].behavior === 'gull-trap' ? trapBoxPx / 2 : towerConfig.radius;
+        const bodyRadius = towerConfig.radius;
 
         wearBar.clear();
         if (wear > 0) {
             const y = bodyRadius + selectionGapPx + 14 + pipRadiusPx + 6;
             const fraction = wear / wearConfig.maxWear;
-            wearBar
-                .rect(-wearBarWidthPx / 2, y, wearBarWidthPx, wearBarHeightPx)
-                .fill({
-                    color: '#000000',
-                    alpha: 0.6,
-                })
-                .rect(-wearBarWidthPx / 2, y, wearBarWidthPx * fraction, wearBarHeightPx)
-                .fill({
-                    color: `hsl(${Math.round(120 - fraction * 120)}, 75%, 45%)`,
-                });
+            drawCozyShape(wearBar, {
+                path: roundRectPath({
+                    x: -wearBarWidthPx / 2,
+                    y,
+                    width: wearBarWidthPx,
+                    height: wearBarHeightPx,
+                    radius: wearBarHeightPx / 2,
+                }),
+                fill: cozyPalette.walnut,
+                highlight: false,
+                outlineScale: 0.6,
+            });
+            drawCozyShape(wearBar, {
+                path: roundRectPath({
+                    x: -wearBarWidthPx / 2,
+                    y,
+                    width: Math.max(wearBarHeightPx, wearBarWidthPx * fraction),
+                    height: wearBarHeightPx,
+                    radius: wearBarHeightPx / 2,
+                }),
+                fill:
+                    fraction < 0.5
+                        ? cozyPalette.meadow
+                        : fraction < 0.85
+                          ? cozyPalette.butter
+                          : cozyPalette.tomato,
+                outline: false,
+            });
         }
 
         cracks.visible = worn;
@@ -410,9 +365,9 @@ export class TowerEntity extends defineEntity({
         wrench.y = -bodyRadius - 22 + Math.sin(this.state.runState.elapsedMs / 200) * 5;
     }
 
-    /** Redraws everything that depends on the level: range ring, swiper arm, pips, selection ring. */
+    /** Redraws everything that depends on the level: range ring, pips, selection ring. */
     protected drawLevelParts() {
-        const {rangeView, pips, selection, paddle} = this;
+        const {rangeView, pips, selection} = this;
         if (!rangeView || !pips || !selection) {
             return;
         }
@@ -439,6 +394,7 @@ export class TowerEntity extends defineEntity({
                     color: knifeConfig.lineColor,
                     alpha: knifeConfig.lineAlpha,
                     width: knifeConfig.lineWidthPx,
+                    cap: 'round',
                 });
         } else {
             rangeView
@@ -446,67 +402,43 @@ export class TowerEntity extends defineEntity({
                 .circle(0, 0, rangePx)
                 .fill({
                     color: definition.color,
-                    alpha: 0.08,
+                    alpha: 0.1,
                 })
                 .stroke({
-                    color: definition.color,
-                    alpha: 0.35,
+                    color: cozyPalette.cream,
+                    alpha: 0.45,
                     width: 3,
                 });
         }
 
-        if (paddle) {
-            const tip = getArmTip({
-                center: {
-                    x: 0,
-                    y: 0,
-                },
-                angle: 0,
-                lengthPx: rangePx,
-            });
-            paddle
-                .clear()
-                .roundRect(
-                    0,
-                    -swiperConfig.armHalfWidthPx,
-                    tip.x,
-                    swiperConfig.armHalfWidthPx * 2,
-                    swiperConfig.armHalfWidthPx,
-                )
-                .fill({
-                    color: '#a1887f',
-                })
-                .stroke({
-                    color: '#5d4037',
-                    width: 3,
-                });
-        }
-
-        const bodyRadius = definition.behavior === 'gull-trap' ? trapBoxPx / 2 : towerConfig.radius;
         pips.clear();
         for (let index = 0; index < level; index++) {
-            pips.circle(
-                (index - (level - 1) / 2) * pipSpacingPx,
-                bodyRadius + selectionGapPx + 14,
-                pipRadiusPx,
-            ).fill({
-                color: '#ffd700',
+            drawCozyShape(pips, {
+                path: ellipsePath({
+                    x: (index - (level - 1) / 2) * pipSpacingPx,
+                    y: towerConfig.radius + selectionGapPx + 14,
+                    rx: pipRadiusPx,
+                    ry: pipRadiusPx,
+                }),
+                fill: cozyPalette.butter,
+                outlineScale: 0.6,
             });
         }
 
-        selection
-            .clear()
-            .circle(0, 0, towerConfig.radius + selectionGapPx)
-            .stroke({
-                color: '#ffffff',
-                width: 4,
-            });
+        drawCozyLine(selection.clear(), {
+            path(graphics) {
+                graphics.circle(0, 0, towerConfig.radius + selectionGapPx);
+            },
+            color: cozyPalette.cream,
+            width: 4,
+            outline: true,
+        });
     }
 
-    /** Flashes the tower and draws a beam to the last target. Presentation only. */
+    /** Draws the tower art for the current time and attack phase. Presentation only. */
     public override render() {
-        const {body, letter, beam, splash, rangeView} = this;
-        if (!body || !letter || !beam || !splash || !rangeView) {
+        const {body, beam, rangeView} = this;
+        if (!body || !beam || !rangeView) {
             return;
         }
 
@@ -528,17 +460,8 @@ export class TowerEntity extends defineEntity({
             this.selection.visible = this.state.ui.selectedTowerId === this.params.towerId;
         }
 
-        if (this.paddle) {
-            this.paddle.rotation = getSwiperAngle({
-                elapsedMs: this.state.runState.elapsedMs,
-                builtAtMs: this.params.builtAtMs,
-            });
-        }
-
         const {lastProcessedAtMs, lastTargetX, lastTargetY, x, y, towerType} = this.params;
-        const flashing =
-            lastProcessedAtMs >= 0 &&
-            this.state.runState.elapsedMs - lastProcessedAtMs < towerFeedbackConfig.flashMs;
+        const {elapsedMs} = this.state.runState;
         if (
             this.lastSeenProcessedAtMs != undefined &&
             lastProcessedAtMs !== this.lastSeenProcessedAtMs &&
@@ -549,82 +472,42 @@ export class TowerEntity extends defineEntity({
         }
         this.lastSeenProcessedAtMs = lastProcessedAtMs;
 
-        const scale = flashing ? 1.25 : 1;
+        const sinceMs = elapsedMs - lastProcessedAtMs;
+        const attackMs = towerArtConfig.attackMs[towerType];
+        drawTower(body, {
+            towerType,
+            attack:
+                lastProcessedAtMs >= 0 && sinceMs >= 0 && sinceMs < attackMs
+                    ? sinceMs / attackMs
+                    : -1,
+            timeSec: elapsedMs / 1000,
+            aimX: lastTargetX - x,
+            aimY: lastTargetY - y,
+            rangePx: getTowerStats(towerType, this.params.level).rangePx,
+            swiperAngle: getSwiperAngle({
+                elapsedMs,
+                builtAtMs: this.params.builtAtMs,
+            }),
+        });
 
-        body.scale.set(scale);
-        letter.scale.set(scale);
+        // The Masher hits from a distance, so a faint line shows which potato it squashed.
         beam.clear();
-        splash.clear();
-        const definition = towerTypes[towerType];
-        const sinceMs = this.state.runState.elapsedMs - lastProcessedAtMs;
-        if (definition.behavior === 'cone') {
-            if (lastProcessedAtMs >= 0 && sinceMs < qualityConfig.microwaveFlashMs) {
-                const aim = Math.atan2(lastTargetY - y, lastTargetX - x);
-                const half = (qualityConfig.microwaveConeHalfAngleDeg * Math.PI) / 180;
-                splash
-                    .moveTo(0, 0)
-                    .arc(
-                        0,
-                        0,
-                        getTowerStats(towerType, this.params.level).rangePx,
-                        aim - half,
-                        aim + half,
-                    )
-                    .closePath()
-                    .fill({
-                        color: definition.color,
-                        alpha: 0.24 + 0.06 * Math.sin(this.state.runState.elapsedMs / 60),
-                    });
-            }
-        } else if (definition.areaOfEffect) {
-            if (lastProcessedAtMs >= 0 && sinceMs < towerFeedbackConfig.splashMs) {
-                const t = sinceMs / towerFeedbackConfig.splashMs;
-                splash
-                    .circle(
-                        0,
-                        0,
-                        getTowerStats(towerType, this.params.level).rangePx * (0.3 + 0.7 * t),
-                    )
-                    .stroke({
-                        color: definition.color,
-                        width: 10,
-                        alpha: 0.8 * (1 - t),
-                    });
-            }
-        } else if (definition.behavior === 'gull-trap') {
-            if (lastProcessedAtMs >= 0 && sinceMs < trapThrowMs) {
-                // A cricket dot arcing from the trap to the gull it was thrown at.
-                const t = sinceMs / trapThrowMs;
-                const dx = lastTargetX - x;
-                const dy = lastTargetY - y;
-                splash.circle(dx * t, dy * t - trapArcHeightPx * 4 * t * (1 - t), 4).fill({
-                    color: '#1b5e20',
-                });
-            }
-        } else if (definition.behavior === 'line') {
-            if (flashing) {
-                beam.moveTo(0, 0)
-                    .lineTo(lastTargetX - x, lastTargetY - y)
-                    .stroke({
-                        color: '#e0e0e0',
-                        width: 6,
-                        alpha: 0.9,
-                    })
-                    .moveTo(0, 0)
-                    .lineTo(lastTargetX - x, lastTargetY - y)
-                    .stroke({
-                        color: '#ffffff',
-                        width: 2,
-                    });
-            }
-        } else if (flashing) {
-            beam.moveTo(0, 0)
-                .lineTo(lastTargetX - x, lastTargetY - y)
-                .stroke({
-                    color: towerTypes[towerType].color,
-                    width: 8,
-                    alpha: 0.9,
-                });
+        if (
+            towerTypes[towerType].behavior === 'mash' &&
+            !towerTypes[towerType].areaOfEffect &&
+            lastProcessedAtMs >= 0 &&
+            sinceMs >= 0 &&
+            sinceMs < towerArtConfig.attackMs[towerType] * 0.5
+        ) {
+            drawCozyLine(beam, {
+                path(graphics) {
+                    graphics.moveTo(0, 0).lineTo(lastTargetX - x, lastTargetY - y);
+                },
+                color: cozyPalette.cream,
+                width: 4,
+                outline: true,
+                alpha: 0.7,
+            });
         }
     }
 }

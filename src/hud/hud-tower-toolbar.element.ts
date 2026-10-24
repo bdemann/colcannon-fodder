@@ -1,6 +1,7 @@
 import {css, defineElement, html, listen} from 'element-vir';
 import {economyConfig} from '../config/game-config.js';
 import {toppingDefinitions} from '../order/topping.js';
+import {getTowerIcon} from '../tower/tower-icons.js';
 import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
@@ -57,14 +58,14 @@ export const HudTowerToolbar = defineElement<{
         .content {
             align-items: center;
             display: flex;
-            gap: 16px;
+            gap: 6px;
             justify-content: center;
         }
 
-        .swatch {
+        .icon {
             flex-shrink: 0;
-            border-radius: 50%;
             height: 44px;
+            margin: 0;
             width: 44px;
         }
 
@@ -124,7 +125,7 @@ export const HudTowerToolbar = defineElement<{
                             })}
                         >
                             <div class="content">
-                                <div class="swatch" style="background: ${definition.color}"></div>
+                                <img class="icon" src=${getTowerIcon(towerType) ?? ''} />
                                 <div class="text">
                                     <span class="label">${definition.label}</span>
                                     <span class="hotkey">[${definition.hotkey}]</span>
