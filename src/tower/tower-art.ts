@@ -20,8 +20,11 @@ import {
     type CozyPath,
 } from '../art/cozy.js';
 import {towerArtConfig} from '../config/game-config.js';
+import {knifeConfig} from '../config/knife-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {TowerType} from './tower-type.js';
+
+const laserColor = knifeConfig.laserColor;
 
 /** What a tower looks like right now. */
 export type TowerPose = {
@@ -990,6 +993,85 @@ function drawSwiper(g: Graphics, pose: Readonly<TowerPose>) {
     );
 }
 
+/** The Laser: a brass lens on a wooden stand. Its attack flash is a red beam along its line. */
+function drawLaser(g: Graphics, pose: Readonly<TowerPose>) {
+    const {timeSec: t, attack} = pose;
+    base(g, cozyPalette.walnut, pose);
+    const aimed = pose.aimX !== 0 || pose.aimY !== 0;
+    const heading = aimed ? Math.atan2(pose.aimY, pose.aimX) : -0.5;
+    const flash = attack < 0 ? 0 : 1 - seg(attack, 0.2, 1);
+    const glow = attack < 0 ? 0.35 + Math.sin(t * 3) * 0.15 : 0.6 + flash * 0.4;
+
+    // The wooden stand: a block with a little tripod foot.
+    part(g, cozyPalette.toffee, rr(-26, 2, 52, 22, 6));
+    part(g, cozyPalette.caramel, rr(-26, 16, 52, 8, 4), {
+        noOutline: true,
+        flat: true,
+        alpha: 0.5,
+    });
+    part(g, cozyPalette.toffee, rr(-6, -14, 12, 18, 3));
+
+    scope(
+        g,
+        {
+            y: -14,
+            rotation: heading,
+        },
+        () => {
+            // The brass barrel and its lens.
+            part(g, cozyPalette.butter, rr(-8, -9, 34, 18, 6));
+            part(g, cozyPalette.caramel, rr(-12, -6, 8, 12, 3), {
+                outlineScale: 0.7,
+            });
+            part(g, cozyPalette.stone, circ(26, 0, 9), {
+                outlineScale: 0.8,
+            });
+            part(g, laserColor, circ(26, 0, 5.5), {
+                noOutline: true,
+                flat: true,
+                alpha: glow,
+            });
+            shine(g, {
+                x: 6,
+                y: -5,
+                rx: 10,
+                ry: 2,
+                strength: 0.8,
+            });
+        },
+    );
+
+    if (flash > 0) {
+        // The beam runs from the lens out to the end of the line (the aim is relative to the tower).
+        const lensX = Math.cos(heading) * 26;
+        const lensY = -14 + labBaseY + Math.sin(heading) * 26;
+        const beam: ReadonlyArray<
+            readonly [
+                number,
+                number,
+            ]
+        > = [
+            [
+                lensX,
+                lensY,
+            ],
+            [
+                pose.aimX,
+                pose.aimY + labBaseY,
+            ],
+        ];
+        line(g, laserColor, 16, beam, {
+            alpha: 0.2 * flash,
+        });
+        line(g, laserColor, 8, beam, {
+            alpha: 0.45 * flash,
+        });
+        line(g, '#ffffff', 3, beam, {
+            alpha: flash,
+        });
+    }
+}
+
 const baseColors: Record<TowerType, string> = {
     [TowerType.Knife]: cozyPalette.sage,
     [TowerType.Boiler]: cozyPalette.pond,
@@ -997,6 +1079,7 @@ const baseColors: Record<TowerType, string> = {
     [TowerType.Microwave]: cozyPalette.caramel,
     [TowerType.CricketTrap]: cozyPalette.walnut,
     [TowerType.Swiper]: '#6f8b6a',
+    [TowerType.Laser]: cozyPalette.walnut,
 };
 
 /** The Microwave draws its cone underneath its base, so its base stays in the main drawing. */
@@ -1021,6 +1104,7 @@ const towerDrawers: Record<TowerType, (g: Graphics, pose: Readonly<TowerPose>) =
     [TowerType.Microwave]: drawMicrowave,
     [TowerType.CricketTrap]: drawCricketTrap,
     [TowerType.Swiper]: drawSwiper,
+    [TowerType.Laser]: drawLaser,
 };
 
 /**

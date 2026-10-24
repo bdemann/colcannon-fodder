@@ -41,6 +41,7 @@ const processSfx: Record<TowerType, Sfx> = {
     [TowerType.Microwave]: Sfx.Boil,
     [TowerType.CricketTrap]: Sfx.Build,
     [TowerType.Swiper]: Sfx.Chop,
+    [TowerType.Laser]: Sfx.Chop,
 };
 
 /** Level pips: gold dots under the tower body. */
@@ -71,7 +72,10 @@ export class TowerEntity extends defineEntity({
             lastProcessedAtMs: -1,
             lastTargetX: 0,
             lastTargetY: 0,
-            /** Cut direction in degrees (0 is right, clockwise). Only the Knife uses it. */
+            /**
+             * Cut direction in degrees (0 is right, clockwise). The Knife sets it at placement
+             * (perpendicular to the belt), the Laser from the player's aim.
+             */
             angleDeg: 0,
             /** 0 to 100. At 100 the tower is worn and works at reduced strength until serviced. */
             wear: 0,
@@ -434,7 +438,7 @@ export class TowerEntity extends defineEntity({
         this.drawnLevel = level;
 
         if (definition.behavior === 'line') {
-            // The Knife shows its fixed cut line instead of a range ring.
+            // Line towers show their fixed cut line instead of a range ring.
             const line = getKnifeLine({
                 origin: {
                     x: 0,
@@ -448,7 +452,10 @@ export class TowerEntity extends defineEntity({
                 .moveTo(line.start.x, line.start.y)
                 .lineTo(line.end.x, line.end.y)
                 .stroke({
-                    color: knifeConfig.lineColor,
+                    color:
+                        towerType === TowerType.Laser
+                            ? knifeConfig.laserColor
+                            : knifeConfig.lineColor,
                     alpha: knifeConfig.lineAlpha,
                     width: knifeConfig.lineWidthPx,
                     cap: 'round',
@@ -571,12 +578,26 @@ export class TowerEntity extends defineEntity({
             attack < 0 && towerTypes[towerType].behavior !== 'swipe'
                 ? Math.floor(elapsedMs / towerArtConfig.idleRedrawMs) * towerArtConfig.idleRedrawMs
                 : Math.floor(elapsedMs / stepMs) * stepMs;
+        // Line towers always face along their fixed line, so the Laser's lens points down its beam.
+        const lineEnd = getKnifeLine({
+            origin: {
+                x,
+                y,
+            },
+            angleDeg: this.params.angleDeg,
+            lengthPx: getTowerStats(towerType, this.params.level).rangePx,
+        }).end;
+        const isLine = towerTypes[towerType].behavior === 'line';
+        const aim = {
+            x: (isLine ? lineEnd.x : lastTargetX) - x,
+            y: (isLine ? lineEnd.y : lastTargetY) - y,
+        };
         const pose: TowerPose = {
             towerType,
             attack,
             timeSec: clockMs / 1000,
-            aimX: lastTargetX - x,
-            aimY: lastTargetY - y,
+            aimX: aim.x,
+            aimY: aim.y,
             rangePx: getTowerStats(towerType, this.params.level).rangePx,
             swiperAngle: getSwiperAngle({
                 elapsedMs: Math.floor(elapsedMs / stepMs) * stepMs,

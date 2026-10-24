@@ -40,14 +40,14 @@ export const HudTowerToolbar = defineElement<{
 
         .row {
             display: flex;
-            gap: 16px;
+            gap: 8px;
         }
 
         button {
             ${hudButtonStyles}
             border-radius: 16px;
             height: 110px;
-            width: 212px;
+            width: 176px;
         }
 
         button.selected {
@@ -58,15 +58,15 @@ export const HudTowerToolbar = defineElement<{
         .content {
             align-items: center;
             display: flex;
-            gap: 6px;
+            gap: 4px;
             justify-content: center;
         }
 
         .icon {
             flex-shrink: 0;
-            height: 44px;
+            height: 36px;
             margin: 0;
-            width: 44px;
+            width: 36px;
         }
 
         .text {
@@ -76,7 +76,7 @@ export const HudTowerToolbar = defineElement<{
         }
 
         .label {
-            font-size: 26px;
+            font-size: 21px;
             font-weight: 700;
             white-space: nowrap;
         }
@@ -102,9 +102,11 @@ export const HudTowerToolbar = defineElement<{
         const hint = selectedTopping
             ? `Click a potato to add ${toppingDefinitions[selectedTopping].label}. Right click or Esc to cancel.`
             : selected
-              ? selected === TowerType.Knife
-                  ? 'Scroll or [ ] to turn the blade. Click beside the belt to build it.'
-                  : `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
+              ? selected === TowerType.Laser
+                  ? 'Scroll or [ ] to aim the beam. Click beside the belt to build it.'
+                  : selected === TowerType.Knife
+                    ? 'The Knife cuts straight across the belt. Click beside the belt to build it.'
+                    : `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
               : comboHintText;
 
         return html`

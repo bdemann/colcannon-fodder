@@ -1,5 +1,10 @@
 import {potatoSizeConfig} from '../../config/game-config.js';
 import {knifeConfig} from '../../config/knife-config.js';
+import {
+    getNearestPathPoint,
+    getPositionAlongPath,
+    type LevelDefinition,
+} from '../../level/level.js';
 import {applyTowerHit} from '../../potato/mash.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {SeagullEntity} from '../../seagull/seagull.entity.js';
@@ -37,6 +42,31 @@ export function getKnifeLine({
     };
 }
 
+/**
+ * The Knife's automatic cut direction in degrees: from `point` toward and through the nearest point
+ * on the nearest path, so the line crosses the belt straight across. 0 when there is no path.
+ */
+export function getPerpendicularKnifeAngle(
+    level: Readonly<LevelDefinition>,
+    point: Readonly<Point>,
+): number {
+    let best: {distance: number; target: Point} | undefined;
+    for (const path of level.paths) {
+        const nearest = getNearestPathPoint(path, point);
+        if (!best || nearest.distance < best.distance) {
+            best = {
+                distance: nearest.distance,
+                target: getPositionAlongPath(path, nearest.alongPx),
+            };
+        }
+    }
+    if (!best || best.distance === 0) {
+        return 0;
+    }
+
+    return (Math.atan2(best.target.y - point.y, best.target.x - point.x) * 180) / Math.PI;
+}
+
 /** Whether a circle at `point` with `radius` touches the slice. */
 export function isOnSlice({
     point,
@@ -58,8 +88,8 @@ export function isOnSlice({
 }
 
 /**
- * Knife behavior: every cooldown it chops its fixed line (set by `angleDeg` when built). Every
- * potato and seagull on the line takes a hit. It never aims.
+ * Line behavior (Knife and Laser): every cooldown it chops its fixed line (set by `angleDeg` when
+ * built). Every potato and seagull on the line takes a hit. It never aims.
  */
 export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): void {
     tower.params.cooldownRemainingMs = Math.max(

@@ -51,7 +51,7 @@ export type GameCommand =
           towerType: TowerType;
           x: number;
           y: number;
-          /** Knife cut direction in degrees (default 0). Ignored by other towers. */
+          /** Laser aim in degrees (default 0). The Knife computes its own; others ignore it. */
           angleDeg?: number;
       }
     | {

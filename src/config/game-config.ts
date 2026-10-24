@@ -3,6 +3,7 @@
  * in milliseconds, distances in game-world pixels (the world is 1920x1080), speeds in pixels per
  * millisecond.
  */
+import {knifeConfig} from './knife-config.js';
 
 /** Per-size potato stats. `value` multiplies the perfect-serving score and coins. */
 export const potatoSizeConfig = {
@@ -204,6 +205,7 @@ export const towerArtConfig = {
     /** How long each tower's attack animation plays after `lastProcessedAtMs`. */
     attackMs: {
         knife: 250,
+        laser: 250,
         boiler: 800,
         masher: 600,
         microwave: 300,
@@ -247,6 +249,12 @@ export const projectileConfig = {
 export const towerTypeConfig = {
     /** Light and fast: its job is to Cut many potatoes so later hits land harder. */
     knife: {
+        damage: 4,
+        rangePx: knifeConfig.perpendicularRangePx,
+        cooldownMs: 250,
+    },
+    /** The late-game Knife: the old Knife's powers, an aimable long line. */
+    laser: {
         damage: 4,
         rangePx: 220,
         cooldownMs: 250,
@@ -373,6 +381,7 @@ export const economyConfig = {
     coinEventsKept: 8,
     towerCost: {
         knife: 40,
+        laser: 150,
         boiler: 60,
         masher: 80,
         microwave: 50,

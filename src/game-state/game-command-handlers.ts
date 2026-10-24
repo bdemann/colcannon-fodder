@@ -15,8 +15,9 @@ import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {isAllowedSpeed} from '../run/speed.js';
+import {getPerpendicularKnifeAngle} from '../tower/behaviors/knife.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
-import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
+import {getSellValue, getUpgradeCost, TowerType, towerTypes} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getServiceCost} from '../tower/wear.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
@@ -134,7 +135,10 @@ export const gameCommandHandlers: {
             lastProcessedAtMs: -1,
             lastTargetX: 0,
             lastTargetY: 0,
-            angleDeg: packet.angleDeg ?? 0,
+            angleDeg:
+                packet.towerType === TowerType.Knife
+                    ? getPerpendicularKnifeAngle(state.level, packet)
+                    : (packet.angleDeg ?? 0),
             wear: 0,
         });
         state.runState.nextTowerId++;
