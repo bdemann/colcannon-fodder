@@ -12,6 +12,11 @@ import {OrderBoardEntity} from '../order/order-board.entity.js';
 import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {
+    canUpgradeAtStars,
+    getStarsFromPoints,
+    isTowerUnlocked,
+} from '../progression/progression.js';
 import {addCoins} from '../run/coins.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {isAllowedSpeed} from '../run/speed.js';
@@ -108,6 +113,7 @@ export const gameCommandHandlers: {
         });
 
         if (
+            !isTowerUnlocked(packet.towerType, getStarsFromPoints(state.runState.prestigePoints)) ||
             !canAfford(state.runState.coins, packet.towerType) ||
             !canPlaceTower({
                 level: state.level,
@@ -160,7 +166,14 @@ export const gameCommandHandlers: {
                 return;
             }
             const cost = getUpgradeCost(tower.params.towerType, (tower.params.level + 1) as 2 | 3);
-            if (state.runState.coins >= cost) {
+            if (
+                state.runState.coins >= cost &&
+                canUpgradeAtStars({
+                    towerType: tower.params.towerType,
+                    toLevel: tower.params.level + 1,
+                    stars: getStarsFromPoints(state.runState.prestigePoints),
+                })
+            ) {
                 state.runState.coins -= cost;
                 tower.params.level++;
             }

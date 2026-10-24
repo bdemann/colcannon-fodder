@@ -130,6 +130,7 @@ describe(advanceOrders.name, () => {
             atMs: 1000,
             scoreDelta: 0,
             satisfactionDelta: orderConfig.expiredSatisfaction,
+            prestigeDelta: 0,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);
     });

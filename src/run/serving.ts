@@ -5,13 +5,14 @@ import {
     seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
+import {progressionConfig} from '../config/progression-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {getLevel} from '../level/levels.js';
 import {dishDefinitions} from '../order/dish.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {matchDish} from '../order/toppings.js';
 import {getMashProgress} from '../potato/mash.js';
-import {pushRecentQuality} from '../quality/quality.js';
+import {applyPrestigeEvent} from '../progression/progression.js';
 import {addCoins, getPerfectReason} from './coins.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
@@ -87,8 +88,12 @@ function fillOrder(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + orderConfig.fulfilled.satisfaction),
     );
+    const prestigeDelta = applyPrestigeEvent(runState, {
+        kind: 'order-filled',
+    });
     runState.lastOrderEvent = {
         kind: 'fulfilled',
+        prestigeDelta,
         dish,
         atMs: runState.elapsedMs,
         scoreDelta: score,
@@ -108,6 +113,32 @@ export function isRunCleared(runState: Readonly<RunState>): boolean {
         runState.potatoesPending === 0 &&
         runState.potatoesServed + runState.potatoesStolen >= runState.potatoesSpawned
     );
+}
+
+/**
+ * Pays the wave-end bonus for every wave whose potatoes are all served or stolen. A wave counts as
+ * finished spawning once the wave counter moves past it; the potato total at that moment is
+ * remembered so later waves' potatoes do not delay the bonus. Call each frame and after each
+ * resolution.
+ */
+export function payWaveBonuses(runState: RunState): void {
+    const finished = runState.wavePhase === 'done' ? runState.waveIndex + 1 : runState.waveIndex;
+    while (runState.waveSpawnTotals.length < finished && runState.potatoesPending === 0) {
+        runState.waveSpawnTotals.push(runState.potatoesSpawned);
+    }
+    const resolved = runState.potatoesServed + runState.potatoesStolen;
+    while (
+        runState.wavesPaid < runState.waveSpawnTotals.length &&
+        resolved >= (runState.waveSpawnTotals[runState.wavesPaid] ?? Infinity)
+    ) {
+        const bonuses = progressionConfig.waveEndBonusCoins;
+        addCoins(runState, {
+            amount: bonuses[Math.min(runState.wavesPaid, bonuses.length - 1)] ?? 0,
+            reason: `Wave ${runState.wavesPaid + 1} cleared!`,
+            ...getRestaurantSpot(runState),
+        });
+        runState.wavesPaid++;
+    }
 }
 
 /** Ends the run if satisfaction ran out (lost) or every potato is dealt with (won). */
@@ -135,10 +166,14 @@ export function stealPotato(runState: RunState): void {
         Math.max(0, runState.satisfaction + seagullConfig.stolenSatisfaction),
     );
     runState.lastSteal = {
+        prestigeDelta: applyPrestigeEvent(runState, {
+            kind: 'stolen',
+        }),
         atMs: runState.elapsedMs,
         satisfactionDelta: newSatisfaction - runState.satisfaction,
     };
     runState.satisfaction = newSatisfaction;
+    payWaveBonuses(runState);
     checkRunEnd(runState);
 }
 
@@ -176,9 +211,17 @@ export function servePotato(
     const coins = isPerfect
         ? Math.round(economyConfig.servingCoins.perfect * serving.value * qualityFactor)
         : economyConfig.servingCoins[result];
-    if (isPerfect) {
-        pushRecentQuality(runState.recentQualities, serving.quality);
-    }
+    const prestigeDelta = applyPrestigeEvent(
+        runState,
+        isPerfect
+            ? {
+                  kind: 'perfect',
+                  quality: serving.quality,
+              }
+            : {
+                  kind: result === ServingResult.Raw ? 'raw' : 'incomplete',
+              },
+    );
     const satisfactionDelta = isPerfect
         ? getSatisfactionDelta(result, serving.processing)
         : getSatisfactionDelta(result, serving.processing) * (serving.penaltyMultiplier ?? 1);
@@ -203,8 +246,10 @@ export function servePotato(
         scoreDelta: score,
         satisfactionDelta: appliedSatisfactionDelta,
         progress: getMashProgress(serving.processing),
+        prestigeDelta,
     };
 
+    payWaveBonuses(runState);
     const status = checkRunEnd(runState);
 
     if (isPerfect && status === RunStatus.Playing) {

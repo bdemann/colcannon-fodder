@@ -2,6 +2,7 @@ import {assertWrap} from '@augment-vir/assert';
 import {economyConfig, orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
+import {type TowerType} from '../tower/tower-type.js';
 
 /** Campaign has a fixed list of waves; endless generates waves forever. */
 export type RunMode = 'campaign' | 'endless';
@@ -43,6 +44,8 @@ export type LastServing = {
     satisfactionDelta: number;
     /** Mash progress when served, 0 to 1. Lets the popup say how close it was. */
     progress: number;
+    /** Prestige points this serving changed. */
+    prestigeDelta: number;
 };
 
 /** The most recent steal by a seagull, kept so the HUD can show a short popup. */
@@ -50,6 +53,7 @@ export type LastSteal = {
     /** `runState.elapsedMs` when the gull escaped. */
     atMs: number;
     satisfactionDelta: number;
+    prestigeDelta: number;
 };
 
 /** One open customer order. */
@@ -68,6 +72,16 @@ export type LastOrderEvent = {
     atMs: number;
     scoreDelta: number;
     satisfactionDelta: number;
+    prestigeDelta: number;
+};
+
+/** Towers that just unlocked or locked because prestige moved, for the HUD banner. */
+export type PrestigeNotice = {
+    /** Counts up so each notice restarts the banner. */
+    id: number;
+    atMs: number;
+    kind: 'unlocked' | 'locked';
+    towerTypes: TowerType[];
 };
 
 /** One change to the coins, kept so the HUD can float a popup with the reason. */
@@ -152,8 +166,16 @@ export type RunState = {
     /** Countdown to the next seagull while a wave is spawning. */
     msUntilNextSeagull: number;
     lastSteal: LastSteal | undefined;
-    /** Quality of the most recent Perfect servings, most recent last (see `prestigeWindow`). */
-    recentQualities: number[];
+    /** Prestige points, 0 to 100. Stars = points / 20. Unlocks towers and upgrades. */
+    prestigePoints: number;
+    prestigeNotice: PrestigeNotice | undefined;
+    /**
+     * For each wave that finished spawning, how many potatoes had spawned or were queued by then.
+     * The wave is cleared once that many are served or stolen.
+     */
+    waveSpawnTotals: number[];
+    /** Waves whose end bonus was paid. */
+    wavesPaid: number;
     /** `runState.elapsedMs` when a boss last spawned, or -1. Drives the HUD banner. */
     lastBossSpawnAtMs: number;
 };
@@ -205,7 +227,10 @@ export function createInitialRunState(
         seagullsSpawnedInWave: 0,
         msUntilNextSeagull: 0,
         lastSteal: undefined,
-        recentQualities: [],
+        prestigePoints: 0,
+        prestigeNotice: undefined,
+        waveSpawnTotals: [],
+        wavesPaid: 0,
         lastBossSpawnAtMs: -1,
     };
 }

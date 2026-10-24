@@ -11,6 +11,7 @@ import {wearConfig} from '../config/wear-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {getStarsFromPoints, isTowerWorking} from '../progression/progression.js';
 import {ProjectileKind} from '../projectile/projectile-kind.js';
 import {spawnProjectile} from '../projectile/projectile-layer.js';
 import {RunStatus} from '../run/run-state.js';
@@ -108,6 +109,9 @@ export class TowerEntity extends defineEntity({
     protected wearBar: Graphics | undefined;
     protected cracks: Graphics | undefined;
     protected wrench: Text | undefined;
+    protected padlock: Text | undefined;
+    /** Whether the grey lock look is currently applied. */
+    protected drawnLocked = false;
     /** The level the range ring and pips were last drawn for. */
     protected drawnLevel = 0;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
@@ -174,7 +178,15 @@ export class TowerEntity extends defineEntity({
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
         const {behavior} = towerTypes[this.params.towerType];
 
-        if (behavior === 'gull-trap') {
+        // A tower of a locked type stops working (no attacks, no wear) until it unlocks again.
+        if (
+            !isTowerWorking(
+                this.params.towerType,
+                getStarsFromPoints(this.state.runState.prestigePoints),
+            )
+        ) {
+            return;
+        } else if (behavior === 'gull-trap') {
             updateGullTrap(this, msSinceLastExecute);
             return;
         } else if (behavior === 'cone') {
@@ -329,6 +341,41 @@ export class TowerEntity extends defineEntity({
             wear: this.params.wear,
             amount: getWearPerUse(this.params.towerType),
         });
+    }
+
+    /** Greys the tower and shows a small padlock while its type is locked. Presentation only. */
+    protected renderLock() {
+        const {body} = this;
+        const locked = !isTowerWorking(
+            this.params.towerType,
+            getStarsFromPoints(this.state.runState.prestigePoints),
+        );
+        if (locked === this.drawnLocked) {
+            return;
+        }
+        this.drawnLocked = locked;
+        const tint = locked ? 0x77_77_77 : 0xff_ff_ff;
+        if (body) {
+            body.tint = tint;
+        }
+        if (this.baseView) {
+            this.baseView.tint = tint;
+        }
+        if (locked && !this.padlock) {
+            const padlock = new Text({
+                text: '🔒',
+                style: {
+                    fontSize: 26,
+                },
+            });
+            padlock.anchor.set(0.5);
+            padlock.y = -towerConfig.radius - 14;
+            this.view.addChild(padlock);
+            this.padlock = padlock;
+        }
+        if (this.padlock) {
+            this.padlock.visible = locked;
+        }
     }
 
     /** Draws the wear bar, cracks, fade and bobbing wrench. Presentation only. */
@@ -547,6 +594,7 @@ export class TowerEntity extends defineEntity({
                 selectedTowerId: this.state.ui.selectedTowerId,
             });
         this.renderWear();
+        this.renderLock();
         if (this.selection) {
             this.selection.visible = this.state.ui.selectedTowerId === this.params.towerId;
         }

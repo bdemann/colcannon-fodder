@@ -5,6 +5,7 @@ import {
     potatoSizeConfig,
     seagullConfig,
 } from '../config/game-config.js';
+import {progressionConfig} from '../config/progression-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {RunStatus} from '../run/run-state.js';
 import {formatSpeed} from '../run/speed.js';
@@ -33,6 +34,8 @@ function getEarnLines(): string[] {
     return [
         `Perfect mash: ${economyConfig.servingCoins.perfect} coins × size (${sizes})`,
         'Quality scales the pay',
+        `Wave cleared: bonus coins (wave 1: ${progressionConfig.waveEndBonusCoins[0]})`,
+        'Prestige: great mash earns stars that unlock towers and upgrades; poor potatoes cost stars',
         `Filled order: +${orderConfig.fulfilled.coins} coins × size`,
         `Eaten anyway: ${economyConfig.servingCoins.incomplete} coins`,
         `Seagull knocked out or fed: ${seagullConfig.bountyCoins} coins`,

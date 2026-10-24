@@ -6,6 +6,7 @@ import {towerConfig} from '../config/game-config.js';
 import {knifeConfig} from '../config/knife-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {getStarsFromPoints, isTowerUnlocked} from '../progression/progression.js';
 import {RunStatus} from '../run/run-state.js';
 import {getKnifeLine, getPerpendicularKnifeAngle} from './behaviors/knife.js';
 import {drawTower} from './tower-art.js';
@@ -83,6 +84,11 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
         preview.visible = true;
 
+        const stars = getStarsFromPoints(state.runState.prestigePoints);
+        if (ui.selectedTowerType && !isTowerUnlocked(ui.selectedTowerType, stars)) {
+            ui.selectedTowerType = undefined;
+        }
+
         for (const key of ui.keys) {
             if (key === 'Escape') {
                 ui.selectedTowerType = undefined;
@@ -122,7 +128,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                 (towerType) => towerTypes[towerType].hotkey === key,
             );
 
-            if (pressed) {
+            if (pressed && isTowerUnlocked(pressed, stars)) {
                 ui.selectedTowerType = ui.selectedTowerType === pressed ? undefined : pressed;
                 if (ui.selectedTowerType) {
                     ui.selectedTopping = undefined;

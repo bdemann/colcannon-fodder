@@ -7,6 +7,7 @@ import {type HudActions} from './hud-actions.js';
 import {coinIcon, wrenchIcon} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {hudButtonStyles, hudPanelStyles} from './hud-theme.js';
+import {starLabel} from './hud-tower-toolbar.element.js';
 
 /** Wear bar color: Grass while fresh, Butter once worn, Tomato when nearly broken. */
 function wearColor(wear: number): string {
@@ -96,7 +97,9 @@ export const HudTowerPanel = defineElement<{
         }
         const definition = towerTypes[tower.towerType];
         const {actions, snapshot} = inputs;
-        const canUpgrade = tower.upgradeCost != undefined && snapshot.coins >= tower.upgradeCost;
+        const gated = tower.upgradeNeedsStars != undefined;
+        const canUpgrade =
+            tower.upgradeCost != undefined && !gated && snapshot.coins >= tower.upgradeCost;
         const hasDamage = definition.behavior !== 'gull-trap' && definition.behavior !== 'swipe';
 
         return html`
@@ -134,7 +137,13 @@ export const HudTowerPanel = defineElement<{
                         actions.upgradeTower(tower.towerId);
                     })}
                 >
-                    Upgrade (U) ${coinIcon()} ${tower.upgradeCost ?? 'MAX'}
+                    ${tower.upgradeNeedsStars == undefined
+                        ? html`
+                              Upgrade (U) ${coinIcon()} ${tower.upgradeCost ?? 'MAX'}
+                          `
+                        : html`
+                              Needs ${starLabel(tower.upgradeNeedsStars)}
+                          `}
                 </button>
                 <button
                     class="sell"
