@@ -1,5 +1,6 @@
 import {css, defineElement, html, nothing} from 'element-vir';
 import {qualityConfig} from '../config/quality-config.js';
+import {getModeRecord} from '../records/records.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudActions} from './hud-actions.js';
 import {starRow} from './hud-icons.js';
@@ -62,6 +63,24 @@ export const HudRunOver = defineElement<{
             margin-bottom: 32px;
         }
 
+        .new-best {
+            background: var(--hud-caramel);
+            border: 4px solid var(--hud-bark);
+            border-radius: 999px;
+            color: var(--hud-bark);
+            display: inline-block;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding: 4px 28px;
+        }
+
+        .bests {
+            font-size: 28px;
+            margin-bottom: 24px;
+            opacity: 0.85;
+        }
+
         button {
             ${hudPrimaryButtonStyles}
         }
@@ -79,6 +98,7 @@ export const HudRunOver = defineElement<{
         const won = snapshot.status === RunStatus.Won;
         const champ = won && snapshot.prestigeStars >= qualityConfig.mashChampStars;
         const survived = won && !champ;
+        const best = getModeRecord(snapshot.records, snapshot.levelId, snapshot.mode);
 
         return html`
             <div class="layer">
@@ -107,9 +127,9 @@ export const HudRunOver = defineElement<{
                                 ? '...but the critics found it a little rubbery.'
                                 : 'The customers have had enough of your potatoes.'}
                     </div>
-                    ${endless
+                    ${snapshot.newBest
                         ? html`
-                              <div class="subtitle">Best: ${snapshot.endlessBest} waves</div>
+                              <div class="new-best">New best!</div>
                           `
                         : nothing}
                     <div class="stars">Prestige ${starRow(snapshot.prestigeStars)}</div>
@@ -122,6 +142,12 @@ export const HudRunOver = defineElement<{
                         </div>
                         <div>Raw ${snapshot.servingCounts[ServingResult.Raw]}</div>
                         <div>Stolen by seagulls ${snapshot.potatoesStolen}</div>
+                    </div>
+                    <div class="bests">
+                        Best score ${best.bestScore.toLocaleString('en-US')} · Best prestige
+                        ${starRow(best.bestStars)}${endless
+                            ? ` · Best ${best.bestWaves} waves`
+                            : ` · 🏆 ${best.champs}`}
                     </div>
                     <button
                         @click=${() => {

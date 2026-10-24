@@ -1,10 +1,13 @@
+import {createFullDateInUserTimezone, toFormattedString} from 'date-vir';
 import {css, defineElement, html, nothing, svg} from 'element-vir';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getPositionAlongPath, type LevelDefinition} from '../level/level.js';
-import {levels} from '../level/levels.js';
+import {getLevel, levels} from '../level/levels.js';
+import {getModeRecord} from '../records/records.js';
 import {RunStatus} from '../run/run-state.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
+import {starRow} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {
     hudButtonStyles,
@@ -35,8 +38,8 @@ export const comboHintText =
     'Combo: the Knife cuts (×1.5), the Pot softens (Mashers hit ×2), then the Masher smashes (×3)';
 
 const previewSize = {
-    width: 240,
-    height: 135,
+    width: 192,
+    height: 108,
 } as const;
 
 /** A mini map of the level: the belt as a polyline, the restaurant square and chute dots. */
@@ -85,6 +88,56 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
     `;
 }
 
+/** A level card's record line for the selected mode: best score, stars and Mash Champ count. */
+function renderRecord(snapshot: HudSnapshot, levelId: string) {
+    const record = getModeRecord(snapshot.records, levelId, snapshot.mode);
+
+    if (!record.bestScore) {
+        return html`
+            <span class="record">No record yet</span>
+        `;
+    }
+
+    return html`
+        <span class="record">
+            Best ${record.bestScore.toLocaleString('en-US')} · ${record.bestStars} ★ · 🏆
+            ${record.champs}
+        </span>
+    `;
+}
+
+/** The top runs overall, or nothing before the first run. */
+function renderHall(snapshot: HudSnapshot) {
+    if (!snapshot.records.hall.length) {
+        return nothing;
+    }
+
+    return html`
+        <div class="hall">
+            <div class="hall-title">Hall of Mash Champs</div>
+            <div class="hall-list">
+                ${snapshot.records.hall.map((entry, index) => {
+                    return html`
+                        <div class="hall-entry">
+                            <div>
+                                ${index + 1}. ${getLevel(entry.levelId).name} ·
+                                ${entry.mode === 'campaign' ? 'Campaign' : 'Endless'}
+                            </div>
+                            <div>
+                                ${entry.score.toLocaleString('en-US')} · ${starRow(entry.stars)} ·
+                                ${toFormattedString(
+                                    createFullDateInUserTimezone(entry.dateMs),
+                                    'MMM d',
+                                )}
+                            </div>
+                        </div>
+                    `;
+                })}
+            </div>
+        </div>
+    `;
+}
+
 export const rules = [
     comboHintText,
     'Every tower mashes. Aim the Knife when you build it (scroll or [ ]) and it chops everything on that line, fast. Pots soften everything in range, so Mashers hit twice as hard.',
@@ -125,14 +178,14 @@ export const HudTitle = defineElement<{
             ${hudPanelStyles}
             border-radius: 28px;
             border-width: 6px;
-            padding: 28px 48px;
+            padding: 16px 48px;
             text-align: center;
             width: 1500px;
         }
 
         .title {
             color: var(--hud-oak);
-            font-size: 72px;
+            font-size: 60px;
             font-weight: 700;
         }
 
@@ -168,13 +221,13 @@ export const HudTitle = defineElement<{
 
         .rules {
             font-size: 24px;
-            line-height: 1.3;
-            margin-bottom: 16px;
+            line-height: 1.2;
+            margin-bottom: 10px;
         }
 
         .controls {
             font-size: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             opacity: 0.8;
         }
 
@@ -182,7 +235,7 @@ export const HudTitle = defineElement<{
             display: flex;
             gap: 24px;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .modes {
@@ -234,6 +287,37 @@ export const HudTitle = defineElement<{
             align-self: center;
             border-radius: 6px;
             margin-top: auto;
+        }
+
+        .record {
+            color: var(--hud-bark);
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .hall {
+            margin-bottom: 12px;
+        }
+
+        .hall-title {
+            color: var(--hud-oak);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .hall-list {
+            display: flex;
+            font-size: 18px;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .hall-entry {
+            border: 3px solid var(--hud-bark);
+            border-radius: 14px;
+            line-height: 1.3;
+            padding: 2px 8px;
+            width: 290px;
         }
 
         .start {
@@ -309,11 +393,13 @@ export const HudTitle = defineElement<{
                                 >
                                     <span class="level-name">${level.name}</span>
                                     <span class="level-description">${level.description}</span>
+                                    ${renderRecord(inputs.snapshot, level.levelId)}
                                     ${renderLevelPreview(level)}
                                 </button>
                             `;
                         })}
                     </div>
+                    ${renderHall(inputs.snapshot)}
                     <button
                         class="start"
                         @click=${() => {

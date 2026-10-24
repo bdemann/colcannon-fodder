@@ -1,5 +1,5 @@
 import {getBossHp} from '../config/boss-config.js';
-import {endlessBestStorageKey, endlessConfig} from '../config/endless-config.js';
+import {endlessConfig} from '../config/endless-config.js';
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {Dish} from '../order/dish.js';
 import {type RunState} from './run-state.js';
@@ -104,23 +104,4 @@ export function getWaveSettings(
 /** Waves the restaurant got through: the current wave counts once it has started spawning. */
 export function getWavesReached(runState: Readonly<RunState>): number {
     return runState.wavePhase === 'spawning' ? runState.waveIndex + 1 : runState.waveIndex;
-}
-
-/**
- * Returns the best endless wave count for a level, saving `reached` first if it beats it. Storage
- * failures give `reached`.
- */
-export function recordEndlessBest(levelId: string, reached: number): number {
-    const key = `${endlessBestStorageKey}${levelId}`;
-    try {
-        const stored = Number(globalThis.localStorage.getItem(key) ?? 0);
-        const best = Number.isFinite(stored) ? stored : 0;
-        if (reached > best) {
-            globalThis.localStorage.setItem(key, String(reached));
-            return reached;
-        }
-        return best;
-    } catch {
-        return reached;
-    }
 }
