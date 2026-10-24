@@ -9,6 +9,7 @@ import {getPrestigeStars} from '../quality/quality.js';
 import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
 import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
+import {getServiceCost} from '../tower/wear.js';
 
 /**
  * Plain copies of everything the HUD shows. `hudMod` builds a fresh snapshot every tick; the HUD
@@ -73,6 +74,9 @@ export type HudSnapshot = {
               /** `undefined` at the max level. */
               upgradeCost: number | undefined;
               sellValue: number;
+              /** Wear 0 to 100, rounded so the HUD re-renders only on whole steps. */
+              wear: number;
+              serviceCost: number;
               stats: {damage: number; rangePx: number; cooldownMs: number};
           }
         | undefined;
@@ -104,7 +108,7 @@ function getSelectedTower(state: Partial<FullGameState>): HudSnapshot['selectedT
     }
 
     for (const tower of state.entityStore.getEntities(TowerEntity)) {
-        const {towerId, towerType, level} = tower.params;
+        const {towerId, towerType, level, wear} = tower.params;
         if (towerId === selectedId) {
             return {
                 towerId,
@@ -115,7 +119,9 @@ function getSelectedTower(state: Partial<FullGameState>): HudSnapshot['selectedT
                         ? getUpgradeCost(towerType, (level + 1) as 2 | 3)
                         : undefined,
                 sellValue: getSellValue(towerType, level),
-                stats: getTowerStats(towerType, level),
+                wear: Math.round(wear),
+                serviceCost: getServiceCost(towerType),
+                stats: getTowerStats(towerType, level, wear),
             };
         }
     }

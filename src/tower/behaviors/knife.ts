@@ -5,6 +5,7 @@ import {PotatoEntity} from '../../potato/potato.entity.js';
 import {SeagullEntity} from '../../seagull/seagull.entity.js';
 import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
+import {addWear, getWearPerUse} from '../wear.js';
 import {distanceToSegment} from './swiper.js';
 
 type Point = {x: number; y: number};
@@ -69,7 +70,7 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
         return;
     }
 
-    const stats = getTowerStats(tower.params.towerType, tower.params.level);
+    const stats = getTowerStats(tower.params.towerType, tower.params.level, tower.params.wear);
     const segment = getKnifeLine({
         origin: {
             x: tower.params.x,
@@ -94,7 +95,7 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
         }
         hitSomething = true;
         const processing = potato.getProcessing();
-        applyTowerHit(processing, tower.params.towerType, tower.params.level);
+        applyTowerHit(processing, tower.params.towerType, tower.params);
         potato.params.cut = processing.cut;
         potato.params.cooked = processing.cooked;
         potato.params.mashHp = processing.mashHp;
@@ -118,6 +119,10 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
     if (!hitSomething) {
         return;
     }
+    tower.params.wear = addWear({
+        wear: tower.params.wear,
+        amount: getWearPerUse(tower.params.towerType),
+    });
     tower.params.lastProcessedAtMs = tower.state.runState.elapsedMs;
     tower.params.lastTargetX = segment.end.x;
     tower.params.lastTargetY = segment.end.y;

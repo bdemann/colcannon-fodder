@@ -16,6 +16,7 @@ import {createInitialRunState, RunStatus} from '../run/run-state.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
+import {getServiceCost} from '../tower/wear.js';
 import {GameCommandType, type GameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
 
@@ -118,6 +119,7 @@ export const gameCommandHandlers: {
             lastTargetX: 0,
             lastTargetY: 0,
             angleDeg: packet.angleDeg ?? 0,
+            wear: 0,
         });
         state.runState.nextTowerId++;
     },
@@ -167,6 +169,32 @@ export const gameCommandHandlers: {
                 tower.params.towerId = 0;
                 return;
             }
+        }
+    },
+    [GameCommandType.ServiceTower]({detail, state}) {
+        if (
+            !state.entityStore ||
+            state.runState?.status !== RunStatus.Playing ||
+            state.runState.paused
+        ) {
+            return;
+        }
+
+        for (const tower of state.entityStore.getEntities(TowerEntity)) {
+            if (tower.params.towerId !== detail.packet.towerId) {
+                continue;
+            }
+            const cost = getServiceCost(tower.params.towerType);
+            if (tower.params.wear > 0 && state.runState.coins >= cost) {
+                addCoins(state.runState, {
+                    amount: -cost,
+                    reason: `Serviced ${towerTypes[tower.params.towerType].label}`,
+                    x: tower.params.x,
+                    y: tower.params.y,
+                });
+                tower.params.wear = 0;
+            }
+            return;
         }
     },
     [GameCommandType.TogglePause]({state}) {

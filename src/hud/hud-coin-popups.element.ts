@@ -30,6 +30,10 @@ export const HudCoinPopups = defineElement<{
             font-size: 34px;
         }
 
+        .amount.spent {
+            color: #ff5252;
+        }
+
         .amount.zero {
             color: #bdbdbd;
         }
@@ -65,7 +69,13 @@ export const HudCoinPopups = defineElement<{
                             hudConfig.coinPopupOffsetPx -
                             popup.staggerPx}px"
                         >
-                            <div class="amount ${popup.amount > 0 ? '' : 'zero'}">
+                            <div
+                                class="amount ${popup.amount > 0
+                                    ? ''
+                                    : popup.amount < 0
+                                      ? 'spent'
+                                      : 'zero'}"
+                            >
                                 ${popup.amount > 0 ? '+' : ''}🪙 ${popup.amount}
                             </div>
                             <div class="reason">${popup.reason}</div>

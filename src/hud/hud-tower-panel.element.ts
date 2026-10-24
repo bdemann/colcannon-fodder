@@ -1,6 +1,7 @@
 import {css, defineElement, html, listen, nothing} from 'element-vir';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {towerTypes} from '../tower/tower-type.js';
+import {getServiceVerb} from '../tower/wear.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 
@@ -47,6 +48,17 @@ export const HudTowerPanel = defineElement<{
             font-size: 22px;
         }
 
+        .wear-track {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            height: 14px;
+            overflow: hidden;
+        }
+
+        .wear-fill {
+            height: 100%;
+        }
+
         button {
             background: #3a8e4a;
             border: 3px solid rgba(255, 255, 255, 0.4);
@@ -57,6 +69,10 @@ export const HudTowerPanel = defineElement<{
             font-size: 26px;
             margin-top: 4px;
             padding: 8px 0;
+        }
+
+        button.service {
+            background: #6a5a2a;
         }
 
         button.sell {
@@ -89,6 +105,23 @@ export const HudTowerPanel = defineElement<{
                     : nothing}
                 <div class="stat">Range: ${tower.stats.rangePx}</div>
                 <div class="stat">Reload: ${(tower.stats.cooldownMs / 1000).toFixed(2)}s</div>
+                <div class="stat">Wear: ${tower.wear}%</div>
+                <div class="wear-track">
+                    <div
+                        class="wear-fill"
+                        style="width: ${tower.wear}%; background: hsl(${120 -
+                        tower.wear * 1.2}, 70%, 45%)"
+                    ></div>
+                </div>
+                <button
+                    class="service"
+                    ?disabled=${tower.wear <= 0 || snapshot.coins < tower.serviceCost}
+                    ${listen('click', () => {
+                        actions.serviceTower(tower.towerId);
+                    })}
+                >
+                    ${getServiceVerb(tower.towerType)} (S) 🪙 ${tower.serviceCost}
+                </button>
                 <button
                     class="upgrade"
                     ?disabled=${!canUpgrade}

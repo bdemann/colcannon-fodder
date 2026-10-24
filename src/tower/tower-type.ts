@@ -1,5 +1,6 @@
 import {economyConfig, towerTypeConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
+import {getWearMultiplier} from './wear.js';
 
 export enum TowerType {
     Knife = 'knife',
@@ -120,16 +121,19 @@ export function getDamageScale(level: number): number {
 
 /**
  * A tower's stats at an upgrade level. Every reader of damage, range or cooldown should go through
- * this so upgrades only change one place. Level 1 is the base stats.
+ * this so upgrades only change one place. Level 1 is the base stats. A worn tower (`wear` 100) does
+ * less damage, and the Cricket Trap reloads slower.
  */
-export function getTowerStats(towerType: TowerType, level: number) {
+export function getTowerStats(towerType: TowerType, level: number, wear = 0) {
     const {damage, rangePx, cooldownMs} = towerTypes[towerType];
     const key = toLevelKey(level);
+    const wearMultiplier = getWearMultiplier(wear);
+    const cooldownWearScale = towerTypes[towerType].behavior === 'gull-trap' ? wearMultiplier : 1;
 
     return {
-        damage: Math.round(damage * upgradeConfig.damageByLevel[key]),
+        damage: Math.round(damage * upgradeConfig.damageByLevel[key] * wearMultiplier),
         rangePx: Math.round(rangePx * upgradeConfig.rangeByLevel[key]),
-        cooldownMs: cooldownMs * upgradeConfig.cooldownByLevel[key],
+        cooldownMs: (cooldownMs * upgradeConfig.cooldownByLevel[key]) / cooldownWearScale,
     };
 }
 

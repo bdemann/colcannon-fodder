@@ -8,6 +8,7 @@ import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
 import {knifeConfig} from '../config/knife-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {swiperConfig} from '../config/swiper-config.js';
+import {wearConfig} from '../config/wear-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
@@ -25,6 +26,7 @@ import {
     getGullsInRange,
 } from './tower-targeting.js';
 import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
+import {addWear, getWearPerUse} from './wear.js';
 
 const processSfx: Record<TowerType, Sfx> = {
     [TowerType.Knife]: Sfx.Chop,
@@ -41,6 +43,10 @@ const pipRadiusPx = 5;
 const pipSpacingPx = 16;
 /** The white selection circle sits this far outside the tower body. */
 const selectionGapPx = 8;
+
+/** The wear bar under the pips. */
+const wearBarWidthPx = 44;
+const wearBarHeightPx = 6;
 
 const trapBoxPx = 44;
 /** How long the thrown cricket is drawn in flight, and how high its arc peaks. */
@@ -67,6 +73,8 @@ export class TowerEntity extends defineEntity({
             lastTargetY: 0,
             /** Cut direction in degrees (0 is right, clockwise). Only the Knife uses it. */
             angleDeg: 0,
+            /** 0 to 100. At 100 the tower is worn and works at reduced strength until serviced. */
+            wear: 0,
         }),
     ),
     paramsMap: {
@@ -90,6 +98,10 @@ export class TowerEntity extends defineEntity({
     protected splash: Graphics | undefined;
     protected pips: Graphics | undefined;
     protected selection: Graphics | undefined;
+    /** Wear bar under the pips, cracks over the body, and the bobbing wrench. */
+    protected wearBar: Graphics | undefined;
+    protected cracks: Graphics | undefined;
+    protected wrench: Text | undefined;
     /** The level the range ring, paddle and pips were last drawn for. */
     protected drawnLevel = 0;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
@@ -160,6 +172,36 @@ export class TowerEntity extends defineEntity({
         const pips = new Graphics();
         view.addChild(pips);
 
+        const wearBar = new Graphics();
+        view.addChild(wearBar);
+
+        const cracks = new Graphics();
+        const crackRadius = isTrap ? trapBoxPx / 2 : towerConfig.radius;
+        cracks
+            .moveTo(-crackRadius * 0.6, -crackRadius * 0.7)
+            .lineTo(-crackRadius * 0.1, -crackRadius * 0.1)
+            .lineTo(-crackRadius * 0.3, crackRadius * 0.2)
+            .lineTo(crackRadius * 0.2, crackRadius * 0.8)
+            .moveTo(crackRadius * 0.7, -crackRadius * 0.5)
+            .lineTo(crackRadius * 0.2, -crackRadius * 0.05)
+            .lineTo(crackRadius * 0.5, crackRadius * 0.4)
+            .stroke({
+                color: '#1a1a1a',
+                width: 3,
+            });
+        cracks.visible = false;
+        view.addChild(cracks);
+
+        const wrench = new Text({
+            text: '🔧',
+            style: {
+                fontSize: 28,
+            },
+        });
+        wrench.anchor.set(0.5);
+        wrench.visible = false;
+        view.addChild(wrench);
+
         const beam = new Graphics();
         view.addChild(beam);
 
@@ -172,6 +214,9 @@ export class TowerEntity extends defineEntity({
         this.beam = beam;
         this.splash = splash;
         this.pips = pips;
+        this.wearBar = wearBar;
+        this.cracks = cracks;
+        this.wrench = wrench;
         this.selection = selection;
         this.drawnLevel = 0;
 
@@ -190,7 +235,7 @@ export class TowerEntity extends defineEntity({
             updateMicrowave(this, msSinceLastExecute);
             return;
         } else if (behavior === 'swipe') {
-            updateSwiper(this);
+            updateSwiper(this, msSinceLastExecute);
             return;
         } else if (behavior === 'line') {
             updateKnife(this, msSinceLastExecute);
@@ -206,7 +251,7 @@ export class TowerEntity extends defineEntity({
         }
 
         const definition = towerTypes[this.params.towerType];
-        const stats = getTowerStats(this.params.towerType, this.params.level);
+        const stats = getTowerStats(this.params.towerType, this.params.level, this.params.wear);
         const gulls = [...this.state.entityStore.getEntities(SeagullEntity)].filter(
             (gull) => gull.params.hp > 0 && !gull.params.fed,
         );
@@ -233,6 +278,7 @@ export class TowerEntity extends defineEntity({
             this.params.lastTargetX = gull.params.x;
             this.params.lastTargetY = gull.params.y;
             gull.takeHit(stats.damage);
+            this.wearFromUse();
             this.params.cooldownRemainingMs = stats.cooldownMs;
             this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
             return;
@@ -271,11 +317,12 @@ export class TowerEntity extends defineEntity({
                     continue;
                 }
                 const hitProcessing = hitPotato.getProcessing();
-                applyTowerHit(hitProcessing, this.params.towerType, this.params.level);
+                applyTowerHit(hitProcessing, this.params.towerType, this.params);
                 hitPotato.params.cut = hitProcessing.cut;
                 hitPotato.params.cooked = hitProcessing.cooked;
                 hitPotato.params.mashHp = hitProcessing.mashHp;
             }
+            this.wearFromUse();
             this.params.cooldownRemainingMs = stats.cooldownMs;
             this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
             this.params.lastTargetX = this.params.x;
@@ -298,14 +345,57 @@ export class TowerEntity extends defineEntity({
         }
 
         const processing = target.getProcessing();
-        applyTowerHit(processing, this.params.towerType, this.params.level);
+        applyTowerHit(processing, this.params.towerType, this.params);
         target.params.cut = processing.cut;
         target.params.cooked = processing.cooked;
         target.params.mashHp = processing.mashHp;
+        this.wearFromUse();
         this.params.cooldownRemainingMs = stats.cooldownMs;
         this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
         this.params.lastTargetX = target.params.x;
         this.params.lastTargetY = target.params.y;
+    }
+
+    /** Adds one use of wear for this tower type. */
+    protected wearFromUse() {
+        this.params.wear = addWear({
+            wear: this.params.wear,
+            amount: getWearPerUse(this.params.towerType),
+        });
+    }
+
+    /** Draws the wear bar, cracks, fade and bobbing wrench. Presentation only. */
+    protected renderWear() {
+        const {wearBar, cracks, wrench, body} = this;
+        if (!wearBar || !cracks || !wrench || !body) {
+            return;
+        }
+        const {wear, towerType} = this.params;
+        const worn = wear >= wearConfig.maxWear;
+        const bodyRadius =
+            towerTypes[towerType].behavior === 'gull-trap' ? trapBoxPx / 2 : towerConfig.radius;
+
+        wearBar.clear();
+        if (wear > 0) {
+            const y = bodyRadius + selectionGapPx + 14 + pipRadiusPx + 6;
+            const fraction = wear / wearConfig.maxWear;
+            wearBar
+                .rect(-wearBarWidthPx / 2, y, wearBarWidthPx, wearBarHeightPx)
+                .fill({
+                    color: '#000000',
+                    alpha: 0.6,
+                })
+                .rect(-wearBarWidthPx / 2, y, wearBarWidthPx * fraction, wearBarHeightPx)
+                .fill({
+                    color: `hsl(${Math.round(120 - fraction * 120)}, 75%, 45%)`,
+                });
+        }
+
+        cracks.visible = worn;
+        body.alpha = worn ? 0.75 : 1;
+
+        wrench.visible = worn;
+        wrench.y = -bodyRadius - 22 + Math.sin(this.state.runState.elapsedMs / 200) * 5;
     }
 
     /** Redraws everything that depends on the level: range ring, swiper arm, pips, selection ring. */
@@ -421,6 +511,7 @@ export class TowerEntity extends defineEntity({
                 selectedTowerType: this.state.ui.selectedTowerType,
                 selectedTowerId: this.state.ui.selectedTowerId,
             });
+        this.renderWear();
         if (this.selection) {
             this.selection.visible = this.state.ui.selectedTowerId === this.params.towerId;
         }

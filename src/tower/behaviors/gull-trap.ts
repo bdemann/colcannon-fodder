@@ -2,6 +2,7 @@ import {SeagullEntity} from '../../seagull/seagull.entity.js';
 import {chooseGullTargetIndex} from '../tower-targeting.js';
 import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
+import {addWear, getWearPerUse} from '../wear.js';
 
 /** A gull the trap could feed. */
 export type TrapGullCandidate = Readonly<{
@@ -46,7 +47,7 @@ export function updateGullTrap(tower: TowerEntity, msSinceLastExecute: number): 
         return;
     }
 
-    const stats = getTowerStats(tower.params.towerType, tower.params.level);
+    const stats = getTowerStats(tower.params.towerType, tower.params.level, tower.params.wear);
     const gulls = [...tower.state.entityStore.getEntities(SeagullEntity)];
     const index = chooseTrapGullIndex(
         {
@@ -70,6 +71,10 @@ export function updateGullTrap(tower: TowerEntity, msSinceLastExecute: number): 
     }
 
     gull.feedCricket();
+    tower.params.wear = addWear({
+        wear: tower.params.wear,
+        amount: getWearPerUse(tower.params.towerType),
+    });
     tower.params.cooldownRemainingMs = stats.cooldownMs;
     tower.params.lastProcessedAtMs = tower.state.runState.elapsedMs;
     tower.params.lastTargetX = gull.params.x;

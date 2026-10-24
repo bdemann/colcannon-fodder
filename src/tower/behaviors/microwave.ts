@@ -2,6 +2,7 @@ import {qualityConfig} from '../../config/quality-config.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {getDamageScale, getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
+import {addWear, getWearMultiplier, getWearPerSecond} from '../wear.js';
 
 /**
  * Whether `point` is inside a cone that starts at `origin`, points at `aimAt`, reaches `lengthPx`
@@ -41,7 +42,7 @@ export function isInCone({
  */
 export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number): void {
     const {rangePx} = getTowerStats(tower.params.towerType, tower.params.level);
-    const damageScale = getDamageScale(tower.params.level);
+    const damageScale = getDamageScale(tower.params.level) * getWearMultiplier(tower.params.wear);
     const origin = {
         x: tower.params.x,
         y: tower.params.y,
@@ -69,6 +70,10 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
         y: target.params.y,
     };
     const seconds = msSinceLastExecute / 1000;
+    tower.params.wear = addWear({
+        wear: tower.params.wear,
+        amount: getWearPerSecond(tower.params.towerType) * seconds,
+    });
     for (const potato of potatoes) {
         if (
             !isInCone({
