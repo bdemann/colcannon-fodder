@@ -5,6 +5,7 @@ module.exports = {
     ignorePaths: [
         ...baseConfig.ignorePaths,
         '.claude/worktrees/**',
+        'docs/art-lab/**',
     ],
     words: [
         ...baseConfig.words,
