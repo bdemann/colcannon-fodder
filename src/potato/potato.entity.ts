@@ -4,9 +4,8 @@ import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
-import {Text} from 'pixi.js';
+import {Text, type Container} from 'pixi.js';
 import {bossConfig} from '../config/boss-config.js';
-import {type Container} from 'pixi.js';
 import {doorConfig} from '../config/door-config.js';
 import {chuteConfig, comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
 import {capQueuedDistance} from '../door/queue.js';
@@ -97,6 +96,8 @@ export class PotatoEntity extends defineEntity({
             radius,
             toppings: this.getToppings(),
             quality: this.params.quality,
+            meter: this.getMeter(),
+            crown: this.params.size === PotatoSize.King,
         });
         const shadow = new Graphics({
             label: shadowLabel,
