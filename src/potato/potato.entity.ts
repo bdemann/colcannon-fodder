@@ -4,7 +4,9 @@ import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
+import {doorConfig} from '../config/door-config.js';
 import {potatoSizeConfig} from '../config/game-config.js';
+import {capQueuedDistance} from '../door/queue.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
 import {type PotatoToppings} from '../order/topping.js';
@@ -132,25 +134,65 @@ export class PotatoEntity extends defineEntity({
             return;
         }
 
-        this.params.distancePx += this.state.runState.beltSpeedPxPerMs * msSinceLastExecute;
+        const path = getPath(this.state.level, this.params.pathId);
+        const aheadDistances: number[] = [];
+        for (const other of this.state.entityStore.getEntities(PotatoEntity)) {
+            if (
+                other !== this &&
+                other.params.pathId === this.params.pathId &&
+                !other.params.carriedBySeagull &&
+                !other.params.served &&
+                other.params.distancePx > this.params.distancePx
+            ) {
+                aheadDistances.push(other.params.distancePx);
+            }
+        }
+        // Potatoes queue behind the one ahead and wait at the counter for the waiter (`PassEntity`).
+        // Never move backwards: a freshly sent-back potato may start closer than the spacing.
+        this.params.distancePx = Math.max(
+            this.params.distancePx,
+            capQueuedDistance({
+                next:
+                    this.params.distancePx +
+                    this.state.runState.beltSpeedPxPerMs * msSinceLastExecute,
+                aheadDistances,
+                spacingPx: doorConfig.queueSpacingPx,
+                endPx: getPathLength(path),
+            }),
+        );
 
+        this.moveToDistance();
+        this.redrawIfChanged();
+    }
+
+    protected moveToDistance() {
         const path = getPath(this.state.level, this.params.pathId);
         const position = getPositionAlongPath(path, this.params.distancePx);
         this.params.x = position.x;
         this.params.y = position.y;
+    }
 
-        if (this.params.distancePx >= getPathLength(path)) {
+    /**
+     * The waiter takes this potato to the customers. A bad one may be sent back to the start of the
+     * belt (keeping its processing and toppings); otherwise it is served and removed.
+     */
+    public serveAtCounter() {
+        const path = getPath(this.state.level, this.params.pathId);
+        const {sentBack} = servePotato(this.state.runState, {
+            processing: this.getProcessing(),
+            ownerSlot: path.ownerSlot,
+            value: potatoSizeConfig[this.params.size].value,
+            toppings: this.getToppings(),
+            timesSentBack: this.params.timesSentBack,
+        });
+
+        if (sentBack) {
+            this.params.distancePx = 0;
+            this.params.timesSentBack += 1;
+            this.moveToDistance();
+        } else {
             this.params.served = true;
-            servePotato(this.state.runState, {
-                processing: this.getProcessing(),
-                ownerSlot: path.ownerSlot,
-                value: potatoSizeConfig[this.params.size].value,
-                toppings: this.getToppings(),
-            });
             this.destroy();
-            return;
         }
-
-        this.redrawIfChanged();
     }
 }

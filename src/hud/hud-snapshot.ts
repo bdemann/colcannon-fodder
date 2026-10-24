@@ -39,6 +39,7 @@ export type HudSnapshot = {
               satisfactionDelta: number;
               /** Mash progress when served, 0 to 1. */
               progress: number;
+              sentBack: boolean;
           }
         | undefined;
     /** Set while the latest seagull steal is recent enough to show; `id` changes for each one. */
@@ -90,10 +91,13 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
             lastServing && runState.elapsedMs - lastServing.servedAtMs < hudConfig.servingPopupMs
                 ? {
                       result: lastServing.result,
-                      id: runState.potatoesServed,
+                      id: lastServing.sentBack
+                          ? -lastServing.servedAtMs - 1
+                          : runState.potatoesServed,
                       scoreDelta: lastServing.scoreDelta,
                       satisfactionDelta: lastServing.satisfactionDelta,
                       progress: lastServing.progress,
+                      sentBack: lastServing.sentBack,
                   }
                 : undefined,
         stealPopup:
