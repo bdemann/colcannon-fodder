@@ -7,7 +7,7 @@ import {knifeConfig} from '../config/knife-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus} from '../run/run-state.js';
-import {getKnifeLine} from './behaviors/knife.js';
+import {getKnifeLine, getPerpendicularKnifeAngle} from './behaviors/knife.js';
 import {drawTower} from './tower-art.js';
 import {canAfford, canPlaceTower} from './tower-placement.js';
 import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
@@ -111,7 +111,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                 continue;
             }
 
-            if (ui.selectedTowerType === TowerType.Knife && (key === '[' || key === ']')) {
+            if (ui.selectedTowerType === TowerType.Laser && (key === '[' || key === ']')) {
                 ui.placementAngleDeg = normalizeAngleDeg(
                     ui.placementAngleDeg + (key === ']' ? 1 : -1) * knifeConfig.rotateStepDeg,
                 );
@@ -130,7 +130,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             }
         }
 
-        if (ui.selectedTowerType === TowerType.Knife && ui.wheelSteps !== 0) {
+        if (ui.selectedTowerType === TowerType.Laser && ui.wheelSteps !== 0) {
             ui.placementAngleDeg = normalizeAngleDeg(
                 ui.placementAngleDeg + ui.wheelSteps * knifeConfig.rotateStepDeg,
             );
@@ -211,21 +211,30 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
 
         const {rangePx} = getTowerStats(ui.selectedTowerType, 1);
 
-        if (ui.selectedTowerType === TowerType.Knife) {
-            // The Knife shows its cut line instead of a range circle.
+        if (towerTypes[ui.selectedTowerType].behavior === 'line') {
+            // Line towers show their cut line instead of a range circle. The Knife's is automatic.
+            const isLaser = ui.selectedTowerType === TowerType.Laser;
             const line = getKnifeLine({
                 origin: {
                     x,
                     y,
                 },
-                angleDeg: ui.placementAngleDeg,
+                angleDeg: isLaser
+                    ? ui.placementAngleDeg
+                    : getPerpendicularKnifeAngle(state.level, {
+                          x,
+                          y,
+                      }),
                 lengthPx: rangePx,
             });
-            preview.moveTo(line.start.x, line.start.y).lineTo(line.end.x, line.end.y).stroke({
-                color: knifeConfig.lineColor,
-                alpha: 0.6,
-                width: knifeConfig.lineWidthPx,
-            });
+            preview
+                .moveTo(line.start.x, line.start.y)
+                .lineTo(line.end.x, line.end.y)
+                .stroke({
+                    color: isLaser ? knifeConfig.laserColor : knifeConfig.lineColor,
+                    alpha: 0.6,
+                    width: knifeConfig.lineWidthPx,
+                });
         } else {
             preview.circle(x, y, rangePx).stroke({
                 color: '#ffffff',

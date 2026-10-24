@@ -9,6 +9,7 @@ export enum TowerType {
     Microwave = 'microwave',
     CricketTrap = 'cricket-trap',
     Swiper = 'swiper',
+    Laser = 'laser',
 }
 
 /**
@@ -104,6 +105,17 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         areaOfEffect: false,
         behavior: 'swipe',
         ...towerTypeConfig.swiper,
+    },
+    [TowerType.Laser]: {
+        towerType: TowerType.Laser,
+        label: 'Laser',
+        glyph: 'L',
+        hotkey: '7',
+        color: '#c4584a',
+        appliesEffect: 'cut',
+        areaOfEffect: false,
+        behavior: 'line',
+        ...towerTypeConfig.laser,
     },
 };
 

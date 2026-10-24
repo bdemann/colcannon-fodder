@@ -29,16 +29,17 @@ Each potato has a mash meter, and the Masher empties it. The other towers set it
 -   Cut and cooked together make a **x3 SMASH!**, shown as a floating hit number and status icons
     on the potato.
 
-### The six towers
+### The seven towers
 
 | Key | Tower        | What it does                                                                                      |
 | --- | ------------ | ------------------------------------------------------------------------------------------------- |
-| `1` | Knife        | Fast. Slices a straight line you aim before building it, cutting every potato on that line.       |
+| `1` | Knife        | Fast. Cuts a short line straight across the belt (automatic), cutting every potato on that line.  |
 | `2` | Boiling Pot  | Splashes every potato in range at once, softening (cooking) them.                                 |
 | `3` | Masher       | Slow and heavy. The finisher: mashes one potato at a time.                                        |
 | `4` | Microwave    | A shortcut. A cone of big damage, cheap, but it spoils the potato's quality (rubbery).            |
 | `5` | Cricket Trap | Feeds a cricket to a seagull so it leaves happy. Long reload.                                     |
 | `6` | Swiper       | A slow rotating paddle that swipes potatoes back up the belt, buying your other towers more time. |
+| `7` | Laser        | Late game (150 coins). The aimable long line: aim it before building, it chops everything on it.  |
 
 Towers cost coins. Click a built tower to **upgrade** it (3 levels: more damage and range, faster
 cooldown), **sell** it for half of what you spent, or **service** it.
@@ -108,20 +109,20 @@ are saved in your browser.
 
 ## Controls
 
-| Input                 | Action                                                                |
-| --------------------- | --------------------------------------------------------------------- |
-| `1` to `6`            | Pick Knife / Boiling Pot / Masher / Microwave / Cricket Trap / Swiper |
-| `Q` / `W` / `E` / `R` | Pick Butter / Scallions / Cabbage / Gravy                             |
-| Click                 | Build the selected tower, top a potato, or select a built tower       |
-| Scroll / `[` `]`      | Turn the Knife blade before building it                               |
-| `U` / `S` / `X`       | With a built tower selected: Upgrade / Service / Sell                 |
-| Right click / `Esc`   | Cancel the selected tower or topping                                  |
-| `P` / `Esc`           | Pause (and resume); music and effects volume                          |
-| `F`                   | Fast-forward: cycle 1x / 1.5x / 2x / 3x                               |
-| `G`                   | Fast-forward until the next income                                    |
-| `M`                   | Mute and unmute                                                       |
-| `Space`               | Start cooking from the title screen                                   |
-| `R`                   | Restart after a run ends                                              |
+| Input                 | Action                                                                        |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `1` to `7`            | Pick Knife / Boiling Pot / Masher / Microwave / Cricket Trap / Swiper / Laser |
+| `Q` / `W` / `E` / `R` | Pick Butter / Scallions / Cabbage / Gravy                                     |
+| Click                 | Build the selected tower, top a potato, or select a built tower               |
+| Scroll / `[` `]`      | Aim the Laser before building it                                              |
+| `U` / `S` / `X`       | With a built tower selected: Upgrade / Service / Sell                         |
+| Right click / `Esc`   | Cancel the selected tower or topping                                          |
+| `P` / `Esc`           | Pause (and resume); music and effects volume                                  |
+| `F`                   | Fast-forward: cycle 1x / 1.5x / 2x / 3x                                       |
+| `G`                   | Fast-forward until the next income                                            |
+| `M`                   | Mute and unmute                                                               |
+| `Space`               | Start cooking from the title screen                                           |
+| `R`                   | Restart after a run ends                                                      |
 
 ## Run locally
 

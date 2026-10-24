@@ -92,7 +92,7 @@ export const inputMod = defineAnthaMod<
         canvas.addEventListener(
             'wheel',
             (event) => {
-                /** The wheel turns the Knife blade, so the page must not scroll. */
+                /** The wheel turns the Laser, so the page must not scroll. */
                 event.preventDefault();
                 buffered.wheelSteps += Math.sign(event.deltaY);
             },

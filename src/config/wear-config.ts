@@ -3,6 +3,7 @@ export const wearConfig = {
     /** Wear added per use; a tower is worn at 100. */
     perUse: {
         knife: 0.45,
+        laser: 0.45,
         boiler: 2.5,
         masher: 2,
         'cricket-trap': 12,
@@ -23,6 +24,7 @@ export const wearConfig = {
     /** The service button's verb per tower type. */
     serviceVerb: {
         knife: 'Sharpen',
+        laser: 'Recalibrate',
         boiler: 'Refill',
         masher: 'Oil',
         microwave: 'Clean',

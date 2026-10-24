@@ -1,6 +1,100 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {getKnifeLine, isOnSlice} from './knife.js';
+import {type LevelDefinition} from '../../level/level.js';
+import {defaultLevel} from '../../level/levels.js';
+import {TowerType, towerTypes} from '../tower-type.js';
+import {getKnifeLine, getPerpendicularKnifeAngle, isOnSlice} from './knife.js';
+
+const bendLevel: LevelDefinition = {
+    ...defaultLevel,
+    paths: [
+        {
+            pathId: 'bend',
+            ownerSlot: 0,
+            widthPx: 80,
+            waypoints: [
+                {
+                    x: 0,
+                    y: 500,
+                },
+                {
+                    x: 500,
+                    y: 500,
+                },
+                {
+                    x: 500,
+                    y: 1000,
+                },
+            ],
+        },
+    ],
+};
+
+function angleAt({x, y}: Readonly<{x: number; y: number}>): number {
+    return Math.round(
+        getPerpendicularKnifeAngle(bendLevel, {
+            x,
+            y,
+        }),
+    );
+}
+
+describe(getPerpendicularKnifeAngle.name, () => {
+    it('points straight across a horizontal leg, from above or below', () => {
+        assert.strictEquals(
+            angleAt({
+                x: 200,
+                y: 420,
+            }),
+            90,
+        );
+        assert.strictEquals(
+            angleAt({
+                x: 200,
+                y: 580,
+            }),
+            -90,
+        );
+    });
+
+    it('points straight across a vertical leg, from either side', () => {
+        assert.strictEquals(
+            angleAt({
+                x: 420,
+                y: 800,
+            }),
+            0,
+        );
+        assert.strictEquals(
+            angleAt({
+                x: 580,
+                y: 800,
+            }),
+            180,
+        );
+    });
+
+    it('aims at the corner from the outside of a bend', () => {
+        assert.strictEquals(
+            angleAt({
+                x: 560,
+                y: 440,
+            }),
+            135,
+        );
+    });
+});
+
+describe('Laser stats', () => {
+    it('are exactly the old Knife stats', () => {
+        const laser = towerTypes[TowerType.Laser];
+        assert.strictEquals(laser.damage, 4);
+        assert.strictEquals(laser.rangePx, 220);
+        assert.strictEquals(laser.cooldownMs, 250);
+        assert.strictEquals(laser.behavior, 'line');
+        assert.strictEquals(laser.appliesEffect, 'cut');
+    });
+});
 
 const origin = {
     x: 0,

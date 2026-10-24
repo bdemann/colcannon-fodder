@@ -39,7 +39,7 @@ export type UiState = {
      * `inputMod`.
      */
     wheelSteps: number;
-    /** Knife direction while placing, in degrees. Kept between placements. */
+    /** Laser direction while placing, in degrees. Kept between placements. */
     placementAngleDeg: number;
 };
 

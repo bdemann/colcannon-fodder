@@ -29,7 +29,7 @@ Earn the title of **Mash Champ**.
 
 ### Features
 
--   Six towers: Knife, Boiling Pot, Masher, Microwave, Cricket Trap and Swiper.
+-   Seven towers: Knife (cuts straight across the belt), Boiling Pot, Masher, Microwave, Cricket Trap, Swiper and the late-game Laser (the aimable long line).
 -   A cut x boil x mash combo with big floating hit numbers.
 -   Thrown projectiles: spinning mashers (meat hammers at level 3), boiling water and crickets fly
     from the towers. Purely visual.
@@ -48,10 +48,10 @@ be is a Mash Champ.
 
 ### Controls
 
--   `1` to `6`: pick a tower. `Q` `W` `E` `R`: pick a topping (Butter, Scallions, Cabbage, Gravy).
+-   `1` to `7`: pick a tower. `Q` `W` `E` `R`: pick a topping (Butter, Scallions, Cabbage, Gravy).
 -   Click: build a tower, top a potato, or select a tower. `U` / `S` / `X`: upgrade / service /
     sell the selected tower.
--   Scroll or `[` `]`: turn the Knife blade. Right click or `Esc`: cancel.
+-   Scroll or `[` `]`: aim the Laser. Right click or `Esc`: cancel.
 -   `P`: pause. `F`: fast-forward. `G`: fast-forward until the next income. `M`: mute.
 -   `Space`: start. `R`: restart.
 
