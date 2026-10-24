@@ -1,0 +1,8 @@
+tower,cost,damage_type,base_damage,attack_interval_s,range_px,special_effect,dps,dps_per_coin
+Knife,40,line,4,0.25,160,"Cut: later hits x1.5; cuts straight across the belt (line across belt)",16,0.4000
+Boiling Pot,60,area,6,1.2,140,"Soft: Masher x2; hits every potato in range",5,0.0833
+Masher,80,single target,40,1,140,"Finisher; x1.5 on Cut and x2 on Soft potatoes",40,0.5000
+Microwave,50,cone (continuous),50,0.7,120,"quality loss 40/s; 45 damage/s in a 25 degree half-angle cone",45,0.9000
+Cricket Trap,60,gull-only,0,6,170,"feeds gull a cricket (lures it away)",0,0.0000
+Swiper,70,push-back,0,0,110,"pushes potato back 120px; arm turns every 5s",0,0.0000
+Laser,150,line,4,0.25,220,"Cut: later hits x1.5; aimable long line",16,0.1067
