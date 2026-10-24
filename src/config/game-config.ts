@@ -149,7 +149,7 @@ export const towerTypeConfig = {
     /** Light and fast: its job is to Cut many potatoes so later hits land harder. */
     knife: {
         damage: 4,
-        rangePx: 140,
+        rangePx: 220,
         cooldownMs: 250,
     },
     /** Area of effect: softens every potato in range at once. */

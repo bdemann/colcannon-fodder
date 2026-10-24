@@ -14,7 +14,7 @@ export enum TowerType {
  * How a tower acts each update. `mash` is the shared damage path (single target or area of effect).
  * The others live in `src/tower/behaviors/`.
  */
-export type TowerBehavior = 'mash' | 'gull-trap' | 'swipe' | 'cone';
+export type TowerBehavior = 'mash' | 'gull-trap' | 'swipe' | 'cone' | 'line';
 
 /** Everything that differs between tower types. Shared behavior lives in the tower entity. */
 export type TowerTypeDefinition = {
@@ -46,7 +46,7 @@ export const towerTypes: Readonly<Record<TowerType, Readonly<TowerTypeDefinition
         color: '#b8c4cc',
         appliesEffect: 'cut',
         areaOfEffect: false,
-        behavior: 'mash',
+        behavior: 'line',
         ...towerTypeConfig.knife,
     },
     [TowerType.Boiler]: {
