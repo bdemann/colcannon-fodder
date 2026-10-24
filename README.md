@@ -25,6 +25,7 @@ the ticket runs out. Keep satisfaction above zero through every wave to become t
 | `1` / `2` / `3`       | Pick Knife / Boiling Pot / Masher                |
 | `Q` / `W` / `E` / `R` | Pick Butter / Scallions / Cabbage / Gravy        |
 | Click                 | Build the selected tower, or top a mashed potato |
+| Scroll / `[` `]`      | Turn the Knife blade before building it          |
 | Right click / `Esc`   | Cancel the selected tower                        |
 | `P` / `Esc`           | Pause (and resume); music and effects volume     |
 | `Space`               | Start cooking from the title screen              |

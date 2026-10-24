@@ -99,8 +99,10 @@ export const HudTowerToolbar = defineElement<{
         const hint = selectedTopping
             ? `Click a potato to add ${toppingDefinitions[selectedTopping].label}. Right click or Esc to cancel.`
             : selected
-              ? `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
-              : 'Knife: fast slice that hits every potato in a straight line (+50% damage after) · Pot: splashes everything in range · Masher: heavy finisher';
+              ? selected === TowerType.Knife
+                  ? 'Scroll or [ ] to turn the blade. Click beside the belt to build it.'
+                  : `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
+              : 'Knife: set its direction when you build it (scroll or [ ]); it chops everything on that line, fast · Pot: splashes everything in range · Masher: heavy finisher';
 
         return html`
             <div class="hint">${hint}</div>

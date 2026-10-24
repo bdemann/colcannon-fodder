@@ -21,7 +21,7 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
 ];
 
 export const rules = [
-    'Every tower mashes. Knife: fast slice that hits every potato in a straight line (+50% damage after); pots soften everything in range so mashers hit twice as hard.',
+    'Every tower mashes. Knife: set its direction when you build it (scroll or [ ]); it chops everything on that line, fast; pots soften everything in range so mashers hit twice as hard.',
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',

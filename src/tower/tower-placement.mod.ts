@@ -2,12 +2,19 @@ import {defineAnthaMod} from '@antha/engine';
 import {Graphics} from '@antha/graphics-2d';
 import {Text} from 'pixi.js';
 import {towerConfig} from '../config/game-config.js';
+import {knifeConfig} from '../config/knife-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {RunStatus} from '../run/run-state.js';
+import {getKnifeLine} from './behaviors/knife.js';
 import {canAfford, canPlaceTower} from './tower-placement.js';
 import {getTowerStats, TowerType, towerTypes} from './tower-type.js';
 import {TowerEntity} from './tower.entity.js';
+
+/** Keeps the placement angle in 0 to 359 degrees. */
+function normalizeAngleDeg(angleDeg: number): number {
+    return ((angleDeg % 360) + 360) % 360;
+}
 
 /** The ghost tower. Owned by this mod, not an entity, because it is UI only. */
 let preview: Graphics | undefined;
@@ -86,6 +93,13 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                 continue;
             }
 
+            if (ui.selectedTowerType === TowerType.Knife && (key === '[' || key === ']')) {
+                ui.placementAngleDeg = normalizeAngleDeg(
+                    ui.placementAngleDeg + (key === ']' ? 1 : -1) * knifeConfig.rotateStepDeg,
+                );
+                continue;
+            }
+
             const pressed = Object.values(TowerType).find(
                 (towerType) => towerTypes[towerType].hotkey === key,
             );
@@ -96,6 +110,12 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                     ui.selectedTopping = undefined;
                 }
             }
+        }
+
+        if (ui.selectedTowerType === TowerType.Knife && ui.wheelSteps !== 0) {
+            ui.placementAngleDeg = normalizeAngleDeg(
+                ui.placementAngleDeg + ui.wheelSteps * knifeConfig.rotateStepDeg,
+            );
         }
 
         const builtTowers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
@@ -143,6 +163,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                         towerType: ui.selectedTowerType,
                         x,
                         y,
+                        angleDeg: ui.placementAngleDeg,
                     });
                 }
             }
@@ -171,13 +192,32 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             reasonLabel.visible = true;
         }
 
-        preview
-            .circle(x, y, getTowerStats(ui.selectedTowerType, 1).rangePx)
-            .stroke({
+        const {rangePx} = getTowerStats(ui.selectedTowerType, 1);
+
+        if (ui.selectedTowerType === TowerType.Knife) {
+            // The Knife shows its cut line instead of a range circle.
+            const line = getKnifeLine({
+                origin: {
+                    x,
+                    y,
+                },
+                angleDeg: ui.placementAngleDeg,
+                lengthPx: rangePx,
+            });
+            preview.moveTo(line.start.x, line.start.y).lineTo(line.end.x, line.end.y).stroke({
+                color: knifeConfig.lineColor,
+                alpha: 0.6,
+                width: knifeConfig.lineWidthPx,
+            });
+        } else {
+            preview.circle(x, y, rangePx).stroke({
                 color: '#ffffff',
                 alpha: 0.5,
                 width: 3,
-            })
+            });
+        }
+
+        preview
             .circle(x, y, towerConfig.radius)
             .fill({
                 color: definition.color,

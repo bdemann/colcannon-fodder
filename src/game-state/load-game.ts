@@ -74,6 +74,8 @@ export async function bootstrapGame({
         pointerWorld: undefined,
         clicks: [],
         keys: [],
+        wheelSteps: 0,
+        placementAngleDeg: 0,
     };
 
     return {

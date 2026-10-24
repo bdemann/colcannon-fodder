@@ -1,60 +1,42 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {getSliceSegment, isOnSlice} from './knife.js';
+import {getKnifeLine, isOnSlice} from './knife.js';
 
 const origin = {
     x: 0,
     y: 0,
 };
 
-describe(getSliceSegment.name, () => {
-    it('extends through the aim point to the full length', () => {
-        const {start, end} = getSliceSegment({
+describe(getKnifeLine.name, () => {
+    it('points right at 0 degrees with the full length', () => {
+        const {start, end} = getKnifeLine({
             origin,
-            aimAt: {
-                x: 30,
-                y: 40,
-            },
+            angleDeg: 0,
             lengthPx: 200,
         });
         assert.deepEquals(start, origin);
-        assert.isTrue(Math.abs(end.x - 120) < 1e-9);
-        assert.isTrue(Math.abs(end.y - 160) < 1e-9);
-    });
-
-    it('also shortens when the aim point is past the length', () => {
-        const {end} = getSliceSegment({
-            origin,
-            aimAt: {
-                x: 500,
-                y: 0,
-            },
-            lengthPx: 100,
-        });
-        assert.isTrue(Math.abs(end.x - 100) < 1e-9);
+        assert.isTrue(Math.abs(end.x - 200) < 1e-9);
         assert.isTrue(Math.abs(end.y) < 1e-9);
     });
 
-    it('slices right when aimed at the origin', () => {
-        const {end} = getSliceSegment({
-            origin,
-            aimAt: origin,
-            lengthPx: 50,
+    it('points down at 90 degrees from an offset origin', () => {
+        const {end} = getKnifeLine({
+            origin: {
+                x: 10,
+                y: 20,
+            },
+            angleDeg: 90,
+            lengthPx: 100,
         });
-        assert.deepEquals(end, {
-            x: 50,
-            y: 0,
-        });
+        assert.isTrue(Math.abs(end.x - 10) < 1e-9);
+        assert.isTrue(Math.abs(end.y - 120) < 1e-9);
     });
 });
 
 describe(isOnSlice.name, () => {
-    const segment = getSliceSegment({
+    const segment = getKnifeLine({
         origin,
-        aimAt: {
-            x: 10,
-            y: 0,
-        },
+        angleDeg: 0,
         lengthPx: 200,
     });
 
@@ -79,7 +61,7 @@ describe(isOnSlice.name, () => {
         }
     });
 
-    it('misses a potato beside the line', () => {
+    it('misses a potato in range but off the line', () => {
         assert.isFalse(
             isOnSlice({
                 point: {
@@ -92,7 +74,7 @@ describe(isOnSlice.name, () => {
         );
     });
 
-    it('misses a potato past the end of the slice', () => {
+    it('misses a potato past the end of the line', () => {
         assert.isFalse(
             isOnSlice({
                 point: {
@@ -101,6 +83,34 @@ describe(isOnSlice.name, () => {
                 },
                 radius: 10,
                 segment,
+            }),
+        );
+    });
+
+    it('follows the angle', () => {
+        const down = getKnifeLine({
+            origin,
+            angleDeg: 90,
+            lengthPx: 200,
+        });
+        assert.isTrue(
+            isOnSlice({
+                point: {
+                    x: 0,
+                    y: 100,
+                },
+                radius: 10,
+                segment: down,
+            }),
+        );
+        assert.isFalse(
+            isOnSlice({
+                point: {
+                    x: 100,
+                    y: 0,
+                },
+                radius: 10,
+                segment: down,
             }),
         );
     });

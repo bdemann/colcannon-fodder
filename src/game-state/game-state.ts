@@ -34,6 +34,13 @@ export type UiState = {
      * `inputMod`.
      */
     keys: string[];
+    /**
+     * Mouse wheel notches since the previous tick (positive is down). Replaced every tick by
+     * `inputMod`.
+     */
+    wheelSteps: number;
+    /** Knife direction while placing, in degrees. Kept between placements. */
+    placementAngleDeg: number;
 };
 
 /** Holds the game-specific data shared by all engine mods. */

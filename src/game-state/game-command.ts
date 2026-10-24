@@ -40,6 +40,8 @@ export type GameCommand =
           towerType: TowerType;
           x: number;
           y: number;
+          /** Knife cut direction in degrees (default 0). Ignored by other towers. */
+          angleDeg?: number;
       }
     | {
           type: GameCommandType.UpgradeTower;
