@@ -121,3 +121,17 @@ export function chooseGullTargetIndex(
 
     return bestIndex;
 }
+
+/**
+ * Cheap pre-check: false means the point is certainly outside the tower's range, so it can be left
+ * out of the candidates without changing which one the choosers pick (they still do the exact
+ * distance check on what is left). A square test, with a little slack for rounding.
+ */
+export function isInRangeBox(
+    tower: Readonly<{x: number; y: number; rangePx: number}>,
+    point: Readonly<{x: number; y: number}>,
+): boolean {
+    const reach = tower.rangePx + 1e-6;
+
+    return Math.abs(point.x - tower.x) <= reach && Math.abs(point.y - tower.y) <= reach;
+}

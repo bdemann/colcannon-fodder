@@ -49,8 +49,6 @@ export type LastServing = {
     satisfactionDelta: number;
     /** Mash progress when served, 0 to 1. Lets the popup say how close it was. */
     progress: number;
-    /** True if the customer sent the potato back to the start of the belt instead of eating it. */
-    sentBack: boolean;
 };
 
 /** The most recent steal by a seagull, kept so the HUD can show a short popup. */
@@ -173,8 +171,6 @@ export type RunState = {
     /** Countdown to the next seagull while a wave is spawning. */
     msUntilNextSeagull: number;
     lastSteal: LastSteal | undefined;
-    /** Consecutive bad servings since the last perfect one. Each makes the next penalty worse. */
-    sendBackStreak: number;
     /** Quality of the most recent Perfect servings, most recent last (see `prestigeWindow`). */
     recentQualities: number[];
     /** `runState.elapsedMs` when a boss last spawned, or -1. Drives the HUD banner. */
@@ -268,7 +264,6 @@ export function createInitialRunState(
         seagullsSpawnedInWave: 0,
         msUntilNextSeagull: 0,
         lastSteal: undefined,
-        sendBackStreak: 0,
         recentQualities: [],
         lastBossSpawnAtMs: -1,
     };

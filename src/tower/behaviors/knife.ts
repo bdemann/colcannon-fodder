@@ -79,14 +79,12 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
         angleDeg: tower.params.angleDeg,
         lengthPx: stats.rangePx,
     });
-    const potatoes = [...tower.state.entityStore.getEntities(PotatoEntity)].filter((potato) => {
-        return (
-            !potato.params.served && !potato.params.carriedBySeagull && potato.params.dropInMs <= 0
-        );
-    });
     let hitSomething = false;
-    for (const potato of potatoes) {
+    for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
         if (
+            potato.params.served ||
+            potato.params.carriedBySeagull ||
+            potato.params.dropInMs > 0 ||
             !isOnSlice({
                 point: potato.params,
                 radius: potatoSizeConfig[potato.params.size].radius,

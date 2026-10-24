@@ -316,9 +316,6 @@ export function drawPotato({
             radius,
             mood: crown ? 'angry' : 'calm',
         });
-        if (processing.cooked) {
-            drawSteam(graphics, radius);
-        }
     }
     drawToppings(graphics, radius, toppings);
     if (crown) {
@@ -732,8 +729,38 @@ function drawFace({
     }
 }
 
-/** Puffs of steam over a boiled potato. */
-function drawSteam(graphics: Graphics, radius: number) {
+/**
+ * Whether the potato has the animated overlays: steam (boiled whole potato) and eyelids (any face
+ * with dot eyes). Mirrors `drawPotato`.
+ */
+export function getPotatoOverlays(processing: Readonly<PotatoProcessing>) {
+    const progress = getMashProgress(processing);
+    return {
+        steam: progress < 0.5 && processing.cooked,
+        blink: progress < 1,
+    };
+}
+
+/** Lids for a blink: a short bark line over each dot eye. Drawn once, shown by toggling. */
+export function drawEyelids(graphics: Graphics, radius: number): Graphics {
+    for (const side of [
+        -1,
+        1,
+    ]) {
+        drawCozyLine(graphics, {
+            path(target) {
+                target.moveTo(side * radius * 0.3 - radius * 0.09, -radius * 0.05);
+                target.lineTo(side * radius * 0.3 + radius * 0.09, -radius * 0.05);
+            },
+            color: cozyPalette.bark,
+            width: radius * 0.16,
+        });
+    }
+    return graphics;
+}
+
+/** Puffs of steam over a boiled potato. Drawn once; the entity moves and fades it. */
+export function drawSteam(graphics: Graphics, radius: number): Graphics {
     for (let puff = 0; puff < 3; puff++) {
         const rise = puff * 0.3;
         const size = radius * 0.16 * (1 + rise);
@@ -748,6 +775,7 @@ function drawSteam(graphics: Graphics, radius: number) {
             ...flat,
         });
     }
+    return graphics;
 }
 
 /** The Russet King's gold crown, tilted jauntily on top of the potato. */
@@ -1239,4 +1267,34 @@ function drawRubbery({
         alpha,
         ...flat,
     });
+}
+
+/**
+ * A string that changes whenever anything `drawPotato` draws changes, so the entity redraws only
+ * then. Mash progress is bucketed, but `done` is explicit: 0.99 and 1 share a bucket yet look
+ * different (meter vs. perfect blob).
+ */
+export function getPotatoLookKey({
+    processing,
+    toppings,
+    quality,
+    radius,
+    crown,
+}: {
+    processing: Readonly<PotatoProcessing>;
+    toppings: Readonly<PotatoToppings>;
+    quality: number;
+    radius: number;
+    crown: boolean;
+}): string {
+    const done = processing.mashHp <= 0;
+    return [
+        processing.cut,
+        processing.cooked,
+        done ? 'done' : Math.round(getMashProgress(processing) * 20),
+        JSON.stringify(toppings),
+        getRubberyStep(quality),
+        radius,
+        crown,
+    ].join('|');
 }

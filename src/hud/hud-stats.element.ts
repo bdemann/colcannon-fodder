@@ -25,15 +25,12 @@ const popupContent: Record<
                       ? 'Half-mashed'
                       : 'Barely touched';
 
-            return `${popup.sentBack ? 'Sent back! ' : ''}${label}... ${popup.satisfactionDelta}`;
+            return `${label}... ${popup.satisfactionDelta}`;
         },
         color: '#f6cf6a',
     },
     [ServingResult.Raw]: {
         getText(popup) {
-            if (popup.sentBack) {
-                return `Sent back! Barely touched... ${popup.satisfactionDelta}`;
-            }
             return `RAW POTATO! ${popup.satisfactionDelta}`;
         },
         color: '#ff8f73',

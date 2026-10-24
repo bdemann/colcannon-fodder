@@ -3,7 +3,7 @@ import {type RunState} from './run-state.js';
 
 /**
  * Adds income to the run's coins and records a coin event so the HUD can show where it came from. A
- * zero amount only records the event (for example a send-back that pays nothing).
+ * zero amount only records the event (for example a freebie).
  */
 export function addCoins(
     runState: RunState,

@@ -27,7 +27,6 @@ function servePerfect(runState: ReturnType<typeof createInitialRunState>, ownerS
         ownerSlot,
         value: 1,
         toppings: createNoToppings(),
-        timesSentBack: 0,
         quality: 100,
     });
 }

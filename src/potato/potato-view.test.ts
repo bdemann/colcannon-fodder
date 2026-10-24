@@ -2,7 +2,63 @@ import {Graphics} from '@antha/graphics-2d';
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {createNoToppings, Topping} from '../order/topping.js';
-import {drawPotato} from './potato-view.js';
+import {drawPotato, getPotatoLookKey} from './potato-view.js';
+
+describe(getPotatoLookKey.name, () => {
+    const baseParams = {
+        toppings: createNoToppings(),
+        quality: 100,
+        radius: 22,
+        crown: false,
+    };
+
+    it('tells a nearly mashed potato from a fully mashed one', () => {
+        const almost = getPotatoLookKey({
+            ...baseParams,
+            processing: {
+                cut: false,
+                cooked: false,
+                mashHp: 1,
+                maxMashHp: 100,
+            },
+        });
+        const done = getPotatoLookKey({
+            ...baseParams,
+            processing: {
+                cut: false,
+                cooked: false,
+                mashHp: 0,
+                maxMashHp: 100,
+            },
+        });
+
+        assert.notStrictEquals(almost, done);
+    });
+
+    it('changes with toppings', () => {
+        const processing = {
+            cut: false,
+            cooked: false,
+            mashHp: 0,
+            maxMashHp: 100,
+        };
+
+        assert.notStrictEquals(
+            getPotatoLookKey({
+                ...baseParams,
+                processing,
+            }),
+            getPotatoLookKey({
+                ...baseParams,
+                processing,
+                toppings: {
+                    ...createNoToppings(),
+                    [Topping.Butter]: true,
+                },
+            }),
+        );
+    });
+});
 
 describe(drawPotato.name, () => {
     it('returns the same graphics instance', () => {

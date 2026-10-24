@@ -2,6 +2,7 @@ import {type ModExecuteParams} from '@antha/engine';
 import {position2dParamsShape, type ViewCreation2d} from '@antha/entity-2d';
 import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
+import {type Coords} from '@augment-vir/common';
 import {defineShape, intersectShape} from 'object-shape-tester';
 import {Container} from 'pixi.js';
 import {
@@ -16,12 +17,22 @@ import {
 } from '../art/cozy.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {seagullConfig} from '../config/game-config.js';
+import {gullPathConfig} from '../config/gull-path-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {PotatoSize} from '../potato/potato-size.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
 import {RunStatus} from '../run/run-state.js';
 import {stealPotato} from '../run/serving.js';
+import {getBeltCarry} from './gull-belt.js';
+import {
+    distanceToEdgeCells,
+    getCellAt,
+    getCellCenter,
+    getGullGrid,
+    isWalkableEdge,
+} from './gull-grid.js';
+import {findGullPath, octileDistance} from './gull-pathfinding.js';
 import {nearestEdgePoint, stepToward} from './seagull-logic.js';
 
 const bodyHeightPx = 13;
@@ -134,6 +145,8 @@ export class SeagullEntity extends defineEntity({
             escapeY: 0,
             /** Ate a cricket from a Cricket Trap: ignored by towers, never grabs potatoes. */
             fed: false,
+            /** A walking gull is currently hopping across a belt (drives the hop animation). */
+            onBelt: false,
         }),
     ),
     paramsMap: {
@@ -151,6 +164,17 @@ export class SeagullEntity extends defineEntity({
     /** Last values seen by `render`, so each grab squawks once and the gull faces its heading. */
     protected lastSeenCarryingId = 0;
     protected lastSeenX: number | undefined;
+    /** The hp the health bar was last drawn for. */
+    protected drawnHp = Number.NaN;
+    protected facing = 1;
+    /**
+     * A walking gull's route (cell centers) and the bookkeeping that decides when to recompute it.
+     * Not params: a missing route (for example after a reload) just triggers a repath.
+     */
+    protected route: Coords[] | undefined;
+    protected routeKey = '';
+    protected msSinceRepath = 0;
+    protected wasOnBelt = false;
 
     public override createView(): ViewCreation2d {
         const view = new Container();
@@ -625,16 +649,141 @@ export class SeagullEntity extends defineEntity({
         });
     }
 
+    /**
+     * One movement step. Flying gulls go straight. Walking gulls follow a cached A* route around
+     * towers, hop slowly across belts and are carried by them; the route is recomputed on a new
+     * target, after leaving a belt, or every `repathMs`, never every frame.
+     */
+    protected moveToward({
+        goal,
+        msSinceLastExecute,
+        routeKey,
+    }: Readonly<{goal: Readonly<Coords>; msSinceLastExecute: number; routeKey: string}>): Coords {
+        if (this.params.flying) {
+            return stepToward({
+                from: this.params,
+                to: goal,
+                stepPx: seagullConfig.flySpeedPxPerMs * msSinceLastExecute,
+            });
+        }
+
+        const carry = getBeltCarry({
+            level: this.state.level,
+            point: this.params,
+            beltSpeedPxPerMs: this.state.runState.beltSpeedPxPerMs,
+            msSinceLastExecute,
+        });
+        this.params.onBelt = carry.onBelt;
+        this.msSinceRepath += msSinceLastExecute;
+        if (
+            !this.route ||
+            this.routeKey !== routeKey ||
+            (this.wasOnBelt && !carry.onBelt) ||
+            this.msSinceRepath >= gullPathConfig.repathMs
+        ) {
+            this.route = this.computeRoute(goal);
+            this.routeKey = routeKey;
+            this.msSinceRepath = 0;
+        }
+        this.wasOnBelt = carry.onBelt;
+
+        while (
+            this.route.length > 0 &&
+            Math.hypot(
+                (this.route[0]?.x ?? 0) - this.params.x,
+                (this.route[0]?.y ?? 0) - this.params.y,
+            ) <= gullPathConfig.waypointReachedPx
+        ) {
+            this.route.shift();
+        }
+        const aim = this.route[0] ?? goal;
+        const speed = carry.onBelt
+            ? gullPathConfig.hopSpeedPxPerMs
+            : seagullConfig.walkSpeedPxPerMs;
+        const stepped = stepToward({
+            from: this.params,
+            to: aim,
+            stepPx: speed * msSinceLastExecute,
+        });
+        // The belt's push is added after the gull's own step, so it can drift the gull off course.
+        return {
+            x: stepped.x + carry.dx,
+            y: stepped.y + carry.dy,
+        };
+    }
+
+    /** A* from the gull to its goal; the cells' centers, minus the last (the live goal is used). */
+    protected computeRoute(goal: Readonly<Coords>): Coords[] {
+        const grid = getGullGrid(this.state.level);
+        const start = getCellAt({
+            grid,
+            point: this.params,
+        });
+        const escaping = this.params.phase === seagullPhases.escape;
+        const goalCell = getCellAt({
+            grid,
+            point: goal,
+        });
+        const cells = escaping
+            ? findGullPath({
+                  grid,
+                  start,
+                  isGoal(cell) {
+                      return isWalkableEdge({
+                          grid,
+                          cell,
+                      });
+                  },
+                  heuristic(cell) {
+                      return distanceToEdgeCells({
+                          grid,
+                          cell,
+                      });
+                  },
+              })
+            : findGullPath({
+                  grid,
+                  start,
+                  isGoal(cell) {
+                      return cell.col === goalCell.col && cell.row === goalCell.row;
+                  },
+                  heuristic(cell) {
+                      return octileDistance({
+                          from: cell,
+                          to: goalCell,
+                      });
+                  },
+              });
+        if (!cells) {
+            return [];
+        }
+
+        const centers = cells.map((cell) => {
+            return getCellCenter({
+                grid,
+                cell,
+            });
+        });
+        if (escaping) {
+            const last = centers.at(-1);
+            if (last) {
+                const edge = nearestEdgePoint(last);
+                this.params.escapeX = edge.x;
+                this.params.escapeY = edge.y;
+            }
+
+            return centers;
+        }
+        // The potato moves on its own, so the last leg is a straight step at its live position.
+        centers.pop();
+
+        return centers;
+    }
+
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
         if (this.params.hp <= 0) {
             return;
-        }
-        const speed = this.params.flying
-            ? seagullConfig.flySpeedPxPerMs
-            : seagullConfig.walkSpeedPxPerMs;
-        const stepPx = speed * msSinceLastExecute;
-
-        if (this.params.phase === seagullPhases.approach) {
+        } else if (this.params.phase === seagullPhases.approach) {
             let target = this.findPotato(this.params.targetPotatoId);
             if (
                 !target ||
@@ -650,10 +799,10 @@ export class SeagullEntity extends defineEntity({
                 return;
             }
 
-            const next = stepToward({
-                from: this.params,
-                to: target.params,
-                stepPx,
+            const next = this.moveToward({
+                goal: target.params,
+                msSinceLastExecute,
+                routeKey: `${this.params.phase}:${this.params.targetPotatoId}`,
             });
             this.params.x = next.x;
             this.params.y = next.y;
@@ -668,13 +817,13 @@ export class SeagullEntity extends defineEntity({
             return;
         }
 
-        const next = stepToward({
-            from: this.params,
-            to: {
+        const next = this.moveToward({
+            goal: {
                 x: this.params.escapeX,
                 y: this.params.escapeY,
             },
-            stepPx,
+            msSinceLastExecute,
+            routeKey: this.params.phase,
         });
         this.params.x = next.x;
         this.params.y = next.y;
@@ -711,12 +860,22 @@ export class SeagullEntity extends defineEntity({
         this.lastSeenCarryingId = carryingPotatoId;
 
         if (this.lastSeenX != undefined && x !== this.lastSeenX) {
-            flipper.scale.x = x > this.lastSeenX ? 1 : -1;
+            this.facing = x > this.lastSeenX ? 1 : -1;
         }
         this.lastSeenX = x;
 
         const {bob, rotation, phase, flapAmount} = this.drawGull();
-        flipper.y = bob;
+        // Hopping across a belt: a bounce with a squash on landing and stretch in the air.
+        const hop = this.params.onBelt
+            ? Math.abs(
+                  Math.sin((this.state.runState.elapsedMs / gullPathConfig.hopCycleMs) * Math.PI),
+              )
+            : 0;
+        flipper.scale.set(
+            this.facing * (1 + gullPathConfig.hopSquash * (0.5 - hop)),
+            this.params.onBelt ? 1 - gullPathConfig.hopSquash * (0.5 - hop) : 1,
+        );
+        flipper.y = bob - hop * gullPathConfig.hopHeightPx;
         flipper.rotation = rotation;
         if (flying) {
             // The shadow breathes with the flap: bigger and lighter when the wings are up.
@@ -730,23 +889,26 @@ export class SeagullEntity extends defineEntity({
         const carried = this.findPotato(carryingPotatoId);
         if (carried) {
             carried.view.pivot.set(
-                -(flipper.scale.x * 2 + Math.sin(phase * 0.5) * 4),
-                -(bob + carriedPotatoDropPx),
+                -(this.facing * 2 + Math.sin(phase * 0.5) * 4),
+                -(flipper.y + carriedPotatoDropPx),
             );
         }
 
-        hpBar.clear();
-        if (hp < seagullConfig.hp) {
-            const barWidth = 40;
-            const barY = -bodyHeightPx - 26;
-            hpBar.rect(-barWidth / 2, barY, barWidth, 6).fill({
-                color: 'rgba(0,0,0,0.6)',
-            });
-            hpBar
-                .rect(-barWidth / 2, barY, (barWidth * Math.max(0, hp)) / seagullConfig.hp, 6)
-                .fill({
-                    color: '#e53935',
+        if (this.drawnHp !== hp) {
+            this.drawnHp = hp;
+            hpBar.clear();
+            if (hp < seagullConfig.hp) {
+                const barWidth = 40;
+                const barY = -bodyHeightPx - 26;
+                hpBar.rect(-barWidth / 2, barY, barWidth, 6).fill({
+                    color: 'rgba(0,0,0,0.6)',
                 });
+                hpBar
+                    .rect(-barWidth / 2, barY, (barWidth * Math.max(0, hp)) / seagullConfig.hp, 6)
+                    .fill({
+                        color: '#e53935',
+                    });
+            }
         }
     }
 }

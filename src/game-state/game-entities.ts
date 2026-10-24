@@ -1,6 +1,4 @@
 import {type Entity2dConstructor} from '@antha/entity-2d';
-import {PassLampEntity} from '../door/pass-lamp.entity.js';
-import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
@@ -25,6 +23,4 @@ export const gameEntities: Entity2dConstructor[] = [
     OrderBoardEntity,
     TowerEntity,
     SeagullEntity,
-    PassEntity,
-    PassLampEntity,
 ];
