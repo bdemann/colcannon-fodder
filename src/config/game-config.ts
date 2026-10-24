@@ -207,6 +207,49 @@ export const mashConfig = {
     softMasherMultiplier: 2,
 } as const;
 
+/** Presentation of the hit numbers and status icons on potatoes. */
+export const comboDisplayConfig = {
+    /** How long a floating hit number stays visible. */
+    hitNumberMs: 600,
+    /** How far it rises while it fades. */
+    hitNumberRisePx: 30,
+    /** Continuous towers (Microwave) record a hit at most this often per potato. */
+    continuousHitIntervalMs: 300,
+    /** Size of the cut and soft status icons. */
+    iconSizePx: 12,
+    /** Text and style by multiplier, checked from the top: first entry with `minMultiplier` met. */
+    tiers: [
+        {
+            minMultiplier: 3,
+            color: '#ff4a1c',
+            fontSize: 36,
+            suffix: ' ×3 SMASH!',
+            pop: true,
+        },
+        {
+            minMultiplier: 2,
+            color: '#ff9a1c',
+            fontSize: 28,
+            suffix: ' ×2',
+            pop: false,
+        },
+        {
+            minMultiplier: 1.5,
+            color: '#ffe135',
+            fontSize: 24,
+            suffix: ' ×1.5',
+            pop: false,
+        },
+        {
+            minMultiplier: 0,
+            color: '#ffffff',
+            fontSize: 20,
+            suffix: '',
+            pop: false,
+        },
+    ],
+} as const;
+
 /** HUD timings. */
 export const hudConfig = {
     servingPopupMs: 1200,

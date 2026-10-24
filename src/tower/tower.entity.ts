@@ -316,6 +316,10 @@ export class TowerEntity extends defineEntity({
                 if (!hitPotato) {
                     continue;
                 }
+                hitPotato.recordHit({
+                    towerType: this.params.towerType,
+                    tower: this.params,
+                });
                 const hitProcessing = hitPotato.getProcessing();
                 applyTowerHit(hitProcessing, this.params.towerType, this.params);
                 hitPotato.params.cut = hitProcessing.cut;
@@ -344,6 +348,10 @@ export class TowerEntity extends defineEntity({
             return;
         }
 
+        target.recordHit({
+            towerType: this.params.towerType,
+            tower: this.params,
+        });
         const processing = target.getProcessing();
         applyTowerHit(processing, this.params.towerType, this.params);
         target.params.cut = processing.cut;

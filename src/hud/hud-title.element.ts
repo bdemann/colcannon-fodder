@@ -20,7 +20,12 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
     },
 ];
 
+/** The combo explained in one line. Shown in the toolbar hint and the title rules. */
+export const comboHintText =
+    'Combo: Knife cuts (×1.5) → Pot softens (×2 Masher) → Masher SMASH (×3)';
+
 export const rules = [
+    comboHintText,
     'Every tower mashes. Knife: set its direction when you build it (scroll or [ ]); it chops everything on that line, fast; pots soften everything in range so mashers hit twice as hard.',
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',

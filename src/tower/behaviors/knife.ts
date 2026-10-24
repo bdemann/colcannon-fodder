@@ -94,6 +94,10 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
             continue;
         }
         hitSomething = true;
+        potato.recordHit({
+            towerType: tower.params.towerType,
+            tower: tower.params,
+        });
         const processing = potato.getProcessing();
         applyTowerHit(processing, tower.params.towerType, tower.params);
         potato.params.cut = processing.cut;

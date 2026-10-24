@@ -5,6 +5,7 @@ import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {comboHintText} from './hud-title.element.js';
 
 /** Bottom toolbar with one button per tower type. */
 export const HudTowerToolbar = defineElement<{
@@ -102,7 +103,7 @@ export const HudTowerToolbar = defineElement<{
               ? selected === TowerType.Knife
                   ? 'Scroll or [ ] to turn the blade. Click beside the belt to build it.'
                   : `Click beside the path to build a ${towerTypes[selected].label}. Right click or Esc to cancel.`
-              : 'Knife: set its direction when you build it (scroll or [ ]); it chops everything on that line, fast · Pot: splashes everything in range · Masher: heavy finisher';
+              : comboHintText;
 
         return html`
             <div class="hint">${hint}</div>

@@ -3,7 +3,7 @@ import {describe, it} from '@augment-vir/test';
 import {mashConfig} from '../config/game-config.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
-import {applyTowerHit, getHitDamage, getMashProgress} from './mash.js';
+import {applyTowerHit, getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
 
 function fresh(overrides: Partial<PotatoProcessing> = {}): PotatoProcessing {
     return {
@@ -145,6 +145,31 @@ describe(getMashProgress.name, () => {
                 }),
             ),
             1,
+        );
+    });
+});
+
+describe(getHitMultiplier.name, () => {
+    it('is 1 on a plain potato and compounds cut and soft for the masher', () => {
+        assert.strictEquals(getHitMultiplier(fresh(), TowerType.Masher), 1);
+        assert.strictEquals(
+            getHitMultiplier(
+                fresh({
+                    cooked: true,
+                }),
+                TowerType.Boiler,
+            ),
+            1,
+        );
+        assert.strictEquals(
+            getHitMultiplier(
+                fresh({
+                    cut: true,
+                    cooked: true,
+                }),
+                TowerType.Masher,
+            ),
+            cutMultiplier * softMasherMultiplier,
         );
     });
 });
