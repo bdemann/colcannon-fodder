@@ -3,6 +3,7 @@
  * in milliseconds, distances in game-world pixels (the world is 1920x1080), speeds in pixels per
  * millisecond.
  */
+import {createVarietyWeights, PotatoVariety} from '../potato/potato-variety.js';
 import {knifeConfig} from './knife-config.js';
 
 /** Per-size potato stats. `value` multiplies the perfect-serving score and coins. */
@@ -90,6 +91,11 @@ export const waveConfig = {
             bossCount: 0,
             spawnIntervalMs: 3500,
             speedPxPerMs: 0.07,
+            eyesChance: 0,
+            varietyWeights: createVarietyWeights({
+                [PotatoVariety.Red]: 0.5,
+                [PotatoVariety.Russet]: 0.5,
+            }),
             sizeWeights: {
                 small: 0.5,
                 medium: 0.5,
@@ -98,7 +104,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 10,
-            hpMultiplier: 1,
+            hpMultiplier: 0.5,
             chuteShare: 0,
             seagullCount: 1,
             clumpChance: 0.1,
@@ -107,6 +113,11 @@ export const waveConfig = {
             bossCount: 0,
             spawnIntervalMs: 2800,
             speedPxPerMs: 0.08,
+            eyesChance: 0,
+            varietyWeights: createVarietyWeights({
+                [PotatoVariety.Red]: 0.4,
+                [PotatoVariety.Russet]: 0.6,
+            }),
             sizeWeights: {
                 small: 0.3,
                 medium: 0.6,
@@ -115,7 +126,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 14,
-            hpMultiplier: 1,
+            hpMultiplier: 0.45,
             chuteShare: 0.15,
             seagullCount: 2,
             clumpChance: 0.15,
@@ -124,6 +135,13 @@ export const waveConfig = {
             bossCount: 0,
             spawnIntervalMs: 2200,
             speedPxPerMs: 0.09,
+            eyesChance: 0.05,
+            varietyWeights: createVarietyWeights({
+                [PotatoVariety.Red]: 0.05,
+                [PotatoVariety.Russet]: 0.45,
+                [PotatoVariety.Yukon]: 0.4,
+                [PotatoVariety.ToughSkinned]: 0.1,
+            }),
             sizeWeights: {
                 small: 0.2,
                 medium: 0.6,
@@ -132,7 +150,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 18,
-            hpMultiplier: 1,
+            hpMultiplier: 0.65,
             chuteShare: 0.2,
             seagullCount: 3,
             clumpChance: 0.2,
@@ -141,6 +159,13 @@ export const waveConfig = {
             bossCount: 0,
             spawnIntervalMs: 1700,
             speedPxPerMs: 0.1,
+            eyesChance: 0.1,
+            varietyWeights: createVarietyWeights({
+                [PotatoVariety.Russet]: 0.4,
+                [PotatoVariety.Yukon]: 0.4,
+                [PotatoVariety.ToughSkinned]: 0.15,
+                [PotatoVariety.Sweet]: 0.05,
+            }),
             sizeWeights: {
                 small: 0.1,
                 medium: 0.5,
@@ -149,7 +174,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 24,
-            hpMultiplier: 1,
+            hpMultiplier: 0.85,
             chuteShare: 0.25,
             seagullCount: 4,
             clumpChance: 0.25,
@@ -158,6 +183,13 @@ export const waveConfig = {
             bossCount: 1,
             spawnIntervalMs: 1300,
             speedPxPerMs: 0.11,
+            eyesChance: 0.3,
+            varietyWeights: createVarietyWeights({
+                [PotatoVariety.Russet]: 0.05,
+                [PotatoVariety.ToughSkinned]: 0.4,
+                [PotatoVariety.Sweet]: 0.3,
+                [PotatoVariety.Yam]: 0.25,
+            }),
             sizeWeights: {
                 small: 0,
                 medium: 0.5,

@@ -1,5 +1,6 @@
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {type PotatoSizeWeights} from '../potato/potato-size.js';
+import {type PotatoVarietyWeights} from '../potato/potato-variety.js';
 import {getWaveSettings} from './endless.js';
 import {type RunState} from './run-state.js';
 
@@ -9,6 +10,8 @@ import {type RunState} from './run-state.js';
  */
 export type WaveSpawn = {
     sizeWeights: PotatoSizeWeights;
+    varietyWeights: PotatoVarietyWeights;
+    eyesChance: number;
     bossCount: number;
     bossHp: number;
     chuteShare: number;
@@ -67,6 +70,8 @@ export function advanceWaves(
         while (timer.msUntilNextSpawn <= 0 && runState.wavePhase === 'spawning') {
             spawns.push({
                 sizeWeights: wave.sizeWeights,
+                varietyWeights: wave.varietyWeights,
+                eyesChance: wave.eyesChance,
                 // Bosses ride in at the wave's halfway spawn.
                 bossCount:
                     runState.spawnedInWave === Math.floor(wave.potatoCount / 2)

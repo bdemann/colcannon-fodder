@@ -14,6 +14,7 @@ import {qualityConfig} from '../config/quality-config.js';
 import {Topping, type PotatoToppings} from '../order/topping.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {getMashProgress} from './mash.js';
+import {PotatoVariety} from './potato-variety.js';
 
 export const defaultMeter = {
     width: 40,
@@ -247,6 +248,7 @@ export function drawPotato({
     seed = 0,
 }: Readonly<{
     graphics: Graphics;
+    /** The variety and eyes (`processing.variety`, `processing.hasEyes`) shape the look. */
     processing: Readonly<PotatoProcessing>;
     radius: number;
     toppings: Readonly<PotatoToppings>;
@@ -283,6 +285,7 @@ export function drawPotato({
             radius,
             perfect: progress >= 1,
             cooked: processing.cooked,
+            variety: processing.variety ?? PotatoVariety.Russet,
         });
         drawRubbery({
             graphics,
@@ -409,6 +412,272 @@ const kingFreckles: ReadonlyArray<Point> = [
     ],
 ];
 
+/** How each variety's whole potato looks. Russet is the original brown. */
+const varietyLooks: Readonly<
+    Record<
+        PotatoVariety,
+        Readonly<{
+            skin: string;
+            cookedSkin: string;
+            /** Freckle and mark color. */
+            spot: string;
+            /** Body width and height scales. */
+            stretch: number;
+            squash: number;
+            lumpiness: number;
+            bumps: number;
+            /** Rough hatch marks (tough skin). */
+            hatch: boolean;
+            /** Extra bumpy texture (yam). */
+            bumpy: boolean;
+        }>
+    >
+> = {
+    [PotatoVariety.Red]: {
+        skin: '#d9695a',
+        cookedSkin: '#ecb0a0',
+        spot: '#a8402f',
+        stretch: 0.94,
+        squash: 1,
+        lumpiness: 0.04,
+        bumps: 5,
+        hatch: false,
+        bumpy: false,
+    },
+    [PotatoVariety.Russet]: {
+        skin: cozyPalette.toffee,
+        cookedSkin: cozyPalette.wheat,
+        spot: cozyPalette.caramel,
+        stretch: 1,
+        squash: 1,
+        lumpiness: 0.05,
+        bumps: 5,
+        hatch: false,
+        bumpy: false,
+    },
+    [PotatoVariety.Yukon]: {
+        skin: '#e6b84a',
+        cookedSkin: '#f7e29a',
+        spot: '#b98a2a',
+        stretch: 1,
+        squash: 1,
+        lumpiness: 0.04,
+        bumps: 4,
+        hatch: false,
+        bumpy: false,
+    },
+    [PotatoVariety.ToughSkinned]: {
+        skin: '#8a5a38',
+        cookedSkin: '#c9a77a',
+        spot: cozyPalette.walnut,
+        stretch: 1,
+        squash: 1,
+        lumpiness: 0.06,
+        bumps: 6,
+        hatch: true,
+        bumpy: false,
+    },
+    [PotatoVariety.Sweet]: {
+        skin: '#e8883a',
+        cookedSkin: '#f5c58a',
+        spot: '#b8581f',
+        stretch: 1.22,
+        squash: 0.8,
+        lumpiness: 0.03,
+        bumps: 3,
+        hatch: false,
+        bumpy: false,
+    },
+    [PotatoVariety.Yam]: {
+        skin: '#6b4558',
+        cookedSkin: '#b99aa0',
+        spot: '#3f2634',
+        stretch: 1.1,
+        squash: 0.95,
+        lumpiness: 0.09,
+        bumps: 8,
+        hatch: false,
+        bumpy: true,
+    },
+};
+
+/** Mash blob colors that differ from the default cream (the orange varieties). */
+const mashTints: Readonly<
+    Partial<Record<PotatoVariety, Readonly<{perfect: string; cooked: string; raw: string}>>>
+> = {
+    [PotatoVariety.Sweet]: {
+        perfect: '#ffc58a',
+        cooked: '#f0a860',
+        raw: '#e0914f',
+    },
+    [PotatoVariety.Yam]: {
+        perfect: '#f2a65c',
+        cooked: '#e08f4a',
+        raw: '#c97a3f',
+    },
+};
+
+/** Short rough hatch marks across a tough skin. */
+function drawHatchMarks({
+    graphics,
+    rx,
+    ry,
+    color,
+}: Readonly<{graphics: Graphics; rx: number; ry: number; color: string}>) {
+    for (const [
+        x,
+        y,
+    ] of [
+        [
+            -0.55,
+            0.4,
+        ],
+        [
+            0.1,
+            0.55,
+        ],
+        [
+            0.6,
+            0.2,
+        ],
+        [
+            -0.15,
+            -0.62,
+        ],
+        [
+            0.55,
+            -0.45,
+        ],
+    ] as const) {
+        const cx = x * rx;
+        const cy = y * ry;
+        for (const offset of [
+            -2,
+            0,
+            2,
+        ]) {
+            drawCozyLine(graphics, {
+                path: linePath([
+                    [
+                        cx - 3 + offset,
+                        cy + 4,
+                    ],
+                    [
+                        cx + 3 + offset,
+                        cy - 4,
+                    ],
+                ]),
+                color,
+                width: 1.4,
+                alpha: 0.8,
+            });
+        }
+    }
+}
+
+/** Lumpy bumps over a yam's skin. */
+function drawBumps({
+    graphics,
+    rx,
+    ry,
+    color,
+}: Readonly<{graphics: Graphics; rx: number; ry: number; color: string}>) {
+    for (const [
+        x,
+        y,
+        size,
+    ] of [
+        [
+            -0.6,
+            0.1,
+            0.12,
+        ],
+        [
+            -0.25,
+            0.55,
+            0.1,
+        ],
+        [
+            0.3,
+            0.5,
+            0.13,
+        ],
+        [
+            0.65,
+            -0.1,
+            0.1,
+        ],
+        [
+            0.25,
+            -0.6,
+            0.12,
+        ],
+        [
+            -0.4,
+            -0.5,
+            0.09,
+        ],
+    ] as const) {
+        drawCozyShape(graphics, {
+            path: dotPath({
+                x: x * rx,
+                y: y * ry,
+                radius: Math.min(rx, ry) * size,
+            }),
+            fill: color,
+            alpha: 0.85,
+            ...flat,
+        });
+    }
+}
+
+/** Darker eye spots on the skin for a potato with eyes (blades struggle). */
+function drawSkinEyes({
+    graphics,
+    radius,
+    rx,
+    ry,
+}: Readonly<{graphics: Graphics; radius: number; rx: number; ry: number}>) {
+    for (const [
+        x,
+        y,
+    ] of [
+        [
+            -0.7,
+            -0.2,
+        ],
+        [
+            0.62,
+            0.45,
+        ],
+        [
+            0.05,
+            -0.72,
+        ],
+    ] as const) {
+        const cx = x * rx;
+        const cy = y * ry;
+        drawCozyShape(graphics, {
+            path: dotPath({
+                x: cx,
+                y: cy,
+                radius: Math.max(2, radius * 0.13),
+            }),
+            fill: cozyPalette.bark,
+            ...flat,
+        });
+        drawCozyShape(graphics, {
+            path: dotPath({
+                x: cx - radius * 0.03,
+                y: cy - radius * 0.03,
+                radius: Math.max(0.8, radius * 0.04),
+            }),
+            fill: cozyPalette.sand,
+            ...flat,
+        });
+    }
+}
+
 /** A raw, boiled or sliced whole potato (or the Russet King's skin). */
 function drawWhole({
     graphics,
@@ -424,17 +693,23 @@ function drawWhole({
     king: boolean;
 }>) {
     const cooked = processing.cooked;
-    const rx = radius * (king ? 1.25 : 1.2);
-    const ry = radius * (king ? 0.95 : 0.9);
+    const variety = processing.variety ?? PotatoVariety.Russet;
+    const look = king ? undefined : varietyLooks[variety];
+    const rx = radius * (king ? 1.25 : 1.2) * (look?.stretch ?? 1);
+    const ry = radius * (king ? 0.95 : 0.9) * (look?.squash ?? 1);
     drawCozyShape(graphics, {
         path: blobPath({
             rx,
             ry,
-            lumpiness: cooked ? 0.03 : 0.05,
-            bumps: cooked ? 4 : 5,
+            lumpiness: cooked ? 0.03 : (look?.lumpiness ?? 0.05),
+            bumps: cooked ? 4 : (look?.bumps ?? 5),
             seed,
         }),
-        fill: king ? cozyPalette.caramel : cooked ? cozyPalette.wheat : cozyPalette.toffee,
+        fill: king
+            ? cozyPalette.caramel
+            : cooked
+              ? (look?.cookedSkin ?? cozyPalette.wheat)
+              : (look?.skin ?? cozyPalette.toffee),
     });
 
     if (cooked) {
@@ -488,10 +763,35 @@ function drawWhole({
                     y: y * radius,
                     radius: Math.max(1.3, radius * 0.06),
                 }),
-                fill: cozyPalette.caramel,
+                fill: look?.spot ?? cozyPalette.caramel,
                 ...flat,
             });
         }
+    }
+
+    if (look?.hatch) {
+        drawHatchMarks({
+            graphics,
+            rx,
+            ry,
+            color: look.spot,
+        });
+    }
+    if (look?.bumpy) {
+        drawBumps({
+            graphics,
+            rx,
+            ry,
+            color: look.spot,
+        });
+    }
+    if (processing.hasEyes) {
+        drawSkinEyes({
+            graphics,
+            radius,
+            rx,
+            ry,
+        });
     }
 
     if (processing.cut) {
@@ -539,11 +839,20 @@ function drawMash({
     radius,
     perfect,
     cooked,
-}: Readonly<{graphics: Graphics; radius: number; perfect: boolean; cooked: boolean}>) {
+    variety,
+}: Readonly<{
+    graphics: Graphics;
+    radius: number;
+    perfect: boolean;
+    cooked: boolean;
+    variety: PotatoVariety;
+}>) {
+    const tint = mashTints[variety];
+    const creamFill = tint?.perfect ?? cozyPalette.cream;
     if (perfect) {
         drawCozyShape(graphics, {
             path: mashBlobPath(radius),
-            fill: cozyPalette.cream,
+            fill: creamFill,
         });
         // The little peak on top.
         drawCozyShape(graphics, {
@@ -561,7 +870,7 @@ function drawMash({
                     -radius * 0.78,
                 ],
             ]),
-            fill: cozyPalette.cream,
+            fill: creamFill,
             outlineScale: 0.9,
         });
         drawCozyShape(graphics, {
@@ -571,7 +880,7 @@ function drawMash({
                 rx: radius * 0.3,
                 ry: radius * 0.14,
             }),
-            fill: cozyPalette.cream,
+            fill: creamFill,
             ...flat,
         });
         drawShine({
@@ -610,7 +919,7 @@ function drawMash({
 
     drawCozyShape(graphics, {
         path: mashBlobPath(radius),
-        fill: cooked ? cozyPalette.wheat : cozyPalette.sand,
+        fill: cooked ? (tint?.cooked ?? cozyPalette.wheat) : (tint?.raw ?? cozyPalette.sand),
     });
     if (!cooked) {
         // Raw chunks still hiding in the mash.
@@ -1296,5 +1605,7 @@ export function getPotatoLookKey({
         getRubberyStep(quality),
         radius,
         crown,
+        processing.variety ?? PotatoVariety.Russet,
+        processing.hasEyes ?? false,
     ].join('|');
 }

@@ -1,0 +1,49 @@
+tower,variety,hp_medium,damage_per_pass_alone,damage_per_pass_alone_with_eyes,damage_per_pass_prepped,damage_per_pass_prepped_with_eyes
+Knife,Red,140,17.2,8.6,19.2,9.6
+Knife,Russet,200,17.2,8.6,19.2,9.6
+Knife,Yukon Gold,260,17.2,8.6,19.2,9.6
+Knife,Tough-skinned,240,14.8,7.4,19.2,9.6
+Knife,Sweet potato,300,17.2,8.6,19.2,9.6
+Knife,Yam,400,14.8,7.4,19.2,9.6
+Boiling Pot,Red,140,11.9,11.9,17.9,17.9
+Boiling Pot,Russet,200,11.9,11.9,17.9,17.9
+Boiling Pot,Yukon Gold,260,11.9,11.9,17.9,17.9
+Boiling Pot,Tough-skinned,240,4.8,4.8,17.9,17.9
+Boiling Pot,Sweet potato,300,11.9,11.9,17.9,17.9
+Boiling Pot,Yam,400,4.8,4.8,17.9,17.9
+Masher,Red,140,95.3,95.3,286.0,286.0
+Masher,Russet,200,95.3,95.3,286.0,286.0
+Masher,Yukon Gold,260,95.3,95.3,286.0,286.0
+Masher,Tough-skinned,240,38.1,38.1,286.0,286.0
+Masher,Sweet potato,300,47.7,47.7,286.0,286.0
+Masher,Yam,400,19.1,19.1,286.0,286.0
+Microwave,Red,140,79.4,79.4,79.4,79.4
+Microwave,Russet,200,79.4,79.4,79.4,79.4
+Microwave,Yukon Gold,260,79.4,79.4,79.4,79.4
+Microwave,Tough-skinned,240,79.4,79.4,79.4,79.4
+Microwave,Sweet potato,300,79.4,79.4,79.4,79.4
+Microwave,Yam,400,79.4,79.4,79.4,79.4
+Cricket Trap,Red,140,0.0,0.0,0.0,0.0
+Cricket Trap,Russet,200,0.0,0.0,0.0,0.0
+Cricket Trap,Yukon Gold,260,0.0,0.0,0.0,0.0
+Cricket Trap,Tough-skinned,240,0.0,0.0,0.0,0.0
+Cricket Trap,Sweet potato,300,0.0,0.0,0.0,0.0
+Cricket Trap,Yam,400,0.0,0.0,0.0,0.0
+Swiper,Red,140,0.0,0.0,0.0,0.0
+Swiper,Russet,200,0.0,0.0,0.0,0.0
+Swiper,Yukon Gold,260,0.0,0.0,0.0,0.0
+Swiper,Tough-skinned,240,0.0,0.0,0.0,0.0
+Swiper,Sweet potato,300,0.0,0.0,0.0,0.0
+Swiper,Yam,400,0.0,0.0,0.0,0.0
+Laser,Red,140,56.7,28.3,58.7,29.3
+Laser,Russet,200,56.7,28.3,58.7,29.3
+Laser,Yukon Gold,260,56.7,28.3,58.7,29.3
+Laser,Tough-skinned,240,54.3,27.1,58.7,29.3
+Laser,Sweet potato,300,56.7,28.3,58.7,29.3
+Laser,Yam,400,54.3,27.1,58.7,29.3
+Laser (across belt),Red,140,17.2,8.6,19.2,9.6
+Laser (across belt),Russet,200,17.2,8.6,19.2,9.6
+Laser (across belt),Yukon Gold,260,17.2,8.6,19.2,9.6
+Laser (across belt),Tough-skinned,240,14.8,7.4,19.2,9.6
+Laser (across belt),Sweet potato,300,17.2,8.6,19.2,9.6
+Laser (across belt),Yam,400,14.8,7.4,19.2,9.6

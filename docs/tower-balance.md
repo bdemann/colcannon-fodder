@@ -1,6 +1,8 @@
 # Tower balance
 
-Numbers come from `src/config/game-config.ts`, `knife-config.ts`, `swiper-config.ts`, `quality-config.ts`, `upgrade-config.ts` and `src/tower/tower-type.ts`. The tables are `docs/tower-balance.csv` (per tower, with expected targets and effective DPS for waves 1-5) and `docs/tower-vs-wave.csv` (per tower and wave: can it finish the average potato alone).
+Numbers come from `src/config/game-config.ts`, `knife-config.ts`, `swiper-config.ts`, `quality-config.ts`, `upgrade-config.ts` and `src/tower/tower-type.ts`. The tables are `docs/tower-balance.csv` (per tower, with expected targets and effective DPS for waves 1-5) and `docs/tower-vs-wave.csv` (per tower and wave: damage per pass against the average potato, alone and prepped) and `docs/tower-vs-variety.csv` (per tower and potato variety).
+
+The model is code: `src/balance/balance-model.ts` (dwell time, hits per pass, damage per pass, throughput). It calls the real `getHitDamage`, and `src/balance/balance-model.test.ts` asserts the three design goals against the real config, so a tuning change that breaks a goal fails the tests.
 
 ## Columns
 
@@ -56,11 +58,11 @@ Inputs, all from `game-config.ts` `waveConfig` and `potatoSizeConfig`:
 
 | Wave | Spawns per s | Density per 100 px | Mean gap (px) | Avg potato HP | Avg potato width + Knife slice (px) |
 | ---- | ------------ | ------------------ | ------------- | ------------- | ----------------------------------- |
-| 1    | 0.29         | 0.41               | 245           | 40            | 66                                  |
-| 2    | 0.41         | 0.52               | 194           | 190           | 70                                  |
-| 3    | 0.60         | 0.66               | 151           | 212           | 73                                  |
-| 4    | 0.83         | 0.82               | 121           | 248           | 77                                  |
-| 5    | 1.23         | 1.12               | 89            | 270           | 80                                  |
+| 1    | 0.29         | 0.41               | 245           | 34            | 66                                  |
+| 2    | 0.41         | 0.52               | 194           | 84            | 70                                  |
+| 3    | 0.60         | 0.66               | 151           | 107           | 73                                  |
+| 4    | 0.83         | 0.82               | 121           | 189           | 77                                  |
+| 5    | 1.23         | 1.12               | 89            | 340           | 80                                  |
 
 Targets per attack:
 
@@ -94,12 +96,38 @@ Key results (level 1, no upgrades):
 -   The Laser aligned case needs special placement; most placements are closer to the across case.
 -   Potato varieties may change the HP and speed averages, so this sheet will need per-variety columns then: add `hp_<variety>` and `damage_per_pass_<variety>` columns to `tower-vs-wave.csv`, and weight `avg_potato_hp` by variety share.
 
+## Potato varieties
+
+Defined in `src/config/potato-variety-config.ts`; the trait math is in `getHitMultiplier` (`src/potato/mash.ts`), so every tower and the hit numbers agree. Variety HP multiplies size HP and the wave `hpMultiplier`. `docs/tower-vs-variety.csv` shows damage per pass for a medium potato at the wave 3 belt speed.
+
+| Variety       | HP x | Trait                                                        |
+| ------------- | ---- | ------------------------------------------------------------ |
+| Red           | 0.7  | none                                                         |
+| Russet        | 1    | none (baseline)                                              |
+| Yukon Gold    | 1.3  | none                                                         |
+| Tough-skinned | 1.2  | tough skin: all hits x0.4 until Cut (the Cut hit too)        |
+| Sweet potato  | 1.5  | dense: Masher hits x0.5 unless Soft                          |
+| Yam           | 2    | tough skin and dense                                         |
+| (eyes)        | -    | Knife and Laser hits x0.5 (rolled per potato, per-wave odds) |
+
+Waves 1-2 are Red and Russet with no eyes. Waves 3-4 are Russet and Yukon heavy with at most 15% tough skin and 5-10% eyes. Wave 5 is mostly tough-skinned, sweet potato and yam with 30% eyes. Endless shifts weight from the soft group to the tough group from wave 3 (7% per wave, capped at 85%) and raises the eyes chance 3% per wave (capped at 40%).
+
+Because Cut removes tough skin and Soft removes dense, a prepped Masher does x3 on every variety (286 per pass at wave 3 speed, even on a Yam), while an unprepped Masher does 19 on a Yam. Prep is what the late game is about.
+
 ## Design goals check
 
-Numbers are from `tower-vs-wave.csv` (average potato HP: 40, 190, 212, 248, 270).
+All three hold with the real config (asserted in `src/balance/balance-model.test.ts`) and **without changing any tower stat**: only the wave `hpMultiplier` values, the variety mix and the new variety HP were tuned (`potatoSizeConfig` is unchanged). Average damage per pass is the mean over the wave's potatoes; "average potato" means mean damage against mean HP.
 
--   **Knives alone pass wave 1: yes, with about two or three.** One Knife does about 21 damage per pass against a 40 HP average (small 30, medium 50), so one is not enough. Two do about 41, which is level with the average, and the starting 150 coins buy three (62 damage per pass, above the 50 HP medium). Wave 1 is tuned for exactly that. A single Masher also finishes wave 1 alone (123 per pass).
--   **Knives stop being enough at once.** From wave 2, a Knife does 15-19 per pass against 190+ HP: that is 10-18 Knives for a full kill. The Knife is a prep tower (Cut) from wave 2 on, not a killer.
--   **Mashers alone do not pass mid waves.** One raw Masher does 107 per pass in wave 2 and 95 in wave 3 against 190 and 212 HP (about half). Two Mashers just reach wave 2 (214) and fall short in wave 3 (190 vs 212, plus the second only helps when the potatoes are slow enough). With Cut and Soft (x3) one Masher does 321 and 286, so Knife plus Pot plus Masher finishes waves 2-3 comfortably. Throughput also bites: a Masher can mash about 0.2 average potatoes per second in wave 3 (40 / 212) while 0.6 arrive.
--   **The combo is needed in late waves.** In wave 5 a raw Masher does 78 per pass against 270 HP. Prepped (x3) it does 234, still short, and a large potato (340 HP) is out of reach for one Masher at any prep. Wave 4 is borderline (257 vs 248 prepped). Late waves need Knife and Pot prep plus two or more Mashers, upgrades, or the Microwave (65 per pass alone, 47 eff DPS, 0.94 DPS per coin in wave 5).
--   **Microwave and Laser are the efficiency outliers.** Microwave scales best with density (0.34 to 0.94 eff DPS per coin) because its cone hits several potatoes, at a quality cost; it is the only cheap tower that gets better in late waves. The aligned Laser reaches 0.26 per coin at wave 5, still below the Masher (0.5) because it costs 150; across the belt it is a 150 coin Knife (0.10). The Boiling Pot is weak as DPS (0.07-0.20) but its Soft (x2 Masher) is what makes the combo work.
+| Wave | Avg HP | Spawns per s | 1 Knife | 2 Knives | 3 Knives | 1 Masher | 2 Mashers | Knife+Pot+Masher | Knife+Pot+2 Mashers |
+| ---- | ------ | ------------ | ------- | -------- | -------- | -------- | --------- | ---------------- | ------------------- |
+| 1    | 34     | 0.29         | 21      | 43       | 66       | 123      | 245       | 411              | 779                 |
+| 2    | 84     | 0.41         | 19      | 40       | 61       | 107      | 215       | 361              | 683                 |
+| 3    | 107    | 0.60         | 17      | 36       | 55       | 90       | 179       | 321              | 607                 |
+| 4    | 189    | 0.82         | 15      | 33       | 51       | 76       | 152       | 289              | 546                 |
+| 5    | 340    | 1.23         | 12      | 27       | 42       | 32       | 64        | 260              | 494                 |
+
+-   **Goal 1, Knives alone work early: pass.** Wave 1 is Red and Russet, small and medium only (HP 21 to 50). Three Knives finish every one of them (worst case a medium Russet at 50 HP against 72 damage); two Knives finish the average (43 against 34), one does not (21).
+-   **Goal 2, Mashers alone work mid-game: pass.** Waves 2 and 3: one or two raw Mashers finish the average potato (wave 2: one does 107 against 84; wave 3: two do 179 against 107, one does 90). Throughput keeps up: two Mashers can finish 0.96 (wave 2) and 0.64 (wave 3) average potatoes per second against 0.41 and 0.60 arriving. This fixes the old model, where Mashers failed waves 2-3 (190 and 212 HP).
+-   **Goal 3, late game needs the combo: pass.** Wave 5 average HP is 340. Unprepped Mashers fall far short (one does 32, two do 64: tough skin and dense cut them to a fraction), a Knife + Pot + one Masher line does 260 (not enough), and the line with two Mashers does 494 (enough). Wave 4 is the ramp: two raw Mashers do 152 against 189.
+-   **Knives stop being enough at once.** From wave 2 a Knife does 12-19 per pass; it is a prep tower (Cut, which also unlocks tough skin) from then on, not a killer. Eyes halve even that.
+-   **Microwave and Laser are the efficiency outliers.** The Microwave scales best with density because its cone hits several potatoes; its flat damage ignores traits, so it is the cheap answer to Yams and eyes at a quality cost. The aligned Laser reaches 0.26 per coin at wave 5 against the Masher's 0.5; across the belt it is a 150 coin Knife. The Boiling Pot is weak as DPS but its Soft (x2 Masher, and no dense penalty) is what makes the combo work.

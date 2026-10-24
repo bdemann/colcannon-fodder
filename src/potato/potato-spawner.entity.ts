@@ -1,6 +1,7 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
 import {chuteConfig, potatoSizeConfig, seagullConfig} from '../config/game-config.js';
+import {potatoVarietyConfig} from '../config/potato-variety-config.js';
 import {spawnConfig} from '../config/spawn-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {getLaneOffset, getMaxLaneOffset} from '../level/belt-lane.js';
@@ -20,6 +21,7 @@ import {pickSeagullEntry} from '../seagull/seagull-logic.js';
 import {SeagullEntity, seagullPhases} from '../seagull/seagull.entity.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {pickPotatoSize, PotatoSize, type PotatoSizeWeights} from './potato-size.js';
+import {pickPotatoVariety, PotatoVariety, type PotatoVarietyWeights} from './potato-variety.js';
 import {PotatoEntity} from './potato.entity.js';
 
 /**
@@ -161,6 +163,8 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         path: Readonly<PathDefinition>,
         spawn: Readonly<{
             sizeWeights: PotatoSizeWeights;
+            varietyWeights: PotatoVarietyWeights;
+            eyesChance: number;
             chuteShare: number;
             hpMultiplier: number;
         }>,
@@ -174,7 +178,13 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         }
 
         const size = pickPotatoSize(spawn.sizeWeights, this.state.seededRandom.next());
-        const mashHp = Math.round(potatoSizeConfig[size].mashHp * spawn.hpMultiplier);
+        const variety = pickPotatoVariety(spawn.varietyWeights, this.state.seededRandom.next());
+        const hasEyes = this.state.seededRandom.next() < spawn.eyesChance;
+        const mashHp = Math.round(
+            potatoSizeConfig[size].mashHp *
+                spawn.hpMultiplier *
+                potatoVarietyConfig.varieties[variety].hpMultiplier,
+        );
         // Only roll on paths with chutes, so other levels keep their random sequence.
         const chute = path.chutes?.length
             ? pickChute({
@@ -207,6 +217,8 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             laneOffsetPx,
             dropInMs: chute ? chuteConfig.dropMs : 0,
             size,
+            variety,
+            hasEyes,
             cut: false,
             cooked: false,
             mashHp,
@@ -242,6 +254,8 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             laneOffsetPx: 0,
             dropInMs: 0,
             size: PotatoSize.King,
+            variety: PotatoVariety.Russet,
+            hasEyes: false,
             cut: false,
             cooked: false,
             mashHp,

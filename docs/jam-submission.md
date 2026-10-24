@@ -31,6 +31,7 @@ Earn the title of **Mash Champ**.
 
 -   Seven towers: Knife (cuts straight across the belt), Boiling Pot, Masher, Microwave, Cricket Trap, Swiper and the late-game Laser (the aimable long line).
 -   A cut x boil x mash combo with big floating hit numbers.
+-   Six potato varieties with traits that change the plan. Tough skin: Cut it first. Dense: soften it first. Eyes: blades struggle.
 -   Thrown projectiles: spinning mashers (meat hammers at level 3), boiling water and crickets fly
     from the towers. Purely visual.
 -   Hand-applied toppings and customer orders: Buttered Mash, Champ, Colcannon, Bangers & Mash.

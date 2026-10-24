@@ -26,6 +26,7 @@ import {type TowerType} from '../tower/tower-type.js';
 import {getHitDamage, getHitMultiplier} from './mash.js';
 import {getPotatoMotion, getSteamPhase, isBlinking} from './potato-motion.js';
 import {PotatoSize} from './potato-size.js';
+import {PotatoVariety} from './potato-variety.js';
 import {
     defaultMeter,
     drawEyelids,
@@ -55,6 +56,10 @@ export class PotatoEntity extends defineEntity({
              */
             dropInMs: 0,
             size: enumShape(PotatoSize),
+            /** Rolled at spawn; sets HP and the tough skin and dense traits. */
+            variety: enumShape(PotatoVariety),
+            /** Eyes weaken Knife and Laser hits. Rolled at spawn. */
+            hasEyes: false,
             cut: false,
             cooked: false,
             mashHp: 0,
@@ -250,12 +255,14 @@ export class PotatoEntity extends defineEntity({
 
     /** The processing state held in the params. */
     public getProcessing(): PotatoProcessing {
-        const {cut, cooked, mashHp, maxMashHp} = this.params;
+        const {cut, cooked, mashHp, maxMashHp, variety, hasEyes} = this.params;
         return {
             cut,
             cooked,
             mashHp,
             maxMashHp,
+            variety,
+            hasEyes,
         };
     }
 
