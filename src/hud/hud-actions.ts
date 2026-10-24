@@ -34,6 +34,8 @@ export type HudActions = {
     selectMode(mode: RunMode): void;
     /** Leaves the title screen and starts the run. */
     beginRun(): void;
+    /** Discards the run and returns to the title screen with the current level and mode. */
+    goToMainMenu(): void;
     /** Pauses or resumes the run. */
     togglePause(): void;
     /** Cycles the fast-forward speed 1x, 1.5x, 2x, 3x, 1x. */
@@ -139,6 +141,14 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
                 ready: true,
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
                 mode,
+            });
+        },
+        goToMainMenu() {
+            sendGameCommand(state, {
+                type: GameCommandType.StartRun,
+                ready: true,
+                levelId: state.runState?.levelId ?? defaultLevel.levelId,
+                mode: state.runState?.mode,
             });
         },
         restartRun() {

@@ -269,6 +269,14 @@ export const HudPause = defineElement<{
                                   >
                                       Restart
                                   </button>
+                                  <button
+                                      class="secondary"
+                                      @click=${() => {
+                                          inputs.actions.goToMainMenu();
+                                      }}
+                                  >
+                                      Main menu
+                                  </button>
                               </div>
                           </div>
                       </div>
