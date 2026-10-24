@@ -68,6 +68,11 @@ export type HudSnapshot = {
     isSpectator: boolean;
     /** The main menu, room list and connection status. */
     session: SessionUi;
+    /**
+     * Measured sim speed as a whole percent of real time (100 is real time). Filled in by `hudMod`,
+     * which owns the clock; `undefined` from `createHudSnapshot` and until measured.
+     */
+    simSpeedPercent: number | undefined;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
     speed: number;
     /** True while the speed is armed to drop back to 1x at the next income. */
@@ -252,6 +257,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
             }),
         },
         isHost: getSlotForClient(runState, clientId) === 0,
+        simSpeedPercent: undefined,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
         satisfaction: runState.satisfaction,

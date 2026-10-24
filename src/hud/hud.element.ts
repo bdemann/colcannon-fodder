@@ -8,6 +8,7 @@ import {HudOrders} from './hud-orders.element.js';
 import {HudPause} from './hud-pause.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
 import {HudSession} from './hud-session.element.js';
+import {HudSimSpeed} from './hud-sim-speed.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
 import {hudFontFamily, hudThemeVariables} from './hud-theme.js';
@@ -63,6 +64,9 @@ export const GameHud = defineElement<{
             <${HudCoinPopups.assign({
                 snapshot: inputs.snapshot,
             })}></${HudCoinPopups}>
+            <${HudSimSpeed.assign({
+                snapshot: inputs.snapshot,
+            })}></${HudSimSpeed}>
             <${HudMute.assign({
                 snapshot: inputs.snapshot,
             })}></${HudMute}>

@@ -460,3 +460,15 @@ export const slotColors = [
     '#6aa84f',
     '#9b59b6',
 ];
+
+/** Lockstep frame timing and the host's sim-speed readout. */
+export const frameConfig = {
+    /**
+     * Time between lockstep frames, and the simulated time each frame advances (about 30 per
+     * second). The host waits this long after each frame finishes (#29), so a longer frame means
+     * the per-frame cost is a smaller share of the wait and slow machines fall behind less.
+     */
+    frameMs: 1000 / 30,
+    /** The sim-speed indicator averages over this much real time. */
+    simSpeedWindowMs: 2000,
+} as const;
