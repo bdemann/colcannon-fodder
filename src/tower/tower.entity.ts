@@ -13,6 +13,7 @@ import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
+import {updateKnife} from './behaviors/knife.js';
 import {updateMicrowave} from './behaviors/microwave.js';
 import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
@@ -187,6 +188,9 @@ export class TowerEntity extends defineEntity({
             return;
         } else if (behavior === 'swipe') {
             updateSwiper(this);
+            return;
+        } else if (behavior === 'line') {
+            updateKnife(this, msSinceLastExecute);
             return;
         }
 
@@ -466,6 +470,22 @@ export class TowerEntity extends defineEntity({
                 splash.circle(dx * t, dy * t - trapArcHeightPx * 4 * t * (1 - t), 4).fill({
                     color: '#1b5e20',
                 });
+            }
+        } else if (definition.behavior === 'line') {
+            if (flashing) {
+                beam.moveTo(0, 0)
+                    .lineTo(lastTargetX - x, lastTargetY - y)
+                    .stroke({
+                        color: '#e0e0e0',
+                        width: 6,
+                        alpha: 0.9,
+                    })
+                    .moveTo(0, 0)
+                    .lineTo(lastTargetX - x, lastTargetY - y)
+                    .stroke({
+                        color: '#ffffff',
+                        width: 2,
+                    });
             }
         } else if (flashing) {
             beam.moveTo(0, 0)
