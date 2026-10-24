@@ -5,12 +5,14 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
 import {cozyPalette, drawCozyLine, drawCozyShape, ellipsePath, roundRectPath} from '../art/cozy.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
-import {towerArtConfig, towerConfig} from '../config/game-config.js';
+import {projectileConfig, towerArtConfig, towerConfig} from '../config/game-config.js';
 import {knifeConfig} from '../config/knife-config.js';
 import {wearConfig} from '../config/wear-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {ProjectileKind} from '../projectile/projectile-kind.js';
+import {spawnProjectile} from '../projectile/projectile-layer.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
@@ -86,7 +88,6 @@ export class TowerEntity extends defineEntity({
     /** Presentation-only handles, set in `createView`. */
     protected rangeView: Graphics | undefined;
     protected body: Graphics | undefined;
-    protected beam: Graphics | undefined;
     protected pips: Graphics | undefined;
     protected selection: Graphics | undefined;
     /** Wear bar under the pips, cracks over the body, and the bobbing wrench. */
@@ -145,12 +146,8 @@ export class TowerEntity extends defineEntity({
         wrench.visible = false;
         view.addChild(wrench);
 
-        const beam = new Graphics();
-        view.addChild(beam);
-
         this.rangeView = rangeView;
         this.body = body;
-        this.beam = beam;
         this.pips = pips;
         this.wearBar = wearBar;
         this.cracks = cracks;
@@ -271,8 +268,16 @@ export class TowerEntity extends defineEntity({
             this.wearFromUse();
             this.params.cooldownRemainingMs = stats.cooldownMs;
             this.params.lastProcessedAtMs = this.state.runState.elapsedMs;
-            this.params.lastTargetX = this.params.x;
-            this.params.lastTargetY = this.params.y;
+            // Aim the thrown water at the middle of whatever it hit.
+            const hitPoints = [
+                ...targetIndexes.flatMap((targetIndex) => potatoes[targetIndex] ?? []),
+                ...hitGulls,
+            ];
+            const hitCount = Math.max(1, hitPoints.length);
+            this.params.lastTargetX =
+                hitPoints.reduce((sum, hit) => sum + hit.params.x, 0) / hitCount;
+            this.params.lastTargetY =
+                hitPoints.reduce((sum, hit) => sum + hit.params.y, 0) / hitCount;
             return;
         }
 
@@ -435,10 +440,41 @@ export class TowerEntity extends defineEntity({
         });
     }
 
+    /** Throws the visible projectile for the attack that just happened. Presentation only. */
+    protected throwProjectile() {
+        const {towerType, level, x, y, lastTargetX, lastTargetY, lastProcessedAtMs} = this.params;
+        let kind: ProjectileKind | undefined;
+        if (towerType === TowerType.Masher) {
+            kind =
+                level >= projectileConfig.hammerLevel
+                    ? ProjectileKind.Hammer
+                    : ProjectileKind.Masher;
+        } else if (towerType === TowerType.Boiler) {
+            kind = ProjectileKind.Water;
+        } else if (towerType === TowerType.CricketTrap) {
+            kind = ProjectileKind.Cricket;
+        }
+        if (!kind) {
+            return;
+        }
+        spawnProjectile({
+            kind,
+            from: {
+                x,
+                y,
+            },
+            to: {
+                x: lastTargetX,
+                y: lastTargetY,
+            },
+            startMs: lastProcessedAtMs,
+        });
+    }
+
     /** Draws the tower art for the current time and attack phase. Presentation only. */
     public override render() {
-        const {body, beam, rangeView} = this;
-        if (!body || !beam || !rangeView) {
+        const {body, rangeView} = this;
+        if (!body || !rangeView) {
             return;
         }
 
@@ -469,6 +505,7 @@ export class TowerEntity extends defineEntity({
             this.state.runState.status === RunStatus.Playing
         ) {
             playSfx(processSfx[towerType]);
+            this.throwProjectile();
         }
         this.lastSeenProcessedAtMs = lastProcessedAtMs;
 
@@ -489,25 +526,5 @@ export class TowerEntity extends defineEntity({
                 builtAtMs: this.params.builtAtMs,
             }),
         });
-
-        // The Masher hits from a distance, so a faint line shows which potato it squashed.
-        beam.clear();
-        if (
-            towerTypes[towerType].behavior === 'mash' &&
-            !towerTypes[towerType].areaOfEffect &&
-            lastProcessedAtMs >= 0 &&
-            sinceMs >= 0 &&
-            sinceMs < towerArtConfig.attackMs[towerType] * 0.5
-        ) {
-            drawCozyLine(beam, {
-                path(graphics) {
-                    graphics.moveTo(0, 0).lineTo(lastTargetX - x, lastTargetY - y);
-                },
-                color: cozyPalette.cream,
-                width: 4,
-                outline: true,
-                alpha: 0.7,
-            });
-        }
     }
 }

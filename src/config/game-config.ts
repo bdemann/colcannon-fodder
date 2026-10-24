@@ -202,8 +202,30 @@ export const towerArtConfig = {
         'cricket-trap': 400,
         swiper: 500,
     },
-    /** How high the thrown cricket's arc peaks. */
+} as const;
+
+/** Thrown projectiles (render-only): towers visibly lob their attacks at the target. */
+export const projectileConfig = {
+    /** How long a masher or water blob takes to reach its target. */
+    flightMs: 180,
+    /** The cricket keeps its slower, lazier arc. */
+    cricketFlightMs: 400,
+    /** At most this many are alive at once; the oldest is dropped first. */
+    maxLive: 40,
+    /** Arc height as a fraction of the flight distance, clamped to a min and max. */
+    arcFraction: 0.25,
+    arcMinPx: 18,
+    arcMaxPx: 60,
+    /** The cricket's arc height. */
     cricketArcPx: 30,
+    /** Full turns a masher or hammer spins during its flight. */
+    spinTurns: 2,
+    /** How long the tiny impact puff lasts after landing. */
+    puffMs: 160,
+    /** Size of the thrown pieces relative to the lab drawings. */
+    scale: 0.85,
+    /** Tower level at which the Masher throws a meat hammer. */
+    hammerLevel: 3,
 } as const;
 
 /** Per-type tower tunables. Keyed by `TowerType` values from `src/tower/tower-type.ts`. */
