@@ -4,6 +4,7 @@ import {bossConfig} from '../config/boss-config.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {createSessionUi, type SessionUi} from '../game-state/multiplayer-session.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
 import {getPrestigeStars} from '../quality/quality.js';
@@ -50,6 +51,8 @@ export type HudSnapshot = {
     isCoop: boolean;
     /** True when this client owns slot 0, the only one that can restart or change level in co-op. */
     isHost: boolean;
+    /** The main menu, room list and connection status. */
+    session: SessionUi;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
     speed: number;
     /** True while the speed is armed to drop back to 1x at the next income. */
@@ -175,6 +178,12 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const lastServing = runState.lastServing;
     const lastOrderEvent = runState.lastOrderEvent;
     const lastSteal = runState.lastSteal;
+    const session =
+        state.ui?.session ??
+        createSessionUi({
+            enabled: false,
+            search: '',
+        });
     const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
     const playerCount = getPlayerCount(runState);
     const prestigeStars = getPrestigeStars(runState.recentQualities);
@@ -201,6 +210,14 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                   `Player ${runState.pausedBySlot + 1}`)
                 : undefined,
         isCoop: isCoopRun(runState),
+        session: {
+            ...session,
+            rooms: session.rooms?.map((room) => {
+                return {
+                    ...room,
+                };
+            }),
+        },
         isHost:
             getSlotForClient(
                 runState,

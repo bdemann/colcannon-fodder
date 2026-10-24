@@ -5,6 +5,8 @@
  *
  * Usage: node scripts/screenshot.js <url> <output.png> [action...]
  *
+ * The script adds `?solo` to the URL so the main menu is skipped; pass `?menu` to see the menu.
+ *
  * Actions run in order. Coordinates are browser pixels in a 1280x720 viewport (the game world is
  * 1920x1080, so world = browser * 1.5):
  *
@@ -16,6 +18,7 @@
  * - `eval:CODE` runs JavaScript in the page, for example `eval:gameState.runState.status='lost'`
  */
 import {chromium} from 'playwright';
+import {parseUrl} from 'url-vir';
 
 const [
     url = 'http://localhost:5173/',
@@ -38,7 +41,12 @@ page.on('console', (message) => {
 });
 page.on('pageerror', (error) => errors.push(error.message));
 
-await page.goto(url);
+/** `?solo` skips the Singleplayer / Co-op main menu so scripted runs start playing right away. */
+const pageUrl = parseUrl(url);
+if (!pageUrl.searchParams.has('menu')) {
+    pageUrl.searchParams.set('solo', '1');
+}
+await page.goto(pageUrl.href);
 await page.waitForTimeout(3000);
 
 for (const action of actions) {
