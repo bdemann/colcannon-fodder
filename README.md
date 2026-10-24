@@ -43,6 +43,9 @@ Each potato has a mash meter, and the Masher empties it. The other towers set it
 Towers cost coins. Click a built tower to **upgrade** it (3 levels: more damage and range, faster
 cooldown), **sell** it for half of what you spent, or **service** it.
 
+The Masher, Boiling Pot and Cricket Trap visibly throw things: a spinning potato masher (a meat
+hammer from level 3), a blob of boiling water and a cricket. It is purely visual.
+
 ### Wear
 
 Every tower wears out with use. A worn tower works at half strength until you service it for coins
