@@ -1,3 +1,4 @@
+import {comboDisplayConfig} from '../../config/game-config.js';
 import {qualityConfig} from '../../config/quality-config.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {getDamageScale, getTowerStats} from '../tower-type.js';
@@ -86,6 +87,11 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
         ) {
             continue;
         }
+        potato.recordHit({
+            towerType: tower.params.towerType,
+            tower: tower.params,
+            minIntervalMs: comboDisplayConfig.continuousHitIntervalMs,
+        });
         potato.params.mashHp = Math.max(
             0,
             potato.params.mashHp - qualityConfig.microwaveDamagePerSecond * damageScale * seconds,

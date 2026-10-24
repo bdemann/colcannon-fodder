@@ -1,4 +1,5 @@
 import {type Graphics} from '@antha/graphics-2d';
+import {comboDisplayConfig} from '../config/game-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {Topping, toppingDefinitions, type PotatoToppings} from '../order/topping.js';
 import {type PotatoProcessing} from '../run/run-state.js';
@@ -39,6 +40,9 @@ const potatoColors = {
         fill: '#ffd700',
         stroke: '#b8860b',
     },
+    bladeStroke: '#c0c8d0',
+    bladeHighlight: '#ffffff',
+    softDrop: '#3aa0ff',
 } as const;
 
 /** Eye dot positions, relative to the potato's center. */
@@ -104,6 +108,12 @@ export function drawPotato({
             .fill({
                 color: potatoColors.meterFill,
             });
+        drawStatusIcons({
+            graphics,
+            processing,
+            radius,
+            meterWidth: meter.width,
+        });
     }
 
     if (progress >= 0.5) {
@@ -245,6 +255,61 @@ function drawCrown(graphics: Graphics, radius: number) {
             color: potatoColors.crown.stroke,
             width: 3,
         });
+}
+
+/**
+ * Draws the active effects above the mash meter, left to right: a blade for cut, then a water drop
+ * for soft (boiled). A fully prepped potato shows both.
+ */
+function drawStatusIcons({
+    graphics,
+    processing,
+    radius,
+    meterWidth,
+}: Readonly<{
+    graphics: Graphics;
+    processing: Readonly<PotatoProcessing>;
+    radius: number;
+    meterWidth: number;
+}>) {
+    const size = comboDisplayConfig.iconSizePx;
+    const top = -radius - meterGapPx - size - 3;
+    let left = -meterWidth / 2;
+
+    if (processing.cut) {
+        graphics
+            .moveTo(left + 1, top + size - 1)
+            .lineTo(left + size - 1, top + 1)
+            .stroke({
+                color: potatoColors.bladeStroke,
+                width: 4,
+            });
+        graphics
+            .moveTo(left + 2, top + size - 3)
+            .lineTo(left + size - 3, top + 2)
+            .stroke({
+                color: potatoColors.bladeHighlight,
+                width: 1.5,
+            });
+        left += size + 4;
+    }
+    if (processing.cooked) {
+        graphics.circle(left + size / 2, top + size * 0.68, size * 0.32).fill({
+            color: potatoColors.softDrop,
+        });
+        graphics
+            .poly([
+                left + size / 2,
+                top,
+                left + size * 0.2,
+                top + size * 0.62,
+                left + size * 0.8,
+                top + size * 0.62,
+            ])
+            .fill({
+                color: potatoColors.softDrop,
+            });
+    }
 }
 
 /** Draws the hand-applied toppings on the potato. Gravy goes first so the rest sit on top. */

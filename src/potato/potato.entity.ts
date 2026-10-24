@@ -4,9 +4,10 @@ import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
+import {Text} from 'pixi.js';
 import {bossConfig} from '../config/boss-config.js';
 import {doorConfig} from '../config/door-config.js';
-import {potatoSizeConfig} from '../config/game-config.js';
+import {comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
 import {capQueuedDistance} from '../door/queue.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
@@ -14,7 +15,8 @@ import {type PotatoToppings} from '../order/topping.js';
 import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
-import {getMashProgress} from './mash.js';
+import {type TowerType} from '../tower/tower-type.js';
+import {getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
 import {PotatoSize} from './potato-size.js';
 import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
 
@@ -51,6 +53,13 @@ export class PotatoEntity extends defineEntity({
             scallions: false,
             cabbage: false,
             gravy: false,
+            /** The latest hit, for the floating damage number. Presentation only. */
+            lastHitDamage: 0,
+            /** Cut x soft multiplier applied by the latest hit (1 = none). */
+            lastHitMultiplier: 1,
+            /** `runState.elapsedMs` of the latest hit, or -1. */
+            lastHitAtMs: -1,
+            lastHitTowerType: '',
         }),
     ),
     paramsMap: {
@@ -66,6 +75,9 @@ export class PotatoEntity extends defineEntity({
 }) {
     /** Which look is currently drawn, so we only redraw when it changes. */
     protected drawnKey = '';
+
+    /** The floating hit number, created on the first hit. */
+    protected hitText: Text | undefined;
 
     public override createView(): ViewCreation2d {
         this.drawnKey = this.getLookKey();
@@ -88,6 +100,79 @@ export class PotatoEntity extends defineEntity({
                 crown: this.params.size === PotatoSize.King,
             }),
         };
+    }
+
+    /**
+     * Records the hit about to be applied (call before `applyTowerHit`, which changes the state the
+     * multiplier depends on). With `minIntervalMs`, a hit within that time of the last one is
+     * skipped, so continuous towers don't spam numbers.
+     */
+    public recordHit({
+        towerType,
+        tower,
+        minIntervalMs = 0,
+    }: Readonly<{
+        towerType: TowerType;
+        tower: Readonly<{level?: number; wear?: number}>;
+        minIntervalMs?: number;
+    }>) {
+        const now = this.state.runState.elapsedMs;
+        if (this.params.lastHitAtMs >= 0 && now - this.params.lastHitAtMs < minIntervalMs) {
+            return;
+        }
+        const processing = this.getProcessing();
+        this.params.lastHitDamage = Math.round(getHitDamage(processing, towerType, tower));
+        this.params.lastHitMultiplier = getHitMultiplier(processing, towerType);
+        this.params.lastHitAtMs = now;
+        this.params.lastHitTowerType = towerType;
+    }
+
+    /** Shows the floating hit number for `comboDisplayConfig.hitNumberMs` after the latest hit. */
+    protected updateHitNumber() {
+        const age = this.state.runState.elapsedMs - this.params.lastHitAtMs;
+        if (this.params.lastHitAtMs < 0 || age < 0 || age >= comboDisplayConfig.hitNumberMs) {
+            if (this.hitText) {
+                this.hitText.visible = false;
+            }
+            return;
+        }
+        const tier =
+            comboDisplayConfig.tiers.find(
+                (candidate) => this.params.lastHitMultiplier >= candidate.minMultiplier,
+            ) ?? comboDisplayConfig.tiers[comboDisplayConfig.tiers.length - 1];
+        if (!tier) {
+            return;
+        }
+        const text =
+            this.hitText ??
+            new Text({
+                text: '',
+                style: {
+                    fill: '#ffffff',
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    stroke: {
+                        color: '#000000',
+                        width: 4,
+                    },
+                },
+            });
+        if (!this.hitText) {
+            text.anchor.set(0.5);
+            this.hitText = text;
+            this.view.addChild(text);
+        }
+        const progress = age / comboDisplayConfig.hitNumberMs;
+        text.visible = true;
+        text.text = `-${this.params.lastHitDamage}${tier.suffix}`;
+        text.style.fill = tier.color;
+        text.style.fontSize = tier.fontSize;
+        text.alpha = 1 - progress;
+        text.position.set(
+            0,
+            -this.getRadius() - 40 - comboDisplayConfig.hitNumberRisePx * progress,
+        );
+        text.scale.set(tier.pop ? 1 + 0.5 * Math.max(0, 1 - progress * 5) : 1);
     }
 
     protected getRadius(): number {
@@ -139,6 +224,7 @@ export class PotatoEntity extends defineEntity({
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
+        this.updateHitNumber();
         // A carried potato stays put: the gull sets x/y, and `distancePx` doesn't change, so a
         // dropped potato snaps back to its belt spot.
         if (this.params.served || this.params.carriedBySeagull) {
