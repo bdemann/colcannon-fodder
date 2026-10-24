@@ -5,10 +5,38 @@ import {type RunState, RunStatus} from '../run/run-state.js';
 import {Dish} from './dish.js';
 
 /**
- * Advances orders by `msElapsed` and mutates `runState`. `roll` returns numbers in [0, 1) (the
- * caller passes `() => state.seededRandom.next()`). Returns nothing; read runState after.
+ * Order lifetime: the configured time, but never less than a scaled belt trip down the longest
+ * path.
  */
-export function advanceOrders(runState: RunState, msElapsed: number, roll: () => number): void {
+export function getOrderLifetimeMs({
+    configuredMs,
+    pathLengthPx,
+    beltSpeedPxPerMs,
+}: {
+    configuredMs: number;
+    pathLengthPx: number;
+    beltSpeedPxPerMs: number;
+}): number {
+    const travelMs = beltSpeedPxPerMs > 0 ? pathLengthPx / beltSpeedPxPerMs : 0;
+    return Math.max(configuredMs, travelMs * orderConfig.travelTimeMultiplier);
+}
+
+/**
+ * Advances orders by `msElapsed` and mutates `runState`. `roll` returns numbers in [0, 1) (the
+ * caller passes `() => state.seededRandom.next()`). `longestPathLengthPx` scales order lifetime.
+ * Returns nothing; read runState after.
+ */
+export function advanceOrders({
+    runState,
+    msElapsed,
+    roll,
+    longestPathLengthPx,
+}: Readonly<{
+    runState: RunState;
+    msElapsed: number;
+    roll: () => number;
+    longestPathLengthPx: number;
+}>): void {
     if (runState.status !== RunStatus.Playing) {
         return;
     }
@@ -53,7 +81,13 @@ export function advanceOrders(runState: RunState, msElapsed: number, roll: () =>
                 orderId: runState.nextOrderId++,
                 dish,
                 createdAtMs: runState.elapsedMs,
-                expiresAtMs: runState.elapsedMs + settings.lifetimeMs,
+                expiresAtMs:
+                    runState.elapsedMs +
+                    getOrderLifetimeMs({
+                        configuredMs: settings.lifetimeMs,
+                        pathLengthPx: longestPathLengthPx,
+                        beltSpeedPxPerMs: runState.beltSpeedPxPerMs,
+                    }),
             });
         }
         runState.msUntilNextOrder += settings.intervalMs;

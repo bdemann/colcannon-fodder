@@ -411,6 +411,8 @@ export const orderConfig = {
     ],
     /** Delay from a wave starting to spawn until its first order. */
     firstOrderDelayMs: 3000,
+    /** An order lives at least this many belt trips, so long maps stay fair. */
+    travelTimeMultiplier: 1.6,
     /**
      * Filling an order, on top of the normal perfect serving. Score and coins scale by potato
      * value.
