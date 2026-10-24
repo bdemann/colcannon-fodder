@@ -5,6 +5,7 @@ import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Text, type Container} from 'pixi.js';
+import {addSoftShadow} from '../art/cozy.js';
 import {bossConfig} from '../config/boss-config.js';
 import {doorConfig} from '../config/door-config.js';
 import {chuteConfig, comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
@@ -18,6 +19,7 @@ import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
+import {getPotatoMotion} from './potato-motion.js';
 import {PotatoSize} from './potato-size.js';
 import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
 
@@ -98,6 +100,12 @@ export class PotatoEntity extends defineEntity({
             quality: this.params.quality,
             meter: this.getMeter(),
             crown: this.params.size === PotatoSize.King,
+            seed: this.params.potatoId,
+        });
+        addSoftShadow(view, {
+            width: radius * 2.4,
+            height: radius * 0.9,
+            offsetY: radius * 0.8,
         });
         const shadow = new Graphics({
             label: shadowLabel,
@@ -253,6 +261,7 @@ export class PotatoEntity extends defineEntity({
             quality: this.params.quality,
             meter: this.getMeter(),
             crown: this.params.size === PotatoSize.King,
+            seed: this.params.potatoId,
         });
     }
 
@@ -306,6 +315,21 @@ export class PotatoEntity extends defineEntity({
 
         this.moveToDistance();
         this.redrawIfChanged();
+        this.applyMotion();
+    }
+
+    /** Render-only wobble, bob and hit squash while riding the belt. */
+    protected applyMotion() {
+        const radius = this.getRadius();
+        const motion = getPotatoMotion({
+            elapsedMs: this.state.runState.elapsedMs,
+            potatoId: this.params.potatoId,
+            radius,
+            lastHitAtMs: this.params.lastHitAtMs,
+        });
+        this.view.rotation = motion.rotation;
+        this.view.scale.set(motion.scaleX, motion.scaleY);
+        this.view.pivot.set(0, -motion.offsetY);
     }
 
     protected moveToDistance() {
