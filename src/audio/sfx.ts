@@ -10,6 +10,7 @@ export enum Sfx {
     ServeRaw = 'serve-raw',
     Build = 'build',
     Squawk = 'squawk',
+    BossArrives = 'boss-arrives',
 }
 
 /** Smallest gain an exponential ramp can reach (it cannot reach 0). */
@@ -182,6 +183,23 @@ const tonesBySfx: Record<Exclude<Sfx, Sfx.Chop>, ReadonlyArray<ToneParams>> = {
             startSec: 0,
             durationSec: 0.12,
             startGain: 0.4,
+        },
+    ],
+    /** A low two-note fanfare. */
+    [Sfx.BossArrives]: [
+        {
+            type: 'sawtooth',
+            startHz: 110,
+            startSec: 0,
+            durationSec: 0.25,
+            startGain: 0.6,
+        },
+        {
+            type: 'sawtooth',
+            startHz: 82,
+            startSec: 0.25,
+            durationSec: 0.25,
+            startGain: 0.6,
         },
     ],
     [Sfx.Build]: [

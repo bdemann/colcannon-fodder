@@ -2,10 +2,12 @@ export enum PotatoSize {
     Small = 'small',
     Medium = 'medium',
     Large = 'large',
+    /** The Russet King boss. Only the spawner makes it; waves never roll it. */
+    King = 'king',
 }
 
 /** Chance of each size for one wave. Numbers sum to 1. */
-export type PotatoSizeWeights = Readonly<Record<PotatoSize, number>>;
+export type PotatoSizeWeights = Readonly<Record<Exclude<PotatoSize, PotatoSize.King>, number>>;
 
 const sizeOrder = [
     PotatoSize.Small,

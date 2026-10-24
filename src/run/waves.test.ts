@@ -96,6 +96,7 @@ describe(advanceWaves.name, () => {
         assert.deepEquals(advanceWaves(runState, timer, 16), [
             {
                 sizeWeights: wave1.sizeWeights,
+                bossCount: 0,
             },
         ]);
         assert.strictEquals(runState.spawnedInWave, 1);
@@ -152,5 +153,41 @@ describe(advanceWaves.name, () => {
         assert.strictEquals(getPhase(runState), 'done');
         assert.strictEquals(runState.waveIndex, lastIndex);
         assert.deepEquals(advanceWaves(runState, timer, 10_000), []);
+    });
+});
+
+describe('boss spawns', () => {
+    it('spawns the final wave boss once, at the halfway spawn', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'spawning';
+        runState.waveIndex = lastIndex;
+        const timer = {
+            msUntilNextSpawn: 0,
+        };
+        const spawns = advanceWaves(runState, timer, 1_000_000);
+        const bossSpawns = spawns
+            .map((spawn, index) => {
+                return {
+                    index,
+                    bossCount: spawn.bossCount,
+                };
+            })
+            .filter((spawn) => spawn.bossCount > 0);
+        assert.deepEquals(bossSpawns, [
+            {
+                index: Math.floor(lastWave.potatoCount / 2),
+                bossCount: 1,
+            },
+        ]);
+    });
+
+    it('spawns no boss in earlier waves', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'spawning';
+        const timer = {
+            msUntilNextSpawn: 0,
+        };
+        const spawns = advanceWaves(runState, timer, 1_000_000);
+        assert.isTrue(spawns.every((spawn) => spawn.bossCount === 0));
     });
 });

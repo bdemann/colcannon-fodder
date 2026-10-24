@@ -26,6 +26,7 @@ let lastSeenTowerCount: number | undefined;
  */
 let hadSelectionLastTick = false;
 let lastSeenStealAtMs: number | undefined;
+let lastSeenBossSpawnAtMs = -1;
 
 /** Plays serving and build sounds. Presentation only, so it lives here and not in the simulation. */
 function playHudSounds(state: Partial<FullGameState>) {
@@ -46,6 +47,14 @@ function playHudSounds(state: Partial<FullGameState>) {
     if (playing && runState.lastSteal && runState.lastSteal.atMs !== lastSeenStealAtMs) {
         playSfx(Sfx.ServeRaw);
     }
+    if (
+        playing &&
+        runState.lastBossSpawnAtMs >= 0 &&
+        runState.lastBossSpawnAtMs !== lastSeenBossSpawnAtMs
+    ) {
+        playSfx(Sfx.BossArrives);
+    }
+    lastSeenBossSpawnAtMs = runState.lastBossSpawnAtMs;
     lastSeenStealAtMs = runState.lastSteal?.atMs;
     lastSeenServedAtMs = lastServing?.servedAtMs;
     lastSeenTowerCount = towerCount;

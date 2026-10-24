@@ -1,5 +1,6 @@
 import {css, defineElement, html} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
+import {HudBossBanner} from './hud-boss-banner.element.js';
 import {HudCoinPopups} from './hud-coin-popups.element.js';
 import {HudMute} from './hud-mute.element.js';
 import {HudOrders} from './hud-orders.element.js';
@@ -65,6 +66,9 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudPause}>
+            <${HudBossBanner.assign({
+                snapshot: inputs.snapshot,
+            })}></${HudBossBanner}>
             <${HudRunOver.assign({
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,

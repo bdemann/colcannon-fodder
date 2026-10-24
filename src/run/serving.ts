@@ -147,6 +147,8 @@ export function servePotato(
         timesSentBack: number;
         /** The potato's quality, 0 to 100. Scales a perfect serving's score and coins. */
         quality: number;
+        /** Multiplies the satisfaction lost on a bad serving (bosses). Defaults to 1. */
+        penaltyMultiplier?: number;
     }>,
 ): {result: ServingResult; sentBack: boolean} {
     const result = evaluatePotato(serving.processing);
@@ -171,8 +173,9 @@ export function servePotato(
     }
     const satisfactionDelta = isPerfect
         ? getSatisfactionDelta(result, serving.processing)
-        : getSatisfactionDelta(result, serving.processing) -
-          doorConfig.angerStep * runState.sendBackStreak;
+        : (getSatisfactionDelta(result, serving.processing) -
+              doorConfig.angerStep * runState.sendBackStreak) *
+          (serving.penaltyMultiplier ?? 1);
     if (isPerfect) {
         runState.sendBackStreak = 0;
     } else {

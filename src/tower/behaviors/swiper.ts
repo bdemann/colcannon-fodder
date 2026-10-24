@@ -1,6 +1,7 @@
 import {potatoSizeConfig} from '../../config/game-config.js';
 import {swiperConfig} from '../../config/swiper-config.js';
 import {getPath, getPositionAlongPath} from '../../level/level.js';
+import {PotatoSize} from '../../potato/potato-size.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
@@ -101,7 +102,7 @@ export function updateSwiper(tower: TowerEntity, msSinceLastExecute: number): vo
 
     for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
         const {params} = potato;
-        if (params.served || params.carriedBySeagull) {
+        if (params.served || params.carriedBySeagull || params.size === PotatoSize.King) {
             continue;
         }
         if (

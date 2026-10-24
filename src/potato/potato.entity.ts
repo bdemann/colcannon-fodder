@@ -4,6 +4,7 @@ import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
+import {bossConfig} from '../config/boss-config.js';
 import {doorConfig} from '../config/door-config.js';
 import {potatoSizeConfig} from '../config/game-config.js';
 import {capQueuedDistance} from '../door/queue.js';
@@ -15,7 +16,7 @@ import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {getMashProgress} from './mash.js';
 import {PotatoSize} from './potato-size.js';
-import {drawPotato, getRubberyStep} from './potato-view.js';
+import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
 
 /** A potato walking along a path toward the restaurant. Served (and removed) when it arrives. */
 export class PotatoEntity extends defineEntity({
@@ -83,6 +84,8 @@ export class PotatoEntity extends defineEntity({
                 radius: this.getRadius(),
                 toppings: this.getToppings(),
                 quality: this.params.quality,
+                meter: this.getMeter(),
+                crown: this.params.size === PotatoSize.King,
             }),
         };
     }
@@ -125,7 +128,14 @@ export class PotatoEntity extends defineEntity({
             radius: this.getRadius(),
             toppings: this.getToppings(),
             quality: this.params.quality,
+            meter: this.getMeter(),
+            crown: this.params.size === PotatoSize.King,
         });
+    }
+
+    /** Bosses get a bigger mash meter. */
+    protected getMeter() {
+        return this.params.size === PotatoSize.King ? bossConfig.meter : defaultMeter;
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -186,6 +196,8 @@ export class PotatoEntity extends defineEntity({
             toppings: this.getToppings(),
             timesSentBack: this.params.timesSentBack,
             quality: this.params.quality,
+            penaltyMultiplier:
+                this.params.size === PotatoSize.King ? bossConfig.penaltyMultiplier : 1,
         });
 
         if (sentBack) {
