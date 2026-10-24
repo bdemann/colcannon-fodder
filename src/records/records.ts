@@ -28,6 +28,11 @@ export type HallEntry = {
 
 export type Records = {
     levels: Record<string, Record<RunMode, ModeRecord>>;
+    /**
+     * Co-op bests, kept apart from `levels` so a team run never replaces a solo best. Keyed by
+     * `getCoopKey` (level, mode and player count). Co-op runs are not added to the hall.
+     */
+    coop: Record<string, ModeRecord>;
     hall: HallEntry[];
 };
 
@@ -40,7 +45,14 @@ export type RunResult = {
     stars: number;
     wavesReached: number;
     dateMs: number;
+    /** Players in the run. Above 1 the result goes in the co-op bucket. Defaults to 1. */
+    playerCount?: number;
 };
+
+/** The key of a co-op record: one entry per level, mode and player count. */
+export function getCoopKey(levelId: string, mode: RunMode, playerCount: number): string {
+    return `${levelId}|${mode}|${playerCount}`;
+}
 
 export function createEmptyModeRecord(): ModeRecord {
     return {
@@ -55,6 +67,7 @@ export function createEmptyModeRecord(): ModeRecord {
 export function createEmptyRecords(): Records {
     return {
         levels: {},
+        coop: {},
         hall: [],
     };
 }
@@ -66,6 +79,21 @@ export function getModeRecord(
     mode: RunMode,
 ): ModeRecord {
     return records.levels[levelId]?.[mode] ?? createEmptyModeRecord();
+}
+
+/** The record a run competes against: its co-op bucket for 2+ players, otherwise the solo best. */
+export function getRunRecord(
+    records: Readonly<Records>,
+    run: Readonly<Pick<RunResult, 'levelId' | 'mode' | 'playerCount'>>,
+): ModeRecord {
+    const playerCount = run.playerCount ?? 1;
+    if (playerCount > 1) {
+        return (
+            records.coop[getCoopKey(run.levelId, run.mode, playerCount)] ?? createEmptyModeRecord()
+        );
+    }
+
+    return getModeRecord(records, run.levelId, run.mode);
 }
 
 function toCount(value: unknown): number {
@@ -122,6 +150,12 @@ export function parseRecords(raw: string | null | undefined): Records {
                 endless: parseModeRecord(modeData['endless']),
             };
         }
+        for (const [
+            key,
+            rawRecord,
+        ] of Object.entries(toObject(data['coop']))) {
+            records.coop[key] = parseModeRecord(rawRecord);
+        }
         if (Array.isArray(data['hall'])) {
             records.hall = (data['hall'] as unknown[])
                 .map(parseHallEntry)
@@ -137,7 +171,7 @@ export function parseRecords(raw: string | null | undefined): Records {
 
 /** True when the run beats the stored best score, stars or (endless) waves for its level and mode. */
 export function isNewBest(records: Readonly<Records>, run: Readonly<RunResult>): boolean {
-    const best = getModeRecord(records, run.levelId, run.mode);
+    const best = getRunRecord(records, run);
 
     return (
         run.score > best.bestScore ||
@@ -152,7 +186,24 @@ function isChamp(run: Readonly<RunResult>): boolean {
 
 /** Returns new records with the run folded in. Pure. */
 export function mergeRunIntoRecords(records: Readonly<Records>, run: Readonly<RunResult>): Records {
-    const best = getModeRecord(records, run.levelId, run.mode);
+    const playerCount = run.playerCount ?? 1;
+    const best = getRunRecord(records, run);
+    const updated: ModeRecord = {
+        bestScore: Math.max(best.bestScore, run.score),
+        bestStars: Math.max(best.bestStars, run.stars),
+        wins: best.wins + (run.won ? 1 : 0),
+        champs: best.champs + (isChamp(run) ? 1 : 0),
+        bestWaves: Math.max(best.bestWaves, run.wavesReached),
+    };
+    if (playerCount > 1) {
+        return {
+            ...records,
+            coop: {
+                ...records.coop,
+                [getCoopKey(run.levelId, run.mode, playerCount)]: updated,
+            },
+        };
+    }
     const previousModes = records.levels[run.levelId];
     const hall = [...records.hall];
     if (run.score > 0) {
@@ -172,15 +223,10 @@ export function mergeRunIntoRecords(records: Readonly<Records>, run: Readonly<Ru
             [run.levelId]: {
                 campaign: previousModes?.campaign ?? createEmptyModeRecord(),
                 endless: previousModes?.endless ?? createEmptyModeRecord(),
-                [run.mode]: {
-                    bestScore: Math.max(best.bestScore, run.score),
-                    bestStars: Math.max(best.bestStars, run.stars),
-                    wins: best.wins + (run.won ? 1 : 0),
-                    champs: best.champs + (isChamp(run) ? 1 : 0),
-                    bestWaves: Math.max(best.bestWaves, run.wavesReached),
-                },
+                [run.mode]: updated,
             },
         },
+        coop: records.coop,
         hall: hall.slice(0, recordsConfig.hallSize),
     };
 }
@@ -232,7 +278,12 @@ const savedRuns = new WeakMap<object, boolean>();
  */
 export function saveFinishedRun(
     runState: Readonly<RunState>,
-    result: Readonly<{score: number; stars: number; wavesReached: number}>,
+    result: Readonly<{
+        score: number;
+        stars: number;
+        wavesReached: number;
+        playerCount?: number;
+    }>,
 ): boolean | undefined {
     if (runState.status !== RunStatus.Won && runState.status !== RunStatus.Lost) {
         return undefined;

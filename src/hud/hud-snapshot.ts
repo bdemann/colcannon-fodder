@@ -17,6 +17,7 @@ import {
     type RunStatus,
     type ServingResult,
 } from '../run/run-state.js';
+import {getPlayerCount, rankSlots, type SlotContribution} from '../run/slot-ranking.js';
 import {hasTowerIcons} from '../tower/tower-icons.js';
 import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -70,6 +71,10 @@ export type HudSnapshot = {
     }>;
     /** Sum of every slot's score. */
     totalScore: number;
+    /** Players in the run; 1 in singleplayer, where the per-player column is hidden. */
+    playerCount: number;
+    /** Every player ranked by points, highest first. Tied top scorers are all crowned. */
+    contributions: SlotContribution[];
     potatoesServed: number;
     /** 1-based number of the current or upcoming wave. */
     waveNumber: number;
@@ -171,12 +176,14 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const lastOrderEvent = runState.lastOrderEvent;
     const lastSteal = runState.lastSteal;
     const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
+    const playerCount = getPlayerCount(runState);
     const prestigeStars = getPrestigeStars(runState.recentQualities);
     // Saves the finished run exactly once (UI side), before `records` is read below.
     const newBest = saveFinishedRun(runState, {
         score: totalScore,
         stars: prestigeStars,
         wavesReached: getWavesReached(runState),
+        playerCount,
     });
 
     return {
@@ -219,6 +226,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                 };
             }),
         totalScore,
+        playerCount,
+        contributions: rankSlots(runState),
         potatoesServed: runState.potatoesServed,
         waveNumber: runState.waveIndex + 1,
         waveCount: runState.mode === 'endless' ? 0 : waveConfig.waves.length,
