@@ -18,7 +18,13 @@ import {
     RunStatus,
     ServingResult,
 } from './run-state.js';
-import {evaluatePotato, getSatisfactionDelta, servePotato, stealPotato} from './serving.js';
+import {
+    evaluatePotato,
+    getSatisfactionDelta,
+    isRunCleared,
+    servePotato,
+    stealPotato,
+} from './serving.js';
 
 const perfect: PotatoProcessing = {
     cut: true,
@@ -235,7 +241,9 @@ describe(servePotato.name, () => {
 
     it('wins the run after serving every potato', () => {
         const runState = createInitialRunState();
-        for (let i = 0; i < runState.potatoesPerRun - 1; i++) {
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 5;
+        for (let i = 0; i < runState.potatoesSpawned - 1; i++) {
             servePotato(runState, {
                 processing: perfect,
                 ownerSlot: 0,
@@ -255,12 +263,14 @@ describe(servePotato.name, () => {
             quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Won);
-        assert.strictEquals(runState.potatoesServed, runState.potatoesPerRun);
+        assert.strictEquals(runState.potatoesServed, runState.potatoesSpawned);
     });
 
     it('counts losing on the last potato as a loss', () => {
         const runState = createInitialRunState();
-        runState.potatoesServed = runState.potatoesPerRun - 1;
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 5;
+        runState.potatoesServed = 4;
         runState.satisfaction = 1;
         servePotato(runState, {
             processing: raw,
@@ -539,7 +549,8 @@ describe('servePotato coin events', () => {
 describe('win check with stolen potatoes', () => {
     it('wins when served plus stolen reaches the total (serving last)', () => {
         const runState = createInitialRunState();
-        runState.potatoesPerRun = 3;
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 3;
         stealPotato(runState);
         stealPotato(runState);
         assert.strictEquals(runState.potatoesStolen, 2);
@@ -557,7 +568,8 @@ describe('win check with stolen potatoes', () => {
 
     it('wins when the last potato is stolen', () => {
         const runState = createInitialRunState();
-        runState.potatoesPerRun = 2;
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 2;
         servePotato(runState, {
             processing: perfect,
             ownerSlot: 0,
@@ -660,7 +672,8 @@ describe('servePotato send-backs', () => {
 
     it('still wins on served plus stolen', () => {
         const runState = createInitialRunState();
-        runState.potatoesPerRun = 2;
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 2;
         stealPotato(runState);
         serve(runState, 0);
         assert.strictEquals(runState.status, RunStatus.Playing);
@@ -782,5 +795,58 @@ describe('servePotato bosses', () => {
             penaltyMultiplier: 3,
         });
         assert.strictEquals(runState.scoreBySlot[0], 600);
+    });
+});
+
+describe(isRunCleared.name, () => {
+    it('is not cleared while waves are still spawning', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'spawning';
+        runState.potatoesSpawned = 2;
+        runState.potatoesServed = 2;
+        assert.isFalse(isRunCleared(runState));
+    });
+
+    it('is not cleared while a potato is still on the belt, falling or a boss', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 4;
+        runState.potatoesServed = 2;
+        runState.potatoesStolen = 1;
+        assert.isFalse(isRunCleared(runState));
+    });
+
+    it('is not cleared while clump potatoes are still queued', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 2;
+        runState.potatoesServed = 2;
+        runState.potatoesPending = 1;
+        assert.isFalse(isRunCleared(runState));
+    });
+
+    it('is cleared once the last wave is done and everything was served or stolen', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 4;
+        runState.potatoesServed = 3;
+        runState.potatoesStolen = 1;
+        assert.isTrue(isRunCleared(runState));
+    });
+
+    it('does not win by serving when more extras spawned than were served', () => {
+        const runState = createInitialRunState();
+        runState.wavePhase = 'done';
+        runState.potatoesSpawned = 3;
+        runState.potatoesServed = 1;
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: 1,
+            toppings: createNoToppings(),
+            timesSentBack: 0,
+            quality: 100,
+        });
+        assert.strictEquals(runState.status, RunStatus.Playing);
     });
 });

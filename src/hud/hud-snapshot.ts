@@ -42,7 +42,6 @@ export type HudSnapshot = {
     /** Sum of every slot's score. */
     totalScore: number;
     potatoesServed: number;
-    potatoesPerRun: number;
     /** 1-based number of the current or upcoming wave. */
     waveNumber: number;
     waveCount: number;
@@ -163,7 +162,6 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
             }),
         totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
         potatoesServed: runState.potatoesServed,
-        potatoesPerRun: runState.potatoesPerRun,
         waveNumber: runState.waveIndex + 1,
         waveCount: waveConfig.waves.length,
         wavePhase: runState.wavePhase,
