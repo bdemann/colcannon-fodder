@@ -70,7 +70,32 @@ export const HudPause = defineElement<{
             opacity: 0.8;
         }
 
+        .volume {
+            align-items: center;
+            display: flex;
+            font-size: 28px;
+            gap: 24px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .volume label {
+            text-align: right;
+            width: 260px;
+        }
+
+        .volume input {
+            height: 40px;
+            width: 700px;
+        }
+
+        .volume .percent {
+            text-align: left;
+            width: 100px;
+        }
+
         .buttons {
+            margin-top: 24px;
             display: flex;
             gap: 32px;
             justify-content: center;
@@ -110,6 +135,47 @@ export const HudPause = defineElement<{
                                   })}
                               </div>
                               <div class="controls">${controlsText}</div>
+                              ${(
+                                  [
+                                      [
+                                          'music',
+                                          'Music',
+                                      ],
+                                      [
+                                          'effects',
+                                          'Sound effects',
+                                      ],
+                                  ] as const
+                              ).map(
+                                  ([
+                                      kind,
+                                      label,
+                                  ]) => {
+                                      const percent = Math.round(snapshot.volumes[kind] * 100);
+                                      return html`
+                                          <div class="volume">
+                                              <label>${label}</label>
+                                              <input
+                                                  type="range"
+                                                  min="0"
+                                                  max="100"
+                                                  .value=${String(percent)}
+                                                  @input=${(event: Event) => {
+                                                      if (
+                                                          event.target instanceof HTMLInputElement
+                                                      ) {
+                                                          inputs.actions.setVolume(
+                                                              kind,
+                                                              Number(event.target.value) / 100,
+                                                          );
+                                                      }
+                                                  }}
+                                              />
+                                              <span class="percent">${percent}%</span>
+                                          </div>
+                                      `;
+                                  },
+                              )}
                               <div class="buttons">
                                   <button
                                       @click=${() => {

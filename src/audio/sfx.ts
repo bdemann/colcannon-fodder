@@ -1,4 +1,5 @@
 import {sfxConfig} from '../config/game-config.js';
+import {getVolumes} from './volume-settings.js';
 
 export enum Sfx {
     Chop = 'chop',
@@ -31,6 +32,7 @@ function getAudio(): Audio | undefined {
         masterGain.gain.value = sfxConfig.volume;
         masterGain.connect(context.destination);
     }
+    masterGain.gain.value = muted ? 0 : getVolumes().effects * sfxConfig.volume;
     if (context.state === 'suspended') {
         void context.resume().catch(() => {});
     }

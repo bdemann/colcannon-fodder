@@ -1,4 +1,5 @@
 import {isMuted} from '../audio/sfx.js';
+import {getVolumes} from '../audio/volume-settings.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
@@ -79,6 +80,8 @@ export type HudSnapshot = {
     prestigeStars: number;
     /** Whether sound effects are muted. */
     muted: boolean;
+    /** Music and sound effect volumes, 0 to 1. */
+    volumes: {music: number; effects: number};
 };
 
 /** Describes the selected built tower for the tower panel, if one is selected and still exists. */
@@ -178,5 +181,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                 : undefined,
         prestigeStars: getPrestigeStars(runState.recentQualities),
         muted: isMuted(),
+        volumes: {
+            ...getVolumes(),
+        },
     };
 }
