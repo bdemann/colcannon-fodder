@@ -7,11 +7,16 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Text, type Container} from 'pixi.js';
 import {addSoftShadow} from '../art/cozy.js';
 import {bossConfig} from '../config/boss-config.js';
-import {chuteConfig, comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
+import {
+    beltLaneConfig,
+    chuteConfig,
+    comboDisplayConfig,
+    potatoSizeConfig,
+} from '../config/game-config.js';
 import {potatoMotionConfig} from '../config/potato-motion-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getDropScale, tickDropMs} from '../level/chute.js';
-import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
+import {getPath, getPathLength, getPositionAlongPathWithOffset} from '../level/level.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
@@ -41,6 +46,8 @@ export class PotatoEntity extends defineEntity({
             pathId: '',
             /** How far along the path it is. */
             distancePx: 0,
+            /** Sideways offset from the belt's center line, picked at spawn. */
+            laneOffsetPx: 0,
             /**
              * Ms left falling from a drop chute. While above 0 the potato sits at its chute, can't
              * be targeted, topped or stolen, and doesn't move along the belt.
@@ -362,9 +369,15 @@ export class PotatoEntity extends defineEntity({
 
     protected moveToDistance() {
         const path = getPath(this.state.level, this.params.pathId);
-        const position = getPositionAlongPath(path, this.params.distancePx);
+        const position = getPositionAlongPathWithOffset({
+            path,
+            distancePx: this.params.distancePx,
+            offsetPx: this.params.laneOffsetPx,
+        });
         this.params.x = position.x;
         this.params.y = position.y;
+        // Potatoes further along draw on top, so overlaps look right.
+        this.view.zIndex = this.params.distancePx * beltLaneConfig.drawOrderPerPx;
     }
 
     /** A presentation-only ghost hops toward the restaurant while the real potato is removed. */

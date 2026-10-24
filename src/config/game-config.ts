@@ -168,6 +168,14 @@ export const chuteConfig = {
     startScale: 2,
 } as const;
 
+/** Potatoes ride at a sideways offset from the belt's center line so they can sit side by side. */
+export const beltLaneConfig = {
+    /** Gap kept between a potato's edge and the belt's edge. */
+    edgeMarginPx: 6,
+    /** ZIndex per px of belt travel, so potatoes further along draw on top (stays below 1). */
+    drawOrderPerPx: 0.0001,
+} as const;
+
 /** Seagulls: potato thieves. Some fly, some walk. */
 export const seagullConfig = {
     hp: 60,
