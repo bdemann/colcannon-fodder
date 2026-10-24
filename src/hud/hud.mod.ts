@@ -4,7 +4,7 @@ import {GameAudioChannel} from '../audio/game-audio.js';
 import {isMuted, playSfx, setMuted, Sfx} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
 import {type FullGameState} from '../game-state/game-state.js';
-import {RunStatus, ServingResult} from '../run/run-state.js';
+import {isCoopRun, RunStatus, ServingResult} from '../run/run-state.js';
 import {ensureTowerIcons} from '../tower/tower-icons.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getHudActions} from './hud-actions.js';
@@ -69,7 +69,8 @@ export const hudMod = defineAnthaMod<FullGameState>({
             state.runState &&
             (state.runState.status === RunStatus.Won || state.runState.status === RunStatus.Lost) &&
             state.ui &&
-            (state.ui.keys.includes('r') || state.ui.keys.includes('R'))
+            (state.ui.keys.includes('r') || state.ui.keys.includes('R')) &&
+            createHudSnapshot(state).isHost
         ) {
             getHudActions(state).restartRun();
         }
@@ -81,10 +82,16 @@ export const hudMod = defineAnthaMod<FullGameState>({
             if (pausePressed || escapePressed) {
                 getHudActions(state).togglePause();
             }
-            if (state.ui.keys.some((key) => key === 'f' || key === 'F')) {
+            if (
+                !isCoopRun(state.runState) &&
+                state.ui.keys.some((key) => key === 'f' || key === 'F')
+            ) {
                 getHudActions(state).cycleSpeed();
             }
-            if (state.ui.keys.some((key) => key === 'g' || key === 'G')) {
+            if (
+                !isCoopRun(state.runState) &&
+                state.ui.keys.some((key) => key === 'g' || key === 'G')
+            ) {
                 getHudActions(state).speedUntilIncome();
             }
         }

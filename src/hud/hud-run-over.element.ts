@@ -14,6 +14,10 @@ export const HudRunOver = defineElement<{
 }>()({
     tagName: 'hud-run-over',
     styles: css`
+        [hidden] {
+            display: none !important;
+        }
+
         :host {
             display: block;
         }
@@ -150,6 +154,7 @@ export const HudRunOver = defineElement<{
                             : ` · 🏆 ${best.champs}`}
                     </div>
                     <button
+                        ?hidden=${!snapshot.isHost}
                         @click=${() => {
                             inputs.actions.restartRun();
                         }}

@@ -6,7 +6,7 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
-import {type RunMode} from '../run/run-state.js';
+import {getSlotForClient, isCoopRun, type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -44,6 +44,17 @@ export type HudActions = {
     /** Sets the music or sound effects volume (0 to 1) and saves it. */
     setVolume(kind: VolumeKind, value: number): void;
 };
+
+/** In co-op only the host (slot 0) may restart or change level; the handler enforces it too. */
+function canControlRun(state: Partial<FullGameState>): boolean {
+    return (
+        !isCoopRun(state.runState) ||
+        getSlotForClient(
+            state.runState,
+            state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
+        ) === 0
+    );
+}
 
 const actionsByState = new WeakMap<object, HudActions>();
 
@@ -108,12 +119,18 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         cycleSpeed() {
+            if (isCoopRun(state.runState)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.SetSpeed,
                 speed: getNextSpeed(state.runState?.speed ?? 1),
             });
         },
         speedUntilIncome() {
+            if (isCoopRun(state.runState)) {
+                return;
+            }
             if ((state.runState?.speed ?? 1) === 1) {
                 sendGameCommand(state, {
                     type: GameCommandType.SetSpeed,
@@ -126,6 +143,9 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         },
         setVolume,
         selectLevel(levelId) {
+            if (!canControlRun(state)) {
+                return;
+            }
             saveLevelChoice(levelId);
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
@@ -136,6 +156,9 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         selectMode(mode) {
+            if (!canControlRun(state)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
                 seed: randomString(),
@@ -145,6 +168,9 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
             });
         },
         restartRun() {
+            if (!canControlRun(state)) {
+                return;
+            }
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
                 seed: randomString(),

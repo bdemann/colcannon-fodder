@@ -11,6 +11,8 @@ import {getRecords, saveFinishedRun, type Records} from '../records/records.js';
 import {getWaveSettings, getWavesReached} from '../run/endless.js';
 import {
     createInitialRunState,
+    getSlotForClient,
+    isCoopRun,
     type RunMode,
     type RunStatus,
     type ServingResult,
@@ -41,6 +43,12 @@ export type HudSnapshot = {
     newBest: boolean;
     /** Whether the run is paused. */
     paused: boolean;
+    /** Name of the slot that paused the run; `undefined` when not paused or in singleplayer. */
+    pausedByName: string | undefined;
+    /** True when more than one player is in the run; fast-forward is off then. */
+    isCoop: boolean;
+    /** True when this client owns slot 0, the only one that can restart or change level in co-op. */
+    isHost: boolean;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
     speed: number;
     /** True while the speed is armed to drop back to 1x at the next income. */
@@ -180,6 +188,17 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         records: getRecords(),
         newBest: newBest ?? false,
         paused: runState.paused,
+        pausedByName:
+            runState.paused && runState.pausedBySlot != undefined && isCoopRun(runState)
+                ? (runState.slotNames[runState.pausedBySlot] ??
+                  `Player ${runState.pausedBySlot + 1}`)
+                : undefined,
+        isCoop: isCoopRun(runState),
+        isHost:
+            getSlotForClient(
+                runState,
+                state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
+            ) === 0,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
         satisfaction: runState.satisfaction,

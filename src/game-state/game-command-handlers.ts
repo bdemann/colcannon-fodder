@@ -16,7 +16,7 @@ import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
-import {createInitialRunState, getSlotForClient, RunStatus} from '../run/run-state.js';
+import {createInitialRunState, getSlotForClient, isCoopRun, RunStatus} from '../run/run-state.js';
 import {isAllowedSpeed} from '../run/speed.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
@@ -64,6 +64,12 @@ export const gameCommandHandlers: {
     async [GameCommandType.StartRun]({detail, state}) {
         if (!state.entityStore) {
             throw new Error('Cannot start run: no entity store exists.');
+            /** In co-op only the host (slot 0) can restart or change the level. */
+        } else if (
+            isCoopRun(state.runState) &&
+            getCommandSlot(state, detail.sourceClientId) !== 0
+        ) {
+            return;
         }
 
         state.entityStore.destroyAllEntities();
@@ -206,6 +212,12 @@ export const gameCommandHandlers: {
         runState.slotNames[slot] = detail.packet.name || getDefaultSlotName(slot);
         runState.connected[slot] = true;
         runState.scoreBySlot[slot] ??= 0;
+
+        /** Fast-forward is disabled in co-op, so drop any speed set before the second player joined. */
+        if (isCoopRun(runState)) {
+            runState.speed = 1;
+            runState.resetSpeedOnIncome = false;
+        }
     },
     [GameCommandType.LeaveRun]({detail, state}) {
         const slot = state.runState?.slotByClientId[detail.packet.clientId];
@@ -288,18 +300,35 @@ export const gameCommandHandlers: {
             return;
         }
     },
-    [GameCommandType.TogglePause]({state}) {
-        if (state.runState?.status === RunStatus.Playing) {
-            state.runState.paused = !state.runState.paused;
+    [GameCommandType.TogglePause]({detail, state}) {
+        if (state.runState?.status !== RunStatus.Playing) {
+            return;
+        }
+
+        const slot = getCommandSlot(state, detail.sourceClientId);
+
+        if (state.runState.paused) {
+            /** Only the pauser or the host can resume. */
+            if (slot === state.runState.pausedBySlot || slot === 0) {
+                state.runState.paused = false;
+                state.runState.pausedBySlot = undefined;
+            }
+        } else {
+            state.runState.paused = true;
+            state.runState.pausedBySlot = slot;
         }
     },
     [GameCommandType.SetSpeed]({detail, state}) {
-        if (state.runState?.status === RunStatus.Playing && isAllowedSpeed(detail.packet.speed)) {
+        if (
+            state.runState?.status === RunStatus.Playing &&
+            !isCoopRun(state.runState) &&
+            isAllowedSpeed(detail.packet.speed)
+        ) {
             state.runState.speed = detail.packet.speed;
         }
     },
     [GameCommandType.ArmSpeedReset]({state}) {
-        if (state.runState?.status === RunStatus.Playing) {
+        if (state.runState?.status === RunStatus.Playing && !isCoopRun(state.runState)) {
             state.runState.resetSpeedOnIncome = true;
         }
     },

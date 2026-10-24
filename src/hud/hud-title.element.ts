@@ -370,6 +370,7 @@ export const HudTitle = defineElement<{
                         ).map((mode) => {
                             return html`
                                 <button
+                                    ?disabled=${!inputs.snapshot.isHost}
                                     class="mode ${mode === inputs.snapshot.mode ? 'selected' : ''}"
                                     @click=${() => {
                                         inputs.actions.selectMode(mode);
@@ -384,6 +385,7 @@ export const HudTitle = defineElement<{
                         ${levels.map((level) => {
                             return html`
                                 <button
+                                    ?disabled=${!inputs.snapshot.isHost}
                                     class="level-card ${level.levelId === inputs.snapshot.levelId
                                         ? 'selected'
                                         : ''}"

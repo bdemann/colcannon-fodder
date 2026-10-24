@@ -278,3 +278,128 @@ describe('player slots', () => {
         }
     });
 });
+
+describe('shared run rules', () => {
+    async function createCoopRun() {
+        const state = createInstance();
+        await send(state, 'host', {
+            type: GameCommandType.StartRun,
+            seed: 's',
+        });
+        await send(state, 'b', {
+            type: GameCommandType.JoinRun,
+        });
+        await send(state, 'c', {
+            type: GameCommandType.JoinRun,
+        });
+        getRun(state).status = RunStatus.Playing;
+        return state;
+    }
+
+    it('ignores StartRun from a non-host and accepts it from the host', async () => {
+        const state = await createCoopRun();
+        getRun(state).coins = 12_345;
+
+        await send(state, 'b', {
+            type: GameCommandType.StartRun,
+            seed: 'other',
+        });
+        assert.strictEquals(getRun(state).coins, 12_345);
+
+        await send(state, 'host', {
+            type: GameCommandType.StartRun,
+            seed: 'other',
+        });
+        assert.notStrictEquals(getRun(state).coins, 12_345);
+    });
+
+    it('lets the pauser or the host resume, but not others', async () => {
+        const state = await createCoopRun();
+
+        await send(state, 'b', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isTrue(getRun(state).paused);
+        assert.strictEquals(getRun(state).pausedBySlot, 1);
+
+        await send(state, 'c', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isTrue(getRun(state).paused);
+
+        await send(state, 'host', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isFalse(getRun(state).paused);
+
+        await send(state, 'b', {
+            type: GameCommandType.TogglePause,
+        });
+        await send(state, 'b', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isFalse(getRun(state).paused);
+    });
+
+    it('ignores SetSpeed and ArmSpeedReset in co-op', async () => {
+        const state = await createCoopRun();
+
+        await send(state, 'host', {
+            type: GameCommandType.SetSpeed,
+            speed: 2,
+        });
+        await send(state, 'host', {
+            type: GameCommandType.ArmSpeedReset,
+        });
+
+        assert.strictEquals(getRun(state).speed, 1);
+        assert.isFalse(getRun(state).resetSpeedOnIncome);
+    });
+
+    it('resets speed to 1x when a second player joins', async () => {
+        const state = createInstance();
+        await send(state, 'host', {
+            type: GameCommandType.StartRun,
+            seed: 's',
+        });
+        getRun(state).status = RunStatus.Playing;
+        await send(state, 'host', {
+            type: GameCommandType.SetSpeed,
+            speed: 2,
+        });
+        assert.strictEquals(getRun(state).speed, 2);
+
+        await send(state, 'b', {
+            type: GameCommandType.JoinRun,
+        });
+        assert.strictEquals(getRun(state).speed, 1);
+    });
+
+    it('singleplayer: restart, pause, resume and speed work as before', async () => {
+        const state = createInstance();
+        await send(state, 'solo', {
+            type: GameCommandType.StartRun,
+            seed: 's',
+        });
+        getRun(state).status = RunStatus.Playing;
+
+        await send(state, 'solo', {
+            type: GameCommandType.SetSpeed,
+            speed: 2,
+        });
+        assert.strictEquals(getRun(state).speed, 2);
+        await send(state, 'solo', {
+            type: GameCommandType.ArmSpeedReset,
+        });
+        assert.isTrue(getRun(state).resetSpeedOnIncome);
+
+        await send(state, 'solo', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isTrue(getRun(state).paused);
+        await send(state, 'solo', {
+            type: GameCommandType.TogglePause,
+        });
+        assert.isFalse(getRun(state).paused);
+    });
+});

@@ -1,4 +1,5 @@
 import {speedConfig} from '../config/game-config.js';
+import {isCoopRun, type RunState} from './run-state.js';
 
 /**
  * How many fixed-size simulation steps to run this frame, and the accumulator left over.
@@ -14,6 +15,13 @@ export function stepsForFrame({
         steps,
         accumulator: total - steps,
     };
+}
+
+/** The speed the simulation runs at: always 1x in co-op, where fast-forward is disabled. */
+export function getEffectiveSpeed(
+    runState: Readonly<Pick<RunState, 'speed' | 'slotByClientId'>>,
+): number {
+    return isCoopRun(runState) ? 1 : runState.speed;
 }
 
 /** Whether a speed is one the player may pick. */

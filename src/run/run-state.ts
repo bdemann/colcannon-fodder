@@ -98,6 +98,8 @@ export type RunState = {
     status: RunStatus;
     /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
     paused: boolean;
+    /** The slot that paused the run, so only it (or slot 0) can resume. `undefined` when not paused. */
+    pausedBySlot: number | undefined;
     /** Fast-forward: simulation steps per frame (1, 1.5, 2 or 3). Set by `SetSpeed`. */
     speed: number;
     /** When true, the next income sets `speed` back to 1 (see `addCoins`). */
@@ -196,6 +198,16 @@ export function getSlotForClient(
     return runState.slotByClientId[clientId] ?? 0;
 }
 
+/**
+ * Whether the run is co-op: more than one client holds a slot. `StartRun` always registers the
+ * host, so a lone player (singleplayer or a host nobody has joined yet) is not co-op.
+ */
+export function isCoopRun(
+    runState: Readonly<Pick<RunState, 'slotByClientId'>> | undefined,
+): boolean {
+    return !!runState && Object.keys(runState.slotByClientId).length > 1;
+}
+
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 
 export function createInitialRunState(
@@ -207,6 +219,7 @@ export function createInitialRunState(
         mode,
         status: RunStatus.Playing,
         paused: false,
+        pausedBySlot: undefined,
         speed: 1,
         resetSpeedOnIncome: false,
         speedAccumulator: 0,
