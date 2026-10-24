@@ -164,6 +164,8 @@ export class SeagullEntity extends defineEntity({
     /** Last values seen by `render`, so each grab squawks once and the gull faces its heading. */
     protected lastSeenCarryingId = 0;
     protected lastSeenX: number | undefined;
+    /** The hp the health bar was last drawn for. */
+    protected drawnHp = Number.NaN;
     protected facing = 1;
     /**
      * A walking gull's route (cell centers) and the bookkeeping that decides when to recompute it.
@@ -892,18 +894,21 @@ export class SeagullEntity extends defineEntity({
             );
         }
 
-        hpBar.clear();
-        if (hp < seagullConfig.hp) {
-            const barWidth = 40;
-            const barY = -bodyHeightPx - 26;
-            hpBar.rect(-barWidth / 2, barY, barWidth, 6).fill({
-                color: 'rgba(0,0,0,0.6)',
-            });
-            hpBar
-                .rect(-barWidth / 2, barY, (barWidth * Math.max(0, hp)) / seagullConfig.hp, 6)
-                .fill({
-                    color: '#e53935',
+        if (this.drawnHp !== hp) {
+            this.drawnHp = hp;
+            hpBar.clear();
+            if (hp < seagullConfig.hp) {
+                const barWidth = 40;
+                const barY = -bodyHeightPx - 26;
+                hpBar.rect(-barWidth / 2, barY, barWidth, 6).fill({
+                    color: 'rgba(0,0,0,0.6)',
                 });
+                hpBar
+                    .rect(-barWidth / 2, barY, (barWidth * Math.max(0, hp)) / seagullConfig.hp, 6)
+                    .fill({
+                        color: '#e53935',
+                    });
+            }
         }
     }
 }

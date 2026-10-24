@@ -123,6 +123,8 @@ export function countProjectiles(): number {
 
 /** The one Pixi graphics all projectiles are drawn on, owned by this module. */
 let layer: Graphics | undefined;
+/** True when the layer was last cleared with nothing drawn, so an idle frame can skip the clear. */
+let layerIsEmpty = false;
 
 /**
  * Draws every live projectile from `runState.elapsedMs` each tick, so they freeze while paused and
@@ -143,7 +145,11 @@ export const projectileLayerMod = defineAnthaMod<FullGameState>({
         }
 
         const {elapsedMs} = state.runState;
+        if (liveProjectiles.length === 0 && layerIsEmpty) {
+            return;
+        }
         layer.clear();
+        layerIsEmpty = liveProjectiles.length === 0;
         for (let index = liveProjectiles.length - 1; index >= 0; index--) {
             const projectile = liveProjectiles[index];
             if (!projectile) {
