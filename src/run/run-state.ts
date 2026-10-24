@@ -74,6 +74,19 @@ export type LastOrderEvent = {
     satisfactionDelta: number;
 };
 
+/** One change to the coins, kept so the HUD can float a popup with the reason. */
+export type CoinEvent = {
+    id: number;
+    /** `runState.elapsedMs` when it happened. */
+    atMs: number;
+    /** 0 for a "no pay" event. */
+    amount: number;
+    reason: string;
+    /** World position of the popup. */
+    x: number;
+    y: number;
+};
+
 /**
  * Everything about the current run that is not an entity. It is plain JSON so it can be synced to
  * peers later. Only change it inside command handlers or entity `update` calls (both run in
@@ -86,6 +99,11 @@ export type RunState = {
     satisfaction: number;
     /** Coins shared by the whole restaurant; spent on towers, earned by servings. */
     coins: number;
+    /** Total coins earned this run (positive income only, not spending). */
+    coinsEarned: number;
+    /** The latest coin events, oldest first. */
+    coinEvents: CoinEvent[];
+    nextCoinEventId: number;
     /** Score earned per player slot. Singleplayer only uses slot 0. */
     scoreBySlot: Record<number, number>;
     potatoesSpawned: number;
@@ -142,6 +160,9 @@ export function createInitialRunState(): RunState {
         paused: false,
         satisfaction: satisfactionConfig.starting,
         coins: economyConfig.startingCoins,
+        coinsEarned: 0,
+        coinEvents: [],
+        nextCoinEventId: 1,
         scoreBySlot: {
             0: 0,
         },

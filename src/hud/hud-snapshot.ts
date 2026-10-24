@@ -23,6 +23,18 @@ export type HudSnapshot = {
     satisfaction: number;
     maxSatisfaction: number;
     coins: number;
+    /** Total coins earned this run. */
+    coinsEarned: number;
+    /** Recent coin events to float over the field; `id` is unique per event. */
+    coinPopups: Array<{
+        id: number;
+        amount: number;
+        reason: string;
+        x: number;
+        y: number;
+        /** Extra upward shift so popups at the same spot do not overlap. */
+        staggerPx: number;
+    }>;
     /** Sum of every slot's score. */
     totalScore: number;
     potatoesServed: number;
@@ -123,6 +135,20 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         satisfaction: runState.satisfaction,
         maxSatisfaction: satisfactionConfig.max,
         coins: runState.coins,
+        coinsEarned: runState.coinsEarned,
+        coinPopups: runState.coinEvents
+            .filter((event) => runState.elapsedMs - event.atMs < hudConfig.coinPopupMs)
+            .map((event) => {
+                return {
+                    id: event.id,
+                    amount: event.amount,
+                    reason: event.reason,
+                    x: event.x,
+                    y: event.y,
+                    staggerPx:
+                        (event.id % hudConfig.coinPopupStaggerSlots) * hudConfig.coinPopupStaggerPx,
+                };
+            }),
         totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
         potatoesServed: runState.potatoesServed,
         potatoesPerRun: runState.potatoesPerRun,
