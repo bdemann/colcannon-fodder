@@ -5,8 +5,9 @@ Jam page: https://itch.io/jam/wizardly-weekend-2026-october. Theme: **Mashup**.
 ## Submission checklist
 
 -   [ ] Deadline: **2026-10-26 03:59** (itch.io page time; no timezone is stated, so submit early).
--   [ ] Upload the **web build** (HTML5, zipped `dist`; mark "This file will be played in the
-        browser"). The jam strongly recommends a web build.
+-   [ ] Create the itch.io page as a **link** to the GitHub Pages build,
+        https://bdemann.github.io/colcannon-fodder/ , instead of uploading a build (co-op only
+        works from that origin).
 -   [ ] Paste the **AI disclosure** below into the itch.io entry page itself (the jam requires it
         there, not only in the README).
 -   [ ] Add screenshots and a cover image (the `TODO` markers below).
