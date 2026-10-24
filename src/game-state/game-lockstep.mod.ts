@@ -8,6 +8,7 @@ import {
     type SeededRandomState,
 } from '@augment-vir/common';
 import {RunStatus, type RunState} from '../run/run-state.js';
+import {stepsForFrame} from '../run/speed.js';
 import {gameCommandHandlers} from './game-command-handlers.js';
 import {type GameCommand} from './game-command.js';
 import {gameEntities} from './game-entities.js';
@@ -102,7 +103,20 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
             return;
         }
 
-        state.runState.elapsedMs += frameUpdateParams.msSinceLastExecute;
-        await state.entityStore?.updateAllEntities(frameUpdateParams);
+        const {steps, accumulator} = stepsForFrame({
+            accumulator: state.runState.speedAccumulator,
+            speed: state.runState.speed,
+        });
+        state.runState.speedAccumulator = accumulator;
+
+        /** Fast-forward runs extra fixed-size steps; time is never scaled. */
+        for (let step = 0; step < steps; step++) {
+            /** A step can end the run (win or loss), which stops the remaining steps. */
+            if ((state.runState.status as RunStatus) !== RunStatus.Playing) {
+                break;
+            }
+            state.runState.elapsedMs += frameUpdateParams.msSinceLastExecute;
+            await state.entityStore?.updateAllEntities(frameUpdateParams);
+        }
     },
 });

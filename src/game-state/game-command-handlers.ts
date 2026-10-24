@@ -17,6 +17,7 @@ import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
 import {createInitialRunState, RunStatus} from '../run/run-state.js';
+import {isAllowedSpeed} from '../run/speed.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
@@ -219,6 +220,16 @@ export const gameCommandHandlers: {
     [GameCommandType.TogglePause]({state}) {
         if (state.runState?.status === RunStatus.Playing) {
             state.runState.paused = !state.runState.paused;
+        }
+    },
+    [GameCommandType.SetSpeed]({detail, state}) {
+        if (state.runState?.status === RunStatus.Playing && isAllowedSpeed(detail.packet.speed)) {
+            state.runState.speed = detail.packet.speed;
+        }
+    },
+    [GameCommandType.ArmSpeedReset]({state}) {
+        if (state.runState?.status === RunStatus.Playing) {
+            state.runState.resetSpeedOnIncome = true;
         }
     },
     [GameCommandType.ApplyTopping]({detail, state}) {

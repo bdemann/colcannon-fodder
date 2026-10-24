@@ -93,6 +93,12 @@ export type RunState = {
     status: RunStatus;
     /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
     paused: boolean;
+    /** Fast-forward: simulation steps per frame (1, 1.5, 2 or 3). Set by `SetSpeed`. */
+    speed: number;
+    /** When true, the next income sets `speed` back to 1 (see `addCoins`). */
+    resetSpeedOnIncome: boolean;
+    /** Fractional steps carried between frames so 1.5x alternates 1 and 2 steps. */
+    speedAccumulator: number;
     satisfaction: number;
     /** Coins shared by the whole restaurant; spent on towers, earned by servings. */
     coins: number;
@@ -158,6 +164,9 @@ export function createInitialRunState(levelId = defaultLevel.levelId): RunState 
         levelId,
         status: RunStatus.Playing,
         paused: false,
+        speed: 1,
+        resetSpeedOnIncome: false,
+        speedAccumulator: 0,
         satisfaction: satisfactionConfig.starting,
         coins: economyConfig.startingCoins,
         coinsEarned: 0,

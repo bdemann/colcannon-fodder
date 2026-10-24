@@ -80,6 +80,12 @@ export const hudMod = defineAnthaMod<FullGameState>({
             if (pausePressed || escapePressed) {
                 getHudActions(state).togglePause();
             }
+            if (state.ui.keys.some((key) => key === 'f' || key === 'F')) {
+                getHudActions(state).cycleSpeed();
+            }
+            if (state.ui.keys.some((key) => key === 'g' || key === 'G')) {
+                getHudActions(state).speedUntilIncome();
+            }
         }
         hadSelectionLastTick = !!(
             state.ui?.selectedTowerType ||

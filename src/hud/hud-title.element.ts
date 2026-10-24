@@ -91,7 +91,7 @@ export const rules = [
 
 /** Controls reminder shown on the title and pause panels. */
 export const controlsText =
-    '1 / 2 / 3 or click a button to pick a tower · Q/W/E/R pick a topping · Click to build · Right click / Esc to cancel · P / Esc pause (volume sliders are in the pause menu) · R to restart after a run';
+    '1 / 2 / 3 or click a button to pick a tower · Q/W/E/R pick a topping · Click to build · Right click / Esc to cancel · P / Esc pause · F fast-forward speed · G fast-forward until the next income (volume sliders are in the pause menu) · R to restart after a run';
 
 /** Full-screen title panel with how-to-play, shown while the run is `Ready`. */
 export const HudTitle = defineElement<{

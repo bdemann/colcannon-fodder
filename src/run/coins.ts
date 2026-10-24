@@ -12,6 +12,10 @@ export function addCoins(
     runState.coins += event.amount;
     if (event.amount > 0) {
         runState.coinsEarned += event.amount;
+        if (runState.resetSpeedOnIncome) {
+            runState.speed = 1;
+            runState.resetSpeedOnIncome = false;
+        }
     }
     runState.coinEvents.push({
         id: runState.nextCoinEventId,

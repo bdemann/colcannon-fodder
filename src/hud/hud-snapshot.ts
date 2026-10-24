@@ -24,6 +24,10 @@ export type HudSnapshot = {
     levelId: string;
     /** Whether the run is paused. */
     paused: boolean;
+    /** Fast-forward speed (1, 1.5, 2 or 3). */
+    speed: number;
+    /** True while the speed is armed to drop back to 1x at the next income. */
+    resetSpeedOnIncome: boolean;
     satisfaction: number;
     maxSatisfaction: number;
     coins: number;
@@ -143,6 +147,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         status: runState.status,
         levelId: runState.levelId,
         paused: runState.paused,
+        speed: runState.speed,
+        resetSpeedOnIncome: runState.resetSpeedOnIncome,
         satisfaction: runState.satisfaction,
         maxSatisfaction: satisfactionConfig.max,
         coins: runState.coins,
