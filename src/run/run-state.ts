@@ -6,6 +6,7 @@ import {
     satisfactionConfig,
     waveConfig,
 } from '../config/game-config.js';
+import {defaultLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 
 export enum RunStatus {
@@ -93,6 +94,8 @@ export type CoinEvent = {
  * lockstep frames), never from UI code.
  */
 export type RunState = {
+    /** Which level this run is on (`LevelDefinition.levelId`). Set by `StartRun`. */
+    levelId: string;
     status: RunStatus;
     /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
     paused: boolean;
@@ -156,8 +159,9 @@ export type RunState = {
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 
-export function createInitialRunState(): RunState {
+export function createInitialRunState(levelId = defaultLevel.levelId): RunState {
     return {
+        levelId,
         status: RunStatus.Playing,
         paused: false,
         satisfaction: satisfactionConfig.starting,

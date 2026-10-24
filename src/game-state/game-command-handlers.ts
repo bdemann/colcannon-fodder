@@ -6,7 +6,10 @@ import {upgradeConfig} from '../config/upgrade-config.js';
 import {PassLampEntity} from '../door/pass-lamp.entity.js';
 import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
+import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
+import {getPositionAlongPath} from '../level/level.js';
+import {getLevel} from '../level/levels.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
 import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
@@ -48,7 +51,9 @@ export const gameCommandHandlers: {
         }
 
         state.entityStore.destroyAllEntities();
-        state.runState = createInitialRunState();
+        const level = getLevel(detail.packet.levelId);
+        state.level = level;
+        state.runState = createInitialRunState(level.levelId);
 
         if (detail.packet.ready) {
             state.runState.status = RunStatus.Ready;
@@ -56,7 +61,17 @@ export const gameCommandHandlers: {
 
         await state.entityStore.addEntity(LevelEntity);
         await state.entityStore.addEntity(BeltEntity);
-        state.runState.potatoesPerRun = getPotatoesPerRun(state.level?.paths.length ?? 0);
+        for (const path of level.paths) {
+            for (const chute of path.chutes ?? []) {
+                await state.entityStore.addEntity(ChuteEntity, {
+                    ...getPositionAlongPath(path, chute.distancePx),
+                    pathId: path.pathId,
+                    distancePx: chute.distancePx,
+                    active: false,
+                });
+            }
+        }
+        state.runState.potatoesPerRun = getPotatoesPerRun(level.paths.length);
         await state.entityStore.addEntity(PotatoSpawnerEntity, {
             msUntilNextSpawn: 0,
         });
@@ -217,6 +232,7 @@ export const gameCommandHandlers: {
             if (potato.params.potatoId === packet.potatoId) {
                 if (
                     !potato.params.carriedBySeagull &&
+                    potato.params.dropInMs <= 0 &&
                     canApplyTopping(potato.params, packet.topping)
                 ) {
                     potato.params[packet.topping] = true;

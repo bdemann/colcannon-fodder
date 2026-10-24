@@ -1,6 +1,5 @@
 import {assertWrap} from '@augment-vir/assert';
 import {type Coords} from '@augment-vir/common';
-import {gameWorldSize} from '../game-state/game-world.js';
 
 /**
  * A path is a polyline of waypoints that potatoes walk from the first point to the last point. The
@@ -18,6 +17,14 @@ export type PathDefinition = {
     waypoints: ReadonlyArray<Readonly<Coords>>;
     /** Full width of the drawn path. Towers may not be placed on it. */
     widthPx: number;
+    /** Drop chutes that release potatoes onto the belt mid-path. */
+    chutes?: ReadonlyArray<Readonly<ChuteDefinition>>;
+};
+
+/** A drop chute over the belt. */
+export type ChuteDefinition = {
+    /** Where along the path (from the first waypoint) potatoes land. */
+    distancePx: number;
 };
 
 /** The restaurant all paths lead to. Drawn as a square centered on its position. */
@@ -28,55 +35,11 @@ export type RestaurantDefinition = {
 };
 
 export type LevelDefinition = {
+    levelId: string;
+    name: string;
+    description: string;
     paths: ReadonlyArray<Readonly<PathDefinition>>;
     restaurant: Readonly<RestaurantDefinition>;
-};
-
-const restaurant: RestaurantDefinition = {
-    x: gameWorldSize.width / 2,
-    y: gameWorldSize.height / 2,
-    sizePx: 220,
-};
-
-/**
- * The jam level: the restaurant sits in the middle of the field and one winding path runs in from
- * the left edge. Co-op later adds a second path from the right edge owned by slot 1.
- */
-export const defaultLevel: LevelDefinition = {
-    paths: [
-        {
-            pathId: 'west',
-            ownerSlot: 0,
-            waypoints: [
-                {
-                    x: 0,
-                    y: 400,
-                },
-                {
-                    x: 420,
-                    y: 400,
-                },
-                {
-                    x: 420,
-                    y: 820,
-                },
-                {
-                    x: 700,
-                    y: 820,
-                },
-                {
-                    x: 700,
-                    y: restaurant.y,
-                },
-                {
-                    x: restaurant.x - restaurant.sizePx / 2,
-                    y: restaurant.y,
-                },
-            ],
-            widthPx: 90,
-        },
-    ],
-    restaurant,
 };
 
 /** Each consecutive pair of waypoints as a segment. */

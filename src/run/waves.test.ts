@@ -97,6 +97,7 @@ describe(advanceWaves.name, () => {
             {
                 sizeWeights: wave1.sizeWeights,
                 bossCount: 0,
+                chuteShare: wave1.chuteShare,
             },
         ]);
         assert.strictEquals(runState.spawnedInWave, 1);

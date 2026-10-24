@@ -26,7 +26,11 @@ export class PassEntity extends defineLogicEntity({
         const inZone: PotatoEntity[] = [];
 
         for (const potato of entityStore.getEntities(PotatoEntity)) {
-            if (potato.params.served || potato.params.carriedBySeagull) {
+            if (
+                potato.params.served ||
+                potato.params.carriedBySeagull ||
+                potato.params.dropInMs > 0
+            ) {
                 continue;
             }
             const length = getPathLength(getPath(level, potato.params.pathId));

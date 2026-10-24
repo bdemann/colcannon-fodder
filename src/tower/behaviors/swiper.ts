@@ -102,7 +102,12 @@ export function updateSwiper(tower: TowerEntity, msSinceLastExecute: number): vo
 
     for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
         const {params} = potato;
-        if (params.served || params.carriedBySeagull || params.size === PotatoSize.King) {
+        if (
+            params.served ||
+            params.carriedBySeagull ||
+            params.dropInMs > 0 ||
+            params.size === PotatoSize.King
+        ) {
             continue;
         }
         if (

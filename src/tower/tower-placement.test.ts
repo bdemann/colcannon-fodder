@@ -1,7 +1,7 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {economyConfig, towerConfig} from '../config/game-config.js';
-import {defaultLevel} from '../level/level.js';
+import {defaultLevel} from '../level/levels.js';
 import {canAfford, canPlaceTower, shouldShowTowerRange} from './tower-placement.js';
 import {TowerType} from './tower-type.js';
 

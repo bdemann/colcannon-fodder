@@ -1,4 +1,5 @@
 import {defineAnthaMod} from '@antha/engine';
+import {loadLevelChoice} from '../level/level-choice.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
 import {GameCommandType, sendGameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
@@ -31,6 +32,7 @@ export const gameUpdateMod = defineAnthaMod<
         sendGameCommand(state, {
             type: GameCommandType.StartRun,
             ready: true,
+            levelId: loadLevelChoice(),
         });
     },
 });

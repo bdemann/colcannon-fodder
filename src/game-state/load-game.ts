@@ -13,7 +13,7 @@ import {css} from 'element-vir';
 import {gameAudio, gameAudioFilesToLoad, GameAudioKey} from '../audio/game-audio.js';
 import {hudMod} from '../hud/hud.mod.js';
 import {inputMod} from '../input/input.mod.js';
-import {defaultLevel} from '../level/level.js';
+import {defaultLevel} from '../level/levels.js';
 import {toppingInputMod} from '../order/topping-input.mod.js';
 import {createInitialRunState} from '../run/run-state.js';
 import {towerPlacementMod} from '../tower/tower-placement.mod.js';

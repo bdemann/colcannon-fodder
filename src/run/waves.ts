@@ -6,7 +6,11 @@ import {type RunState} from './run-state.js';
  * One spawn moment: the spawner releases one potato per path (plus `bossCount` bosses), sizes
  * picked from these weights.
  */
-export type WaveSpawn = {sizeWeights: PotatoSizeWeights; bossCount: number};
+export type WaveSpawn = {
+    sizeWeights: PotatoSizeWeights;
+    bossCount: number;
+    chuteShare: number;
+};
 
 /** The spawner's countdown to its next spawn. It lives in the spawner entity's params. */
 export type SpawnTimer = {msUntilNextSpawn: number};
@@ -65,6 +69,7 @@ export function advanceWaves(
                     runState.spawnedInWave === Math.floor(wave.potatoCount / 2)
                         ? wave.bossCount
                         : 0,
+                chuteShare: wave.chuteShare,
             });
             runState.spawnedInWave++;
             timer.msUntilNextSpawn += wave.spawnIntervalMs;

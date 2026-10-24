@@ -33,6 +33,8 @@ export type GameCommand =
           type: GameCommandType.StartRun;
           /** Start on the title screen (`Ready`) instead of playing immediately. */
           ready?: boolean;
+          /** The level to play (`LevelDefinition.levelId`). Defaults to the first level. */
+          levelId?: string;
       }
     | {
           type: GameCommandType.BeginRun;
