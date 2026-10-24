@@ -5,13 +5,14 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
+import {swiperConfig} from '../config/swiper-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
-import {updateSwiper} from './behaviors/swiper.js';
+import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {
     chooseAreaTargetIndexes,
@@ -67,6 +68,8 @@ export class TowerEntity extends defineEntity({
     protected body: Graphics | undefined;
     protected letter: Text | undefined;
     protected beam: Graphics | undefined;
+    /** Swiper only: the rotating paddle. */
+    protected paddle: Graphics | undefined;
     protected splash: Graphics | undefined;
     /** Last `lastProcessedAtMs` seen by `render`, so each processing plays one sound. */
     protected lastSeenProcessedAtMs: number | undefined;
@@ -97,6 +100,33 @@ export class TowerEntity extends defineEntity({
                 width: 4,
             });
         view.addChild(body);
+
+        if (definition.behavior === 'swipe') {
+            const tip = getArmTip({
+                center: {
+                    x: 0,
+                    y: 0,
+                },
+                angle: 0,
+                lengthPx: definition.rangePx,
+            });
+            this.paddle = new Graphics()
+                .roundRect(
+                    0,
+                    -swiperConfig.armHalfWidthPx,
+                    tip.x,
+                    swiperConfig.armHalfWidthPx * 2,
+                    swiperConfig.armHalfWidthPx,
+                )
+                .fill({
+                    color: '#a1887f',
+                })
+                .stroke({
+                    color: '#5d4037',
+                    width: 3,
+                });
+            view.addChild(this.paddle);
+        }
 
         const letter = new Text({
             text: definition.label.slice(0, 1),
@@ -133,7 +163,7 @@ export class TowerEntity extends defineEntity({
             updateGullTrap(this, msSinceLastExecute);
             return;
         } else if (behavior === 'swipe') {
-            updateSwiper(this, msSinceLastExecute);
+            updateSwiper(this);
             return;
         }
 
@@ -259,6 +289,13 @@ export class TowerEntity extends defineEntity({
             pointerWorld: this.state.ui.pointerWorld,
             selectedTowerType: this.state.ui.selectedTowerType,
         });
+
+        if (this.paddle) {
+            this.paddle.rotation = getSwiperAngle({
+                elapsedMs: this.state.runState.elapsedMs,
+                builtAtMs: this.params.builtAtMs,
+            });
+        }
 
         const {lastProcessedAtMs, lastTargetX, lastTargetY, x, y, towerType} = this.params;
         const flashing =
