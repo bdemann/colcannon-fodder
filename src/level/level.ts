@@ -19,6 +19,8 @@ export type PathDefinition = {
     widthPx: number;
     /** Drop chutes that release potatoes onto the belt mid-path. */
     chutes?: ReadonlyArray<Readonly<ChuteDefinition>>;
+    /** Odds of this path in a `'pick-one'` level, relative to the other paths. Defaults to 1. */
+    spawnWeight?: number;
 };
 
 /** A drop chute over the belt. */
@@ -38,6 +40,11 @@ export type LevelDefinition = {
     levelId: string;
     name: string;
     description: string;
+    /**
+     * `'each-path'` (default) releases a potato on every path per spawn. `'pick-one'` releases one
+     * potato on one path, picked by `spawnWeight`.
+     */
+    spawnMode?: 'each-path' | 'pick-one';
     paths: ReadonlyArray<Readonly<PathDefinition>>;
     restaurant: Readonly<RestaurantDefinition>;
 };
@@ -169,4 +176,36 @@ export function getPath(level: Readonly<LevelDefinition>, pathId: string) {
     }
 
     return path;
+}
+
+/**
+ * The paths one spawn moment releases onto: every path, or on `'pick-one'` levels a single path
+ * chosen by `roll` (0 to under 1) weighted by `spawnWeight`. Only rolls on pick-one levels, so
+ * other levels keep their random sequence.
+ */
+export function pickSpawnPaths(
+    level: Readonly<LevelDefinition>,
+    roll: number,
+): ReadonlyArray<Readonly<PathDefinition>> {
+    if (level.spawnMode !== 'pick-one') {
+        return level.paths;
+    }
+
+    const weights = level.paths.map((path) => Math.max(0, path.spawnWeight ?? 1));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    let remaining = roll * total;
+
+    for (const [
+        index,
+        path,
+    ] of level.paths.entries()) {
+        remaining -= weights[index] ?? 0;
+        if (remaining < 0) {
+            return [path];
+        }
+    }
+
+    const fallback = level.paths.at(-1);
+
+    return fallback ? [fallback] : [];
 }

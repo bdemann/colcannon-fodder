@@ -79,6 +79,7 @@ export const gameCommandHandlers: {
             pendingClumpSpawns: 0,
             msUntilClumpSpawn: 0,
             clumpWaveIndex: 0,
+            clumpPathId: '',
         });
         await state.entityStore.addEntity(OrderBoardEntity, {});
         await state.entityStore.addEntity(PassEntity, {

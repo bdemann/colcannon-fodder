@@ -4,7 +4,12 @@ import {chuteConfig, potatoSizeConfig, seagullConfig} from '../config/game-confi
 import {spawnConfig} from '../config/spawn-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {pickChute} from '../level/chute.js';
-import {getPositionAlongPath, type PathDefinition} from '../level/level.js';
+import {
+    getPositionAlongPath,
+    pickSpawnPaths,
+    type LevelDefinition,
+    type PathDefinition,
+} from '../level/level.js';
 import {createNoToppings} from '../order/topping.js';
 import {getWaveSettings} from '../run/endless.js';
 import {getClumpExtraCount, shouldSpawnExtra} from '../run/spawn-variety.js';
@@ -27,6 +32,8 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         msUntilClumpSpawn: 0,
         /** Index of the wave whose size odds the queued clump uses. */
         clumpWaveIndex: 0,
+        /** The one path a queued clump rides on a pick-one level; '' means every path. */
+        clumpPathId: '',
     }),
 }) {
     public override async update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -42,7 +49,9 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         const spawns = advanceWaves(runState, this.params, msSinceLastExecute);
 
         for (const spawn of spawns) {
-            for (const path of level.paths) {
+            const spawnPaths = pickSpawnPaths(level, this.pickRoll(level));
+
+            for (const path of spawnPaths) {
                 await this.spawnPotato(path, spawn);
 
                 for (let bossIndex = 0; bossIndex < spawn.bossCount; bossIndex++) {
@@ -66,7 +75,9 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     }
                     this.params.pendingClumpSpawns += extra;
                     this.params.clumpWaveIndex = spawningIndex;
-                    runState.potatoesPending += extra * level.paths.length;
+                    this.params.clumpPathId =
+                        level.spawnMode === 'pick-one' ? (spawnPaths[0]?.pathId ?? '') : '';
+                    runState.potatoesPending += extra * spawnPaths.length;
                 }
             }
         }
@@ -80,13 +91,18 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 roll: this.state.seededRandom.next(),
             })
         ) {
-            for (const path of level.paths) {
+            for (const path of pickSpawnPaths(level, this.pickRoll(level))) {
                 await this.spawnPotato(path, spawningWave);
             }
         }
 
         await this.releaseClumpSpawns(msSinceLastExecute);
         await this.spawnSeagulls(msSinceLastExecute);
+    }
+
+    /** The roll for picking a spawn path; only drawn on pick-one levels. */
+    protected pickRoll(level: Readonly<LevelDefinition>): number {
+        return level.spawnMode === 'pick-one' ? this.state.seededRandom.next() : 0;
     }
 
     /** Releases queued clump potatoes, one per path every `clumpGapMs`. */
@@ -99,11 +115,15 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
 
         this.params.msUntilClumpSpawn -= msSinceLastExecute;
         while (this.params.msUntilClumpSpawn <= 0 && this.params.pendingClumpSpawns > 0) {
-            for (const path of level.paths) {
+            const clumpPaths = this.params.clumpPathId
+                ? level.paths.filter((path) => path.pathId === this.params.clumpPathId)
+                : level.paths;
+
+            for (const path of clumpPaths) {
                 await this.spawnPotato(path, wave);
             }
             this.params.pendingClumpSpawns--;
-            runState.potatoesPending -= level.paths.length;
+            runState.potatoesPending -= clumpPaths.length;
             this.params.msUntilClumpSpawn += spawnConfig.clumpGapMs;
         }
     }

@@ -140,58 +140,62 @@ function strokePath({
     });
 }
 
-/** The wooden rails and the stone surface (stripes are drawn by `BeltEntity`). */
-function drawBelt(ground: Graphics, path: Readonly<PathDefinition>) {
-    const frameWidth = path.widthPx + 14;
+/**
+ * The wooden rails and the stone surface (stripes are drawn by `BeltEntity`). Drawn layer by layer
+ * across all paths, so where belts overlap (a fork) one path's rails never cover another's
+ * surface.
+ */
+function drawBelts(ground: Graphics, paths: ReadonlyArray<Readonly<PathDefinition>>) {
     const outline = cozyStyle.outlineWidth * 2;
+    const layers = [
+        // drop shadow, then Bark outline, wooden frame and a darker inner lip
+        {
+            color: 'rgba(43,26,18,0.3)',
+            extraWidth: 14 + outline,
+            shadow: true,
+        },
+        {
+            color: levelColors.outline,
+            extraWidth: 14 + outline,
+        },
+        {
+            color: levelColors.beltRail,
+            extraWidth: 14,
+        },
+        {
+            color: levelColors.beltRailDark,
+            extraWidth: 4,
+        },
+        {
+            color: levelColors.outline,
+            extraWidth: 1,
+        },
+        {
+            color: levelColors.belt,
+            extraWidth: -2,
+        },
+    ];
 
-    // drop shadow, then Bark outline, wooden frame and a darker inner lip
-    const shadowPath = {
-        ...path,
-        waypoints: path.waypoints.map((point) => {
-            return {
-                x: point.x,
-                y: point.y + cozyStyle.shadow.offsetY,
-            };
-        }),
-    };
-
-    strokePath({
-        ground,
-        path: shadowPath,
-        color: 'rgba(43,26,18,0.3)',
-        width: frameWidth + outline,
-    });
-    strokePath({
-        ground,
-        path,
-        color: levelColors.outline,
-        width: frameWidth + outline,
-    });
-    strokePath({
-        ground,
-        path,
-        color: levelColors.beltRail,
-        width: frameWidth,
-    });
-    strokePath({
-        ground,
-        path,
-        color: levelColors.beltRailDark,
-        width: path.widthPx + 4,
-    });
-    strokePath({
-        ground,
-        path,
-        color: levelColors.outline,
-        width: path.widthPx + 1,
-    });
-    strokePath({
-        ground,
-        path,
-        color: levelColors.belt,
-        width: path.widthPx - 2,
-    });
+    for (const layer of layers) {
+        for (const path of paths) {
+            strokePath({
+                ground,
+                path: layer.shadow
+                    ? {
+                          ...path,
+                          waypoints: path.waypoints.map((point) => {
+                              return {
+                                  x: point.x,
+                                  y: point.y + cozyStyle.shadow.offsetY,
+                              };
+                          }),
+                      }
+                    : path,
+                color: layer.color,
+                width: path.widthPx + layer.extraWidth,
+            });
+        }
+    }
 }
 
 /** A barn door where potatoes come in, half hidden by the screen edge. */
@@ -303,7 +307,7 @@ export class LevelEntity extends defineEntity({
         });
 
         drawMeadow(ground, level.levelId);
-        level.paths.forEach((path) => drawBelt(ground, path));
+        drawBelts(ground, level.paths);
         view.addChild(ground);
 
         level.paths.forEach((path) => drawSpawnMarker(view, path));
