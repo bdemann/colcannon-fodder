@@ -5,6 +5,7 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Container, Text} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {towerConfig, towerFeedbackConfig} from '../config/game-config.js';
+import {knifeConfig} from '../config/knife-config.js';
 import {qualityConfig} from '../config/quality-config.js';
 import {swiperConfig} from '../config/swiper-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
@@ -13,7 +14,7 @@ import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
 import {updateGullTrap} from './behaviors/gull-trap.js';
-import {updateKnife} from './behaviors/knife.js';
+import {getKnifeLine, updateKnife} from './behaviors/knife.js';
 import {updateMicrowave} from './behaviors/microwave.js';
 import {getArmTip, getSwiperAngle, updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
@@ -64,6 +65,8 @@ export class TowerEntity extends defineEntity({
             lastProcessedAtMs: -1,
             lastTargetX: 0,
             lastTargetY: 0,
+            /** Cut direction in degrees (0 is right, clockwise). Only the Knife uses it. */
+            angleDeg: 0,
         }),
     ),
     paramsMap: {
@@ -316,18 +319,39 @@ export class TowerEntity extends defineEntity({
         const {rangePx} = getTowerStats(towerType, level);
         this.drawnLevel = level;
 
-        rangeView
-            .clear()
-            .circle(0, 0, rangePx)
-            .fill({
-                color: definition.color,
-                alpha: 0.08,
-            })
-            .stroke({
-                color: definition.color,
-                alpha: 0.35,
-                width: 3,
+        if (definition.behavior === 'line') {
+            // The Knife shows its fixed cut line instead of a range ring.
+            const line = getKnifeLine({
+                origin: {
+                    x: 0,
+                    y: 0,
+                },
+                angleDeg: this.params.angleDeg,
+                lengthPx: rangePx,
             });
+            rangeView
+                .clear()
+                .moveTo(line.start.x, line.start.y)
+                .lineTo(line.end.x, line.end.y)
+                .stroke({
+                    color: knifeConfig.lineColor,
+                    alpha: knifeConfig.lineAlpha,
+                    width: knifeConfig.lineWidthPx,
+                });
+        } else {
+            rangeView
+                .clear()
+                .circle(0, 0, rangePx)
+                .fill({
+                    color: definition.color,
+                    alpha: 0.08,
+                })
+                .stroke({
+                    color: definition.color,
+                    alpha: 0.35,
+                    width: 3,
+                });
+        }
 
         if (paddle) {
             const tip = getArmTip({
@@ -388,12 +412,15 @@ export class TowerEntity extends defineEntity({
             this.drawLevelParts();
         }
 
-        rangeView.visible = shouldShowTowerRange({
-            tower: this.params,
-            pointerWorld: this.state.ui.pointerWorld,
-            selectedTowerType: this.state.ui.selectedTowerType,
-            selectedTowerId: this.state.ui.selectedTowerId,
-        });
+        const isKnife = towerTypes[this.params.towerType].behavior === 'line';
+        rangeView.visible =
+            isKnife ||
+            shouldShowTowerRange({
+                tower: this.params,
+                pointerWorld: this.state.ui.pointerWorld,
+                selectedTowerType: this.state.ui.selectedTowerType,
+                selectedTowerId: this.state.ui.selectedTowerId,
+            });
         if (this.selection) {
             this.selection.visible = this.state.ui.selectedTowerId === this.params.towerId;
         }

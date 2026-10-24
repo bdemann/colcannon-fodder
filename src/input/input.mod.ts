@@ -24,9 +24,11 @@ function toWorldPoint(state: Partial<FullGameState>, event: MouseEvent) {
 const buffered: {
     clicks: UiClick[];
     keys: string[];
+    wheelSteps: number;
 } = {
     clicks: [],
     keys: [],
+    wheelSteps: 0,
 };
 
 /**
@@ -50,7 +52,9 @@ export const inputMod = defineAnthaMod<
         state.ui.clicks = buffered.clicks;
         state.ui.keys = buffered.keys;
         buffered.clicks = [];
+        state.ui.wheelSteps = buffered.wheelSteps;
         buffered.keys = [];
+        buffered.wheelSteps = 0;
 
         const canvas = state.pixi?.canvas;
 
@@ -85,6 +89,17 @@ export const inputMod = defineAnthaMod<
             /** Right click is a game control (deselect), not the browser menu. */
             event.preventDefault();
         });
+        canvas.addEventListener(
+            'wheel',
+            (event) => {
+                /** The wheel turns the Knife blade, so the page must not scroll. */
+                event.preventDefault();
+                buffered.wheelSteps += Math.sign(event.deltaY);
+            },
+            {
+                passive: false,
+            },
+        );
         globalThis.addEventListener('keydown', (event) => {
             if (!event.repeat) {
                 buffered.keys.push(event.key);

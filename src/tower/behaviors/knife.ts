@@ -9,22 +9,20 @@ import {distanceToSegment} from './swiper.js';
 
 type Point = {x: number; y: number};
 
-/** The slice: from `origin` through `aimAt`, extended to exactly `lengthPx`. */
-export function getSliceSegment({
+/**
+ * The fixed cut line: from `origin` out `lengthPx` in the direction `angleDeg` (0 is right,
+ * clockwise).
+ */
+export function getKnifeLine({
     origin,
-    aimAt,
+    angleDeg,
     lengthPx,
 }: Readonly<{
     origin: Readonly<Point>;
-    aimAt: Readonly<Point>;
+    angleDeg: number;
     lengthPx: number;
 }>): {start: Point; end: Point} {
-    const dx = aimAt.x - origin.x;
-    const dy = aimAt.y - origin.y;
-    const distance = Math.hypot(dx, dy);
-    /** Aiming at the origin itself has no direction, so slice to the right. */
-    const ux = distance === 0 ? 1 : dx / distance;
-    const uy = distance === 0 ? 0 : dy / distance;
+    const radians = (angleDeg * Math.PI) / 180;
 
     return {
         start: {
@@ -32,8 +30,8 @@ export function getSliceSegment({
             y: origin.y,
         },
         end: {
-            x: origin.x + ux * lengthPx,
-            y: origin.y + uy * lengthPx,
+            x: origin.x + Math.cos(radians) * lengthPx,
+            y: origin.y + Math.sin(radians) * lengthPx,
         },
     };
 }
@@ -59,8 +57,8 @@ export function isOnSlice({
 }
 
 /**
- * Knife behavior: when ready, aims at the furthest-along potato still to mash in range and slices a
- * straight line through it. Every potato and seagull on the line takes a hit.
+ * Knife behavior: every cooldown it chops its fixed line (set by `angleDeg` when built). Every
+ * potato and seagull on the line takes a hit. It never aims.
  */
 export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): void {
     tower.params.cooldownRemainingMs = Math.max(
@@ -72,33 +70,18 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
     }
 
     const stats = getTowerStats(tower.params.towerType, tower.params.level);
-    const origin = {
-        x: tower.params.x,
-        y: tower.params.y,
-    };
+    const segment = getKnifeLine({
+        origin: {
+            x: tower.params.x,
+            y: tower.params.y,
+        },
+        angleDeg: tower.params.angleDeg,
+        lengthPx: stats.rangePx,
+    });
     const potatoes = [...tower.state.entityStore.getEntities(PotatoEntity)].filter(
         (potato) => !potato.params.served && !potato.params.carriedBySeagull,
     );
-
-    let target: PotatoEntity | undefined;
-    for (const potato of potatoes) {
-        if (
-            potato.params.mashHp > 0 &&
-            Math.hypot(potato.params.x - origin.x, potato.params.y - origin.y) <= stats.rangePx &&
-            (!target || potato.params.distancePx > target.params.distancePx)
-        ) {
-            target = potato;
-        }
-    }
-    if (!target) {
-        return;
-    }
-
-    const segment = getSliceSegment({
-        origin,
-        aimAt: target.params,
-        lengthPx: stats.rangePx,
-    });
+    let hitSomething = false;
     for (const potato of potatoes) {
         if (
             !isOnSlice({
@@ -109,6 +92,7 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
         ) {
             continue;
         }
+        hitSomething = true;
         const processing = potato.getProcessing();
         applyTowerHit(processing, tower.params.towerType, tower.params.level);
         potato.params.cut = processing.cut;
@@ -125,11 +109,15 @@ export function updateKnife(tower: TowerEntity, msSinceLastExecute: number): voi
                 segment,
             })
         ) {
+            hitSomething = true;
             gull.takeHit(stats.damage);
         }
     }
 
     tower.params.cooldownRemainingMs = stats.cooldownMs;
+    if (!hitSomething) {
+        return;
+    }
     tower.params.lastProcessedAtMs = tower.state.runState.elapsedMs;
     tower.params.lastTargetX = segment.end.x;
     tower.params.lastTargetY = segment.end.y;

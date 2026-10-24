@@ -116,6 +116,7 @@ export const gameCommandHandlers: {
             lastProcessedAtMs: -1,
             lastTargetX: 0,
             lastTargetY: 0,
+            angleDeg: packet.angleDeg ?? 0,
         });
         state.runState.nextTowerId++;
     },
