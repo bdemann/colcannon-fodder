@@ -67,13 +67,11 @@ toppings in the recipe, and send it through before the ticket runs out:
 The toppings must match the recipe exactly. A filled order pays bonus score, coins and
 satisfaction; an expired one makes the customer unhappy. Orders need a potato of decent quality.
 
-### The Pass and send-backs
+### Judged on arrival
 
-Served potatoes queue on the belt at **the Pass**, a heat-lamp counter in front of the restaurant
-with four plates. A waiter takes one plate at a time. After a grace period under the heat lamp a
-waiting potato loses quality, so do not let the line back up. Customers **send back** potatoes
-that are not perfect (no pay, and each consecutive send-back angers them more); after two
-send-backs the potato is eaten anyway, grudgingly.
+A potato must be done done done before it reaches the restaurant. It is judged the instant it
+arrives: perfect, incomplete (a penalty scaled by how far along it was) or raw. There is no queue
+and no second chance.
 
 ### Seagulls
 
@@ -82,7 +80,7 @@ of satisfaction. Knock a gull out with your towers or feed it with a Cricket Tra
 
 ### Prestige and quality
 
-Every potato has a quality that the Microwave and the heat lamp wear down. **Prestige** (0 to 5
+Every potato has a quality that the Microwave wears down. **Prestige** (0 to 5
 stars) is the average quality of your last ten perfect servings. To earn **Mash Champ** you need to
 win with 3 or more stars, so shortcuts have a price.
 

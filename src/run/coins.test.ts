@@ -34,7 +34,7 @@ describe(addCoins.name, () => {
         const runState = createInitialRunState();
         addCoins(runState, {
             amount: 0,
-            reason: 'Sent back · no pay',
+            reason: 'Free sample',
             x: 0,
             y: 0,
         });
