@@ -1,9 +1,11 @@
 import {setVolume, type VolumeKind} from '../audio/volume-settings.js';
+import {speedConfig} from '../config/game-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
+import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
 /**
@@ -31,6 +33,10 @@ export type HudActions = {
     beginRun(): void;
     /** Pauses or resumes the run. */
     togglePause(): void;
+    /** Cycles the fast-forward speed 1x, 1.5x, 2x, 3x, 1x. */
+    cycleSpeed(): void;
+    /** Speeds up to 2x if at 1x, and drops back to 1x at the next income. */
+    speedUntilIncome(): void;
     /** Sets the music or sound effects volume (0 to 1) and saves it. */
     setVolume(kind: VolumeKind, value: number): void;
 };
@@ -95,6 +101,23 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
         togglePause() {
             sendGameCommand(state, {
                 type: GameCommandType.TogglePause,
+            });
+        },
+        cycleSpeed() {
+            sendGameCommand(state, {
+                type: GameCommandType.SetSpeed,
+                speed: getNextSpeed(state.runState?.speed ?? 1),
+            });
+        },
+        speedUntilIncome() {
+            if ((state.runState?.speed ?? 1) === 1) {
+                sendGameCommand(state, {
+                    type: GameCommandType.SetSpeed,
+                    speed: speedConfig.untilIncomeSpeed,
+                });
+            }
+            sendGameCommand(state, {
+                type: GameCommandType.ArmSpeedReset,
             });
         },
         setVolume,

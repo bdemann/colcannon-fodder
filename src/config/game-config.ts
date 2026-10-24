@@ -406,3 +406,16 @@ export const orderConfig = {
     /** An order that runs out of time: an unhappy customer, close to a raw potato. */
     expiredSatisfaction: -12,
 } as const;
+
+/** Fast-forward: how many simulation steps run per frame. */
+export const speedConfig = {
+    /** Allowed speeds, in cycling order. */
+    speeds: [
+        1,
+        1.5,
+        2,
+        3,
+    ],
+    /** The speed "fast until income" jumps to when the run is at normal speed. */
+    untilIncomeSpeed: 2,
+} as const;

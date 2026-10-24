@@ -7,6 +7,7 @@ import {
 } from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {RunStatus} from '../run/run-state.js';
+import {formatSpeed} from '../run/speed.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {controlsText, rules} from './hud-title.element.js';
@@ -58,6 +59,27 @@ export const HudPause = defineElement<{
             position: absolute;
             top: 16px;
             width: 64px;
+        }
+
+        .speed-button {
+            background: rgba(20, 20, 20, 0.85);
+            border: 4px solid transparent;
+            border-radius: 12px;
+            box-sizing: border-box;
+            color: white;
+            cursor: pointer;
+            font-size: 30px;
+            height: 64px;
+            padding: 0 16px;
+            pointer-events: auto;
+            position: absolute;
+            top: 16px;
+            white-space: nowrap;
+        }
+
+        .speed-button.armed {
+            background: #ffd84a;
+            color: #1a1a1a;
         }
 
         .layer {
@@ -256,6 +278,26 @@ export const HudPause = defineElement<{
                 }}
             >
                 ⏸
+            </button>
+            <button
+                class="speed-button"
+                style="left: 1004px; width: 150px;"
+                title="Fast-forward (F)"
+                @click=${() => {
+                    inputs.actions.cycleSpeed();
+                }}
+            >
+                ⏩ ${formatSpeed(snapshot.speed)}
+            </button>
+            <button
+                class=${'speed-button' + (snapshot.resetSpeedOnIncome ? ' armed' : '')}
+                style="left: 1170px; width: 190px;"
+                title="Fast-forward until the next income (G)"
+                @click=${() => {
+                    inputs.actions.speedUntilIncome();
+                }}
+            >
+                ⏩ until 🪙
             </button>
         `;
     },

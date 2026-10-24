@@ -28,6 +28,8 @@ the ticket runs out. Keep satisfaction above zero through every wave to become t
 | Scroll / `[` `]`      | Turn the Knife blade before building it          |
 | Right click / `Esc`   | Cancel the selected tower                        |
 | `P` / `Esc`           | Pause (and resume); music and effects volume     |
+| `F`                   | Fast-forward: cycle 1x / 1.5x / 2x / 3x          |
+| `G`                   | Fast-forward until the next income               |
 | `Space`               | Start cooking from the title screen              |
 | `R`                   | Restart after a run ends                         |
 

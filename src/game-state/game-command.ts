@@ -25,6 +25,10 @@ export enum GameCommandType {
     ApplyTopping = 'apply-topping',
     /** Pauses or resumes the run. Ignored unless the run is `Playing`. */
     TogglePause = 'toggle-pause',
+    /** Sets the fast-forward speed (1, 1.5, 2 or 3). Ignored unless `Playing` and allowed. */
+    SetSpeed = 'set-speed',
+    /** Resets the speed to 1x on the next income, without changing the speed now. */
+    ArmSpeedReset = 'arm-speed-reset',
 }
 
 /** Must stay JSON compatible: it is sent over the network in co-op. */
@@ -68,6 +72,13 @@ export type GameCommand =
       }
     | {
           type: GameCommandType.TogglePause;
+      }
+    | {
+          type: GameCommandType.SetSpeed;
+          speed: number;
+      }
+    | {
+          type: GameCommandType.ArmSpeedReset;
       };
 
 /** Queues a command for the next lockstep frame. Call this from UI code, never from handlers. */
