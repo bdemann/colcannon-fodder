@@ -10,6 +10,7 @@ module.exports = {
     words: [
         ...baseConfig.words,
         'bdemann',
+        'playtesting',
         'lerp',
         'Tintable',
         'Sweeetpotatoo',
