@@ -4,6 +4,7 @@ import {doorConfig} from '../config/door-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {getPath, getPathLength} from '../level/level.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
+import {heatLampLoss} from './heat-lamp.js';
 
 /** Where the Pass starts on a path: the last `passSlots` queue spots before the counter. */
 export function getPassStartPx(pathLength: number): number {
@@ -31,11 +32,17 @@ export class PassEntity extends defineLogicEntity({
             const length = getPathLength(getPath(level, potato.params.pathId));
             if (potato.params.distancePx >= getPassStartPx(length)) {
                 inZone.push(potato);
+                potato.params.passWaitMs += msSinceLastExecute;
                 potato.params.quality = Math.max(
                     0,
                     potato.params.quality -
-                        (doorConfig.heatLampQualityPerSecond * msSinceLastExecute) / 1000,
+                        heatLampLoss({
+                            passWaitMs: potato.params.passWaitMs,
+                            ms: msSinceLastExecute,
+                        }),
                 );
+            } else {
+                potato.params.passWaitMs = 0;
             }
         }
 

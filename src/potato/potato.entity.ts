@@ -39,11 +39,10 @@ export class PotatoEntity extends defineEntity({
             quality: 100,
             /** How many times customers have sent this potato back to the start of the belt. */
             timesSentBack: 0,
-            /**
-             * `runState.elapsedMs` of the last Swiper hit, or -1. A Swiper skips recently swiped
-             * potatoes.
-             */
+            /** `runState.elapsedMs` of the last Swiper hit, or -1. Used to debounce the Swiper. */
             lastSwipedAtMs: -1,
+            /** Ms spent in the pass zone; the heat lamp only hurts after a grace period. */
+            passWaitMs: 0,
             /** Unique per run (from `runState.nextPotatoId`), so commands can name this potato. */
             potatoId: 0,
             /** Hand-applied toppings. Keys match `Topping` values. */
@@ -191,6 +190,7 @@ export class PotatoEntity extends defineEntity({
 
         if (sentBack) {
             this.params.distancePx = 0;
+            this.params.passWaitMs = 0;
             this.params.timesSentBack += 1;
             this.moveToDistance();
         } else {

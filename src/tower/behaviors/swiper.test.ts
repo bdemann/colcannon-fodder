@@ -1,5 +1,6 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
+import {waveConfig} from '../../config/game-config.js';
 import {swiperConfig} from '../../config/swiper-config.js';
 import {distanceToSegment, getArmTip, getSwiperAngle, shouldSwipe} from './swiper.js';
 
@@ -126,7 +127,7 @@ describe(shouldSwipe.name, () => {
             }),
         );
     });
-    it('skips a potato swiped within one rotation', () => {
+    it('skips a potato swiped within the debounce window', () => {
         assert.isFalse(
             shouldSwipe({
                 ...base,
@@ -134,7 +135,7 @@ describe(shouldSwipe.name, () => {
                     x: 50,
                     y: 0,
                 },
-                lastSwipedAtMs: 8000,
+                lastSwipedAtMs: base.elapsedMs - swiperConfig.debounceMs + 1,
             }),
         );
         assert.isTrue(
@@ -144,8 +145,16 @@ describe(shouldSwipe.name, () => {
                     x: 50,
                     y: 0,
                 },
-                lastSwipedAtMs: base.elapsedMs - swiperConfig.rotationMs,
+                lastSwipedAtMs: base.elapsedMs - swiperConfig.debounceMs,
             }),
         );
+    });
+});
+
+describe('swiper timing', () => {
+    it('can never leave a potato permanently stuck', () => {
+        const slowestBeltSpeed = Math.min(...waveConfig.waves.map((wave) => wave.speedPxPerMs));
+        // x2: at a corner the arm can cross two legs of the path in one turn.
+        assert.isBelow(swiperConfig.pushBackPx * 2, slowestBeltSpeed * swiperConfig.rotationMs);
     });
 });

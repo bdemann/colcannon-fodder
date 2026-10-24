@@ -50,6 +50,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     quality: 100,
                     timesSentBack: 0,
                     lastSwipedAtMs: -1,
+                    passWaitMs: 0,
                     potatoId: runState.nextPotatoId,
                     ...createNoToppings(),
                 });
