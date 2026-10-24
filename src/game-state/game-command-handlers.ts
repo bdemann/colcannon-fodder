@@ -55,7 +55,7 @@ export const gameCommandHandlers: {
         state.entityStore.destroyAllEntities();
         const level = getLevel(detail.packet.levelId);
         state.level = level;
-        state.runState = createInitialRunState(level.levelId);
+        state.runState = createInitialRunState(level.levelId, detail.packet.mode);
 
         if (detail.packet.ready) {
             state.runState.status = RunStatus.Ready;

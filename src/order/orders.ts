@@ -1,5 +1,6 @@
 import {assertWrap} from '@augment-vir/assert';
-import {orderConfig, satisfactionConfig} from '../config/game-config.js';
+import {orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {getWaveSettings} from '../run/endless.js';
 import {type RunState, RunStatus} from '../run/run-state.js';
 import {Dish} from './dish.js';
 
@@ -36,9 +37,11 @@ export function advanceOrders(runState: RunState, msElapsed: number, roll: () =>
         return;
     }
 
+    // Past the campaign's last wave, keep using the last wave's orders.
     const settings = assertWrap.isDefined(
-        orderConfig.byWave[runState.waveIndex] ?? orderConfig.byWave[orderConfig.byWave.length - 1],
-    );
+        getWaveSettings(runState, runState.waveIndex) ??
+            getWaveSettings(runState, waveConfig.waves.length - 1),
+    ).orders;
     runState.msUntilNextOrder -= msElapsed;
     while (runState.msUntilNextOrder <= 0) {
         if (runState.orders.length < settings.maxOpen) {

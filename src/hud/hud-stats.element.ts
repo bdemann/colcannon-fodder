@@ -173,7 +173,12 @@ export const HudStats = defineElement<{
                 <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
             </div>
             <div class="prestige">Prestige ${formatStars(snapshot.prestigeStars)}</div>
-            <div class="wave">Wave ${snapshot.waveNumber} / ${snapshot.waveCount}</div>
+            <div class="wave">
+                Wave
+                ${snapshot.waveNumber}${snapshot.mode === 'endless'
+                    ? ''
+                    : ` / ${snapshot.waveCount}`}${snapshot.isBossWave ? ' 👑' : ''}
+            </div>
             <div class="label">Potatoes served ${snapshot.potatoesServed}</div>
             ${snapshot.wavePhase === 'break' && snapshot.status !== RunStatus.Ready
                 ? html`

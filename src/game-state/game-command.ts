@@ -1,4 +1,5 @@
 import {type Topping} from '../order/topping.js';
+import {type RunMode} from '../run/run-state.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {type FullGameState} from './game-state.js';
 
@@ -39,6 +40,8 @@ export type GameCommand =
           ready?: boolean;
           /** The level to play (`LevelDefinition.levelId`). Defaults to the first level. */
           levelId?: string;
+          /** Campaign (default) or endless waves. */
+          mode?: RunMode | undefined;
       }
     | {
           type: GameCommandType.BeginRun;

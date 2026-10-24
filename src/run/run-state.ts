@@ -3,6 +3,9 @@ import {economyConfig, orderConfig, satisfactionConfig, waveConfig} from '../con
 import {defaultLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 
+/** Campaign has a fixed list of waves; endless generates waves forever. */
+export type RunMode = 'campaign' | 'endless';
+
 export enum RunStatus {
     /** Title screen: the run is set up but frozen until `BeginRun`. */
     Ready = 'ready',
@@ -90,6 +93,8 @@ export type CoinEvent = {
 export type RunState = {
     /** Which level this run is on (`LevelDefinition.levelId`). Set by `StartRun`. */
     levelId: string;
+    /** Set by `StartRun`. */
+    mode: RunMode;
     status: RunStatus;
     /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
     paused: boolean;
@@ -125,7 +130,7 @@ export type RunState = {
     waveIndex: number;
     /**
      * 'break' = waiting before waveIndex starts; 'spawning' = wave is spawning; 'done' = every wave
-     * has spawned.
+     * has spawned (never in endless).
      */
     wavePhase: 'break' | 'spawning' | 'done';
     /** Time left in the current break. */
@@ -159,9 +164,13 @@ export type RunState = {
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 
-export function createInitialRunState(levelId = defaultLevel.levelId): RunState {
+export function createInitialRunState(
+    levelId = defaultLevel.levelId,
+    mode: RunMode = 'campaign',
+): RunState {
     return {
         levelId,
+        mode,
         status: RunStatus.Playing,
         paused: false,
         speed: 1,

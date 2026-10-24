@@ -82,6 +82,7 @@ export const HudRunOver = defineElement<{
             `;
         }
 
+        const endless = snapshot.mode === 'endless';
         const won = snapshot.status === RunStatus.Won;
         const champ = won && snapshot.prestigeStars >= qualityConfig.mashChampStars;
         const survived = won && !champ;
@@ -105,12 +106,19 @@ export const HudRunOver = defineElement<{
                         ${champ ? 'MASH CHAMP!' : survived ? 'Survived!' : 'Restaurant Closed'}
                     </div>
                     <div class="subtitle">
-                        ${champ
-                            ? 'Every customer went home full.'
-                            : survived
-                              ? '...but the critics found it a little rubbery.'
-                              : 'The customers have had enough of your potatoes.'}
+                        ${endless
+                            ? `The restaurant closed after ${snapshot.wavesReached} waves`
+                            : champ
+                              ? 'Every customer went home full.'
+                              : survived
+                                ? '...but the critics found it a little rubbery.'
+                                : 'The customers have had enough of your potatoes.'}
                     </div>
+                    ${endless
+                        ? html`
+                              <div class="subtitle">Best: ${snapshot.endlessBest} waves</div>
+                          `
+                        : nothing}
                     <div class="stars">Prestige ${formatStars(snapshot.prestigeStars)}</div>
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>

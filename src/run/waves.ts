@@ -1,5 +1,6 @@
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {type PotatoSizeWeights} from '../potato/potato-size.js';
+import {getWaveSettings} from './endless.js';
 import {type RunState} from './run-state.js';
 
 /**
@@ -9,6 +10,7 @@ import {type RunState} from './run-state.js';
 export type WaveSpawn = {
     sizeWeights: PotatoSizeWeights;
     bossCount: number;
+    bossHp: number;
     chuteShare: number;
 };
 
@@ -40,7 +42,7 @@ export function advanceWaves(
         if (runState.breakRemainingMs <= 0) {
             runState.wavePhase = 'spawning';
             runState.spawnedInWave = 0;
-            const startingWave = waveConfig.waves[runState.waveIndex];
+            const startingWave = getWaveSettings(runState, runState.waveIndex);
             runState.seagullsSpawnedInWave = 0;
             if (startingWave) {
                 runState.beltSpeedPxPerMs = startingWave.speedPxPerMs;
@@ -53,7 +55,7 @@ export function advanceWaves(
     } else if (runState.wavePhase === 'done') {
         return spawns;
     } else {
-        const wave = waveConfig.waves[runState.waveIndex];
+        const wave = getWaveSettings(runState, runState.waveIndex);
         if (!wave) {
             runState.wavePhase = 'done';
             return spawns;
@@ -69,13 +71,17 @@ export function advanceWaves(
                     runState.spawnedInWave === Math.floor(wave.potatoCount / 2)
                         ? wave.bossCount
                         : 0,
+                bossHp: wave.bossHp,
                 chuteShare: wave.chuteShare,
             });
             runState.spawnedInWave++;
             timer.msUntilNextSpawn += wave.spawnIntervalMs;
 
             if (runState.spawnedInWave >= wave.potatoCount) {
-                if (runState.waveIndex >= waveConfig.waves.length - 1) {
+                if (
+                    runState.mode === 'campaign' &&
+                    runState.waveIndex >= waveConfig.waves.length - 1
+                ) {
                     runState.wavePhase = 'done';
                 } else {
                     runState.waveIndex++;

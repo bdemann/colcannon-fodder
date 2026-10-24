@@ -7,7 +7,13 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
 import {getPrestigeStars} from '../quality/quality.js';
-import {createInitialRunState, type RunStatus, type ServingResult} from '../run/run-state.js';
+import {getWaveSettings, getWavesReached, recordEndlessBest} from '../run/endless.js';
+import {
+    createInitialRunState,
+    RunStatus,
+    type RunMode,
+    type ServingResult,
+} from '../run/run-state.js';
 import {getSellValue, getTowerStats, getUpgradeCost, type TowerType} from '../tower/tower-type.js';
 import {TowerEntity} from '../tower/tower.entity.js';
 import {getServiceCost} from '../tower/wear.js';
@@ -22,6 +28,12 @@ export type HudSnapshot = {
     status: RunStatus;
     /** The current level's `levelId`, to highlight its card on the title. */
     levelId: string;
+    mode: RunMode;
+    /** True while the current or upcoming wave has a boss. */
+    isBossWave: boolean;
+    /** Endless: waves the restaurant got through, and the saved best (updated on a loss). */
+    wavesReached: number;
+    endlessBest: number;
     /** Whether the run is paused. */
     paused: boolean;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
@@ -48,6 +60,7 @@ export type HudSnapshot = {
     potatoesServed: number;
     /** 1-based number of the current or upcoming wave. */
     waveNumber: number;
+    /** Campaign wave total; 0 in endless (no total). */
     waveCount: number;
     wavePhase: 'break' | 'spawning' | 'done';
     /** Whole seconds left in the break (0 outside a break), so the HUD updates once a second. */
@@ -146,6 +159,13 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     return {
         status: runState.status,
         levelId: runState.levelId,
+        mode: runState.mode,
+        isBossWave: (getWaveSettings(runState, runState.waveIndex)?.bossCount ?? 0) > 0,
+        wavesReached: getWavesReached(runState),
+        endlessBest:
+            runState.mode === 'endless' && runState.status === RunStatus.Lost
+                ? recordEndlessBest(runState.levelId, getWavesReached(runState))
+                : 0,
         paused: runState.paused,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
@@ -169,7 +189,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         totalScore: Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0),
         potatoesServed: runState.potatoesServed,
         waveNumber: runState.waveIndex + 1,
-        waveCount: waveConfig.waves.length,
+        waveCount: runState.mode === 'endless' ? 0 : waveConfig.waves.length,
         wavePhase: runState.wavePhase,
         breakSecondsLeft:
             runState.wavePhase === 'break' ? Math.ceil(runState.breakRemainingMs / 1000) : 0,
