@@ -30,6 +30,8 @@ Earn the title of **Mash Champ**.
 
 -   Six towers: Knife, Boiling Pot, Masher, Microwave, Cricket Trap and Swiper.
 -   A cut x boil x mash combo with big floating hit numbers.
+-   Thrown projectiles: spinning mashers (meat hammers at level 3), boiling water and crickets fly
+    from the towers. Purely visual.
 -   Hand-applied toppings and customer orders: Buttered Mash, Champ, Colcannon, Bangers & Mash.
 -   The Pass: a heat-lamp counter, a busy waiter and customers who send bad plates back.
 -   Thieving seagulls, tower wear and servicing, upgrades, and restaurant prestige.
