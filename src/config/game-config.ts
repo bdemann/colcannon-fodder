@@ -355,6 +355,15 @@ export const economyConfig = {
 } as const;
 
 /**
+ * Co-op difficulty scaling by player count. Potatoes already scale with path count (one per path
+ * per spawn) and coins are shared, so income scales with players on its own; each extra player only
+ * adds starting coins, because every path needs its own set of towers.
+ */
+export const coopConfig = {
+    extraStartingCoinsPerPlayer: 100,
+} as const;
+
+/**
  * Customer orders (issue: orders and hand-applied toppings). `byWave` is indexed like
  * `waveConfig.waves`; `dishes` lists the `Dish` string values that wave may order (equal odds).
  * Learning curve comes from fewer, slower, simpler orders early.

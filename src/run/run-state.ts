@@ -1,5 +1,11 @@
 import {assertWrap} from '@augment-vir/assert';
-import {economyConfig, orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
+import {
+    coopConfig,
+    economyConfig,
+    orderConfig,
+    satisfactionConfig,
+    waveConfig,
+} from '../config/game-config.js';
 import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 
@@ -224,7 +230,9 @@ export function createInitialRunState(
         resetSpeedOnIncome: false,
         speedAccumulator: 0,
         satisfaction: satisfactionConfig.starting,
-        coins: economyConfig.startingCoins,
+        coins:
+            economyConfig.startingCoins +
+            (getLevel(levelId).minPlayers - 1) * coopConfig.extraStartingCoinsPerPlayer,
         coinsEarned: 0,
         coinEvents: [],
         nextCoinEventId: 1,
