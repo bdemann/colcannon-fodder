@@ -35,7 +35,6 @@ function getEarnLines(): string[] {
         'Quality scales the pay',
         `Filled order: +${orderConfig.fulfilled.coins} coins × size`,
         `Eaten anyway: ${economyConfig.servingCoins.incomplete} coins`,
-        'Sent back: no pay',
         `Seagull knocked out or fed: ${seagullConfig.bountyCoins} coins`,
         'Towers wear out with use. Click one and press S to service it.',
         `Selling a tower refunds ${Math.round(upgradeConfig.sellRefund * 100)}%`,

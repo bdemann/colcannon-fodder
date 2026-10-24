@@ -45,8 +45,6 @@ export const cozyShades = {
     beltStripe: '#e6dfcb',
     /** Darker grass for tufts. */
     grassDark: '#6f8035',
-    /** The warm heat lamp glow. */
-    lamp: '#ffd47a',
 } as const;
 
 /** The lab's style values. Shadows are Bark colored. */

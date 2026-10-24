@@ -4,7 +4,7 @@ import {createRestaurantSign} from './restaurant-art.js';
 
 /**
  * The hanging `RESTAURANT` sign. It is its own entity, with a zIndex above potatoes, so potatoes
- * queueing at the counter can never hide it. Presentation only. Added right after `LevelEntity`.
+ * crowding the door can never hide it. Presentation only. Added right after `LevelEntity`.
  */
 export class RestaurantSignEntity extends defineEntity({
     key: 'RestaurantSignEntity',
