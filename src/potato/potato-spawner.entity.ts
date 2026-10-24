@@ -91,6 +91,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             carryingPotatoId: 0,
             escapeX: 0,
             escapeY: 0,
+            fed: false,
         });
         runState.seagullsSpawnedInWave++;
         runState.msUntilNextSeagull = getSeagullIntervalMs(wave);

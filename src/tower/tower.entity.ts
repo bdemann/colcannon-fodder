@@ -32,6 +32,11 @@ const processSfx: Record<TowerType, Sfx> = {
     [TowerType.Swiper]: Sfx.Chop,
 };
 
+const trapBoxPx = 44;
+/** How long the thrown cricket is drawn in flight, and how high its arc peaks. */
+const trapThrowMs = 400;
+const trapArcHeightPx = 30;
+
 /** A built tower. Placed by the `PlaceTower` command; processes potatoes in range. */
 export class TowerEntity extends defineEntity({
     key: 'TowerEntity',
@@ -90,15 +95,40 @@ export class TowerEntity extends defineEntity({
                 width: 3,
             });
         view.addChild(rangeView);
-        const body = new Graphics()
-            .circle(0, 0, towerConfig.radius)
-            .fill({
-                color: definition.color,
-            })
-            .stroke({
-                color: '#222222',
-                width: 4,
-            });
+        const isTrap = definition.behavior === 'gull-trap';
+        const body = new Graphics();
+        if (isTrap) {
+            // A wooden box with a little cricket on top.
+            body.roundRect(-trapBoxPx / 2, -trapBoxPx / 2, trapBoxPx, trapBoxPx, 6)
+                .fill({
+                    color: '#8d6e63',
+                })
+                .stroke({
+                    color: '#5d4037',
+                    width: 4,
+                })
+                .ellipse(0, 0, 9, 4.5)
+                .fill({
+                    color: '#1b5e20',
+                })
+                .moveTo(-4, 3)
+                .lineTo(-9, 9)
+                .moveTo(4, 3)
+                .lineTo(9, 9)
+                .stroke({
+                    color: '#1b5e20',
+                    width: 2,
+                });
+        } else {
+            body.circle(0, 0, towerConfig.radius)
+                .fill({
+                    color: definition.color,
+                })
+                .stroke({
+                    color: '#222222',
+                    width: 4,
+                });
+        }
         view.addChild(body);
 
         if (definition.behavior === 'swipe') {
@@ -137,6 +167,7 @@ export class TowerEntity extends defineEntity({
             },
         });
         letter.anchor.set(0.5);
+        letter.visible = !isTrap;
         view.addChild(letter);
 
         const beam = new Graphics();
@@ -177,7 +208,7 @@ export class TowerEntity extends defineEntity({
 
         const definition = towerTypes[this.params.towerType];
         const gulls = [...this.state.entityStore.getEntities(SeagullEntity)].filter(
-            (gull) => gull.params.hp > 0,
+            (gull) => gull.params.hp > 0 && !gull.params.fed,
         );
         const gullCandidates = gulls.map((gull) => {
             return {
@@ -326,6 +357,16 @@ export class TowerEntity extends defineEntity({
                     color: definition.color,
                     width: 10,
                     alpha: 0.8 * (1 - t),
+                });
+            }
+        } else if (definition.behavior === 'gull-trap') {
+            if (lastProcessedAtMs >= 0 && sinceMs < trapThrowMs) {
+                // A cricket dot arcing from the trap to the gull it was thrown at.
+                const t = sinceMs / trapThrowMs;
+                const dx = lastTargetX - x;
+                const dy = lastTargetY - y;
+                splash.circle(dx * t, dy * t - trapArcHeightPx * 4 * t * (1 - t), 4).fill({
+                    color: '#1b5e20',
                 });
             }
         } else if (flashing) {
