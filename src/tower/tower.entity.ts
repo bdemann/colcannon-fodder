@@ -10,6 +10,8 @@ import {applyTowerHit} from '../potato/mash.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {RunStatus} from '../run/run-state.js';
 import {SeagullEntity} from '../seagull/seagull.entity.js';
+import {updateGullTrap} from './behaviors/gull-trap.js';
+import {updateSwiper} from './behaviors/swiper.js';
 import {shouldShowTowerRange} from './tower-placement.js';
 import {
     chooseAreaTargetIndexes,
@@ -23,6 +25,10 @@ const processSfx: Record<TowerType, Sfx> = {
     [TowerType.Knife]: Sfx.Chop,
     [TowerType.Boiler]: Sfx.Boil,
     [TowerType.Masher]: Sfx.Squish,
+    /** Placeholder sounds; the issues for these towers may swap them. */
+    [TowerType.Microwave]: Sfx.Boil,
+    [TowerType.CricketTrap]: Sfx.Build,
+    [TowerType.Swiper]: Sfx.Chop,
 };
 
 /** A built tower. Placed by the `PlaceTower` command; processes potatoes in range. */
@@ -32,6 +38,12 @@ export class TowerEntity extends defineEntity({
         position2dParamsShape,
         defineShape({
             towerType: enumShape(TowerType),
+            /** Unique per run (from `runState.nextTowerId`), so commands can name this tower. */
+            towerId: 0,
+            /** Upgrade level, starting at 1. */
+            level: 1,
+            /** `runState.elapsedMs` when built. Rotating towers use it for their phase. */
+            builtAtMs: 0,
             ownerSlot: 0,
             cooldownRemainingMs: 0,
             lastProcessedAtMs: -1,
@@ -115,6 +127,16 @@ export class TowerEntity extends defineEntity({
     }
 
     public override update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
+        const {behavior} = towerTypes[this.params.towerType];
+
+        if (behavior === 'gull-trap') {
+            updateGullTrap(this, msSinceLastExecute);
+            return;
+        } else if (behavior === 'swipe') {
+            updateSwiper(this, msSinceLastExecute);
+            return;
+        }
+
         this.params.cooldownRemainingMs = Math.max(
             0,
             this.params.cooldownRemainingMs - msSinceLastExecute,

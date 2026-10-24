@@ -99,12 +99,16 @@ export const gameCommandHandlers: {
             x: packet.x,
             y: packet.y,
             towerType: packet.towerType,
+            towerId: state.runState.nextTowerId,
+            level: 1,
+            builtAtMs: state.runState.elapsedMs,
             ownerSlot: getCommandSlot(),
             cooldownRemainingMs: 0,
             lastProcessedAtMs: -1,
             lastTargetX: 0,
             lastTargetY: 0,
         });
+        state.runState.nextTowerId++;
     },
     [GameCommandType.TogglePause]({state}) {
         if (state.runState?.status === RunStatus.Playing) {

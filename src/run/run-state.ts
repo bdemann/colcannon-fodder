@@ -118,6 +118,8 @@ export type RunState = {
     lastOrderEvent: LastOrderEvent | undefined;
     /** Next `potatoId` the spawner hands out, so commands can name a potato. */
     nextPotatoId: number;
+    /** Next `towerId` handed out by `PlaceTower`, so commands can name a tower (upgrades). */
+    nextTowerId: number;
     /** Potatoes seagulls escaped with. They count as dealt with for ending the run. */
     potatoesStolen: number;
     seagullsSpawnedInWave: number;
@@ -158,6 +160,7 @@ export function createInitialRunState(): RunState {
         msUntilNextOrder: orderConfig.firstOrderDelayMs,
         lastOrderEvent: undefined,
         nextPotatoId: 1,
+        nextTowerId: 1,
         potatoesStolen: 0,
         seagullsSpawnedInWave: 0,
         msUntilNextSeagull: 0,

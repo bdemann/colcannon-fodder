@@ -47,6 +47,9 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     maxMashHp: mashHp,
                     served: false,
                     carriedBySeagull: false,
+                    quality: 100,
+                    timesSentBack: 0,
+                    lastSwipedAtMs: -1,
                     potatoId: runState.nextPotatoId,
                     ...createNoToppings(),
                 });

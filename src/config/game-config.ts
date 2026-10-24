@@ -164,6 +164,24 @@ export const towerTypeConfig = {
         rangePx: 140,
         cooldownMs: 1000,
     },
+    /** A shortcut: big damage, fast, cheap, but rubbery potatoes (quality and prestige issue). */
+    microwave: {
+        damage: 50,
+        rangePx: 120,
+        cooldownMs: 700,
+    },
+    /** Seagull-only: lures one gull away with a cricket, then a long reload (cricket trap issue). */
+    'cricket-trap': {
+        damage: 0,
+        rangePx: 170,
+        cooldownMs: 6000,
+    },
+    /** A slow rotating arm that swipes potatoes back up the belt (swiper issue). Range = arm length. */
+    swiper: {
+        damage: 0,
+        rangePx: 110,
+        cooldownMs: 0,
+    },
 } as const;
 
 /** The mash meter. See issue #36. */
@@ -203,6 +221,9 @@ export const economyConfig = {
         knife: 40,
         boiler: 60,
         masher: 80,
+        microwave: 50,
+        'cricket-trap': 60,
+        swiper: 70,
     },
     servingCoins: {
         perfect: 20,

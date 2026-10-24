@@ -45,7 +45,7 @@ export const HudTowerToolbar = defineElement<{
             cursor: pointer;
             font-family: inherit;
             height: 110px;
-            width: 240px;
+            width: 200px;
         }
 
         button.selected {
@@ -61,6 +61,7 @@ export const HudTowerToolbar = defineElement<{
         }
 
         .swatch {
+            flex-shrink: 0;
             border-radius: 50%;
             height: 44px;
             width: 44px;

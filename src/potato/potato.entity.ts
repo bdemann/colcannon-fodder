@@ -33,6 +33,15 @@ export class PotatoEntity extends defineEntity({
             served: false,
             /** True while a seagull holds it: it stops moving, can't be served, towers skip it. */
             carriedBySeagull: false,
+            /** 0 to 100. Shortcuts (Microwave) and waiting under the heat lamp lower it. */
+            quality: 100,
+            /** How many times customers have sent this potato back to the start of the belt. */
+            timesSentBack: 0,
+            /**
+             * `runState.elapsedMs` of the last Swiper hit, or -1. A Swiper skips recently swiped
+             * potatoes.
+             */
+            lastSwipedAtMs: -1,
             /** Unique per run (from `runState.nextPotatoId`), so commands can name this potato. */
             potatoId: 0,
             /** Hand-applied toppings. Keys match `Topping` values. */
