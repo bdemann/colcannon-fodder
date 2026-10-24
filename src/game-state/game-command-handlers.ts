@@ -1,6 +1,9 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {type MaybePromise} from '@augment-vir/common';
+import {doorConfig} from '../config/door-config.js';
 import {economyConfig, getPotatoesPerRun} from '../config/game-config.js';
+import {PassLampEntity} from '../door/pass-lamp.entity.js';
+import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
 import {OrderBoardEntity} from '../order/order-board.entity.js';
@@ -54,6 +57,10 @@ export const gameCommandHandlers: {
             msUntilNextSpawn: 0,
         });
         await state.entityStore.addEntity(OrderBoardEntity, {});
+        await state.entityStore.addEntity(PassEntity, {
+            msUntilWaiter: doorConfig.waiterIntervalMs,
+        });
+        await state.entityStore.addEntity(PassLampEntity);
     },
     [GameCommandType.BeginRun]({state}) {
         if (state.runState?.status === RunStatus.Ready) {

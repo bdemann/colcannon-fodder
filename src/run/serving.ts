@@ -1,3 +1,4 @@
+import {doorConfig} from '../config/door-config.js';
 import {
     economyConfig,
     orderConfig,
@@ -105,7 +106,9 @@ export function stealPotato(runState: RunState): void {
 /**
  * Serves one potato at the restaurant: updates `runState` in place with the result's score,
  * satisfaction, counts and `lastServing`, and ends the run when it is won or lost. Simulation code
- * (the potato entity) calls this exactly once per potato that reaches the restaurant.
+ * (the potato entity) calls this exactly once per potato the waiter takes. A bad potato is sent
+ * back (`sentBack`, not counted) until it has been sent back `maxSendBacks` times; the caller
+ * resets it.
  */
 export function servePotato(
     runState: RunState,
@@ -117,26 +120,42 @@ export function servePotato(
         value: number;
         /** Hand-applied toppings. A perfect potato matching an open order fills it. */
         toppings: PotatoToppings;
+        /** How many times this potato was already sent back. */
+        timesSentBack: number;
     }>,
-): ServingResult {
+): {result: ServingResult; sentBack: boolean} {
     const result = evaluatePotato(serving.processing);
     if (runState.status !== RunStatus.Playing) {
-        return result;
+        return {
+            result,
+            sentBack: false,
+        };
     }
 
     const isPerfect = result === ServingResult.Perfect;
+    const sentBack = !isPerfect && serving.timesSentBack < doorConfig.maxSendBacks;
     const score = isPerfect
         ? Math.round(servingConfig.perfect.score * serving.value)
         : servingConfig[result].score;
     const coins = isPerfect
         ? Math.round(economyConfig.servingCoins.perfect * serving.value)
         : economyConfig.servingCoins[result];
-    const satisfactionDelta = getSatisfactionDelta(result, serving.processing);
-    runState.potatoesServed += 1;
-    runState.servingCounts[result] += 1;
-    runState.scoreBySlot[serving.ownerSlot] =
-        (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
-    runState.coins += coins;
+    const satisfactionDelta = isPerfect
+        ? getSatisfactionDelta(result, serving.processing)
+        : getSatisfactionDelta(result, serving.processing) -
+          doorConfig.angerStep * runState.sendBackStreak;
+    if (isPerfect) {
+        runState.sendBackStreak = 0;
+    } else {
+        runState.sendBackStreak += 1;
+    }
+    if (!sentBack) {
+        runState.potatoesServed += 1;
+        runState.servingCounts[result] += 1;
+        runState.scoreBySlot[serving.ownerSlot] =
+            (runState.scoreBySlot[serving.ownerSlot] ?? 0) + score;
+        runState.coins += coins;
+    }
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
         Math.max(0, runState.satisfaction + satisfactionDelta),
@@ -146,9 +165,10 @@ export function servePotato(
     runState.lastServing = {
         result,
         servedAtMs: runState.elapsedMs,
-        scoreDelta: score,
+        scoreDelta: sentBack ? 0 : score,
         satisfactionDelta: appliedSatisfactionDelta,
         progress: getMashProgress(serving.processing),
+        sentBack,
     };
 
     const status = checkRunEnd(runState);
@@ -157,5 +177,8 @@ export function servePotato(
         fillOrder(runState, serving);
     }
 
-    return result;
+    return {
+        result,
+        sentBack,
+    };
 }
