@@ -6,9 +6,9 @@ import {
     seagullConfig,
     servingConfig,
 } from '../config/game-config.js';
+import {qualityConfig} from '../config/quality-config.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {matchDish} from '../order/toppings.js';
-import {qualityConfig} from '../config/quality-config.js';
 import {getMashProgress} from '../potato/mash.js';
 import {pushRecentQuality} from '../quality/quality.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';

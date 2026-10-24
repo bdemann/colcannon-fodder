@@ -560,6 +560,7 @@ describe('servePotato send-backs', () => {
             value: 1,
             toppings: createNoToppings(),
             timesSentBack,
+            quality: 100,
         });
     }
 
@@ -677,7 +678,12 @@ describe('servePotato quality', () => {
     });
 
     it('only fills an order at or above the minimum quality', () => {
-        const order = {orderId: 1, dish: Dish.ButteredMash, createdAtMs: 0, expiresAtMs: 99_999};
+        const order = {
+            orderId: 1,
+            dish: Dish.ButteredMash,
+            createdAtMs: 0,
+            expiresAtMs: 99_999,
+        };
         const low = createInitialRunState();
         low.orders.push(order);
         serveAt(low, qualityConfig.minOrderQuality - 1);
