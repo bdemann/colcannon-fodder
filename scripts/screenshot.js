@@ -18,6 +18,7 @@
  * - `eval:CODE` runs JavaScript in the page, for example `eval:gameState.runState.status='lost'`
  */
 import {chromium} from 'playwright';
+import {parseUrl} from 'url-vir';
 
 const [
     url = 'http://localhost:5173/',
@@ -41,11 +42,8 @@ page.on('console', (message) => {
 page.on('pageerror', (error) => errors.push(error.message));
 
 /** `?solo` skips the Singleplayer / Co-op main menu so scripted runs start playing right away. */
-const pageUrl = new URL(url);
-if (!pageUrl.searchParams.has('menu')) {
-    pageUrl.searchParams.set('solo', '1');
-}
-await page.goto(pageUrl.href);
+const showMenu = 'menu' in parseUrl(url).searchParams;
+await page.goto(showMenu ? url : `${url}${url.includes('?') ? '&' : '?'}solo=1`);
 await page.waitForTimeout(3000);
 
 for (const action of actions) {
