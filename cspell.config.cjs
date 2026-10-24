@@ -12,6 +12,7 @@ module.exports = {
         'bdemann',
         'aimable',
         'targetable',
+        'maxlength',
         'playtesting',
         'empacotatron',
         'Fupi',

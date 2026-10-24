@@ -1,5 +1,6 @@
 import {assertWrap} from '@augment-vir/assert';
 import {type Coords} from '@augment-vir/common';
+import {cozyPalette} from '../art/cozy.js';
 
 /**
  * A path is a polyline of waypoints that potatoes walk from the first point to the last point. The
@@ -47,7 +48,32 @@ export type LevelDefinition = {
     spawnMode?: 'each-path' | 'pick-one';
     paths: ReadonlyArray<Readonly<PathDefinition>>;
     restaurant: Readonly<RestaurantDefinition>;
+    /** Fewest players this map supports. Singleplayer maps use 1. */
+    minPlayers: number;
+    /** Most players this map supports. Singleplayer maps use 1. */
+    maxPlayers: number;
 };
+
+/** Tells each player slot's path apart: used on the path rails, barn door and restaurant entrance. */
+export const slotColors: ReadonlyArray<string> = [
+    cozyPalette.tomato,
+    cozyPalette.sky,
+    cozyPalette.butter,
+    cozyPalette.pine,
+];
+
+/** The color of a player slot, wrapping for slots past the list. */
+export function getSlotColor(slot: number): string {
+    return slotColors[slot % slotColors.length] ?? cozyPalette.tomato;
+}
+
+/** Whether a map supports a room with this many players. */
+export function levelSupportsPlayerCount(
+    level: Readonly<Pick<LevelDefinition, 'minPlayers' | 'maxPlayers'>>,
+    playerCount: number,
+): boolean {
+    return playerCount >= level.minPlayers && playerCount <= level.maxPlayers;
+}
 
 /** Each consecutive pair of waypoints as a segment. */
 function getPathSegments(path: Readonly<PathDefinition>) {

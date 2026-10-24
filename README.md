@@ -140,6 +140,14 @@ npx virmator frontend
 
 Then open http://localhost:5173.
 
+## Co-op
+
+Co-op runs through electrovir's multiplayer server (`https://backend.mp.electrovir.com`) and is
+available on the GitHub Pages build (`https://bdemann.github.io/colcannon-fodder/`); the itch.io
+page just links there. Hosting the game on another domain needs that origin added to the game id
+`colcannon-fodder` on the server, plus the origin in `src/game-state/multiplayer-game-id.ts`.
+Elsewhere the co-op menu is hidden.
+
 ## How it was made (AI disclosure)
 
 -   The game concept, design direction and playtesting are by the human designer,

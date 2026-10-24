@@ -25,6 +25,7 @@ import {gameLockstepMod} from './game-lockstep.mod.js';
 import {type FullGameState} from './game-state.js';
 import {gameUpdateMod} from './game-update.mod.js';
 import {gameWorldSize} from './game-world.js';
+import {createSessionUi} from './multiplayer-session.js';
 
 /** Loads assets and installs the game mods so a new engine starts a playable session. */
 export async function bootstrapGame({
@@ -77,6 +78,7 @@ export async function bootstrapGame({
         keys: [],
         wheelSteps: 0,
         placementAngleDeg: 0,
+        session: createSessionUi(),
     };
 
     return {

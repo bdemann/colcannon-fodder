@@ -2,7 +2,7 @@ import {createFullDateInUserTimezone, toFormattedString} from 'date-vir';
 import {css, defineElement, html, nothing, svg} from 'element-vir';
 import {gameWorldSize} from '../game-state/game-world.js';
 import {getPositionAlongPath, type LevelDefinition} from '../level/level.js';
-import {getLevel, levels} from '../level/levels.js';
+import {getLevel, getLevelsForPlayerCount} from '../level/levels.js';
 import {getModeRecord} from '../records/records.js';
 import {RunStatus} from '../run/run-state.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
@@ -16,6 +16,9 @@ import {
     hudScrimStyles,
     hudSelectedStyles,
 } from './hud-theme.js';
+
+/** The title screen starts singleplayer runs, so it only offers 1-player maps. */
+const singleplayerCount = 1;
 
 /** The recipe order, with what each tower does to a potato. */
 const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
@@ -43,7 +46,7 @@ const previewSize = {
 } as const;
 
 /** A mini map of the level: the belt as a polyline, the restaurant square and chute dots. */
-function renderLevelPreview(level: Readonly<LevelDefinition>) {
+export function renderLevelPreview(level: Readonly<LevelDefinition>) {
     const scale = previewSize.width / gameWorldSize.width;
     const restaurantSize = level.restaurant.sizePx * scale;
 
@@ -89,7 +92,7 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
 }
 
 /** A level card's record line for the selected mode: best score, stars and Mash Champ count. */
-function renderRecord(snapshot: HudSnapshot, levelId: string) {
+export function renderRecord(snapshot: HudSnapshot, levelId: string) {
     const record = getModeRecord(snapshot.records, levelId, snapshot.mode);
 
     if (!record.bestScore) {
@@ -326,7 +329,8 @@ export const HudTitle = defineElement<{
         }
     `,
     render({inputs}) {
-        if (inputs.snapshot.status !== RunStatus.Ready) {
+        /** Rooms use the lobby panel instead. */
+        if (inputs.snapshot.status !== RunStatus.Ready || inputs.snapshot.session.roomName) {
             return html`
                 ${nothing}
             `;
@@ -371,6 +375,7 @@ export const HudTitle = defineElement<{
                         ).map((mode) => {
                             return html`
                                 <button
+                                    ?disabled=${!inputs.snapshot.isHost}
                                     class="mode ${mode === inputs.snapshot.mode ? 'selected' : ''}"
                                     @click=${() => {
                                         inputs.actions.selectMode(mode);
@@ -382,9 +387,10 @@ export const HudTitle = defineElement<{
                         })}
                     </div>
                     <div class="levels">
-                        ${levels.map((level) => {
+                        ${getLevelsForPlayerCount(singleplayerCount).map((level) => {
                             return html`
                                 <button
+                                    ?disabled=${!inputs.snapshot.isHost}
                                     class="level-card ${level.levelId === inputs.snapshot.levelId
                                         ? 'selected'
                                         : ''}"

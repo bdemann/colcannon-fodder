@@ -5,6 +5,8 @@ export const testLevel: LevelDefinition = {
     levelId: 'test',
     name: 'Test',
     description: '',
+    minPlayers: 1,
+    maxPlayers: 1,
     paths: [
         {
             pathId: 'west',

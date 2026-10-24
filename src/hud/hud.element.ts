@@ -2,10 +2,13 @@ import {css, defineElement, html, unsafeCSS} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
 import {HudBossBanner} from './hud-boss-banner.element.js';
 import {HudCoinPopups} from './hud-coin-popups.element.js';
+import {HudLobby} from './hud-lobby.element.js';
 import {HudMute} from './hud-mute.element.js';
 import {HudOrders} from './hud-orders.element.js';
 import {HudPause} from './hud-pause.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
+import {HudSession} from './hud-session.element.js';
+import {HudSimSpeed} from './hud-sim-speed.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
 import {hudFontFamily, hudThemeVariables} from './hud-theme.js';
@@ -61,6 +64,9 @@ export const GameHud = defineElement<{
             <${HudCoinPopups.assign({
                 snapshot: inputs.snapshot,
             })}></${HudCoinPopups}>
+            <${HudSimSpeed.assign({
+                snapshot: inputs.snapshot,
+            })}></${HudSimSpeed}>
             <${HudMute.assign({
                 snapshot: inputs.snapshot,
             })}></${HudMute}>
@@ -79,6 +85,14 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudTitle}>
+            <${HudLobby.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudLobby}>
+            <${HudSession.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudSession}>
         `;
     },
 });

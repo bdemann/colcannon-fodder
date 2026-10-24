@@ -5,6 +5,7 @@ import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.j
 import {progressionConfig} from '../config/progression-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
+import {createSessionUi, type SessionUi} from '../game-state/multiplayer-session.js';
 import {levels} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 import {type Topping} from '../order/topping.js';
@@ -18,10 +19,18 @@ import {getRecords, saveFinishedRun, type Records} from '../records/records.js';
 import {getWaveSettings, getWavesReached} from '../run/endless.js';
 import {
     createInitialRunState,
+    getSlotForClient,
+    isCoopRun,
     type RunMode,
     type RunStatus,
     type ServingResult,
 } from '../run/run-state.js';
+import {
+    getPlayerCount,
+    getSlotColor,
+    rankSlots,
+    type SlotContribution,
+} from '../run/slot-ranking.js';
 import {hasTowerIcons} from '../tower/tower-icons.js';
 import {
     getSellValue,
@@ -54,6 +63,29 @@ export type HudSnapshot = {
     newBest: boolean;
     /** Whether the run is paused. */
     paused: boolean;
+    /** Name of the slot that paused the run; `undefined` when not paused or in singleplayer. */
+    pausedByName: string | undefined;
+    /** True when more than one player is in the run; fast-forward is off then. */
+    isCoop: boolean;
+    /** True when this client owns slot 0, the only one that can restart or change level in co-op. */
+    isHost: boolean;
+    /** Everyone in the room by slot, for the co-op lobby. */
+    lobbyPlayers: Array<{
+        slot: number;
+        name: string;
+        color: string;
+        connected: boolean;
+        isYou: boolean;
+    }>;
+    /** True when this client joined a co-op run in progress with no free slot: it can only watch. */
+    isSpectator: boolean;
+    /** The main menu, room list and connection status. */
+    session: SessionUi;
+    /**
+     * Measured sim speed as a whole percent of real time (100 is real time). Filled in by `hudMod`,
+     * which owns the clock; `undefined` from `createHudSnapshot` and until measured.
+     */
+    simSpeedPercent: number | undefined;
     /** Fast-forward speed (1, 1.5, 2 or 3). */
     speed: number;
     /** True while the speed is armed to drop back to 1x at the next income. */
@@ -75,6 +107,10 @@ export type HudSnapshot = {
     }>;
     /** Sum of every slot's score. */
     totalScore: number;
+    /** Players in the run; 1 in singleplayer, where the per-player column is hidden. */
+    playerCount: number;
+    /** Every player ranked by points, highest first. Tied top scorers are all crowned. */
+    contributions: SlotContribution[];
     potatoesServed: number;
     /** 1-based number of the current or upcoming wave. */
     waveNumber: number;
@@ -197,6 +233,13 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
     const lastServing = runState.lastServing;
     const lastOrderEvent = runState.lastOrderEvent;
     const lastSteal = runState.lastSteal;
+    const session =
+        state.ui?.session ??
+        createSessionUi({
+            enabled: false,
+            search: '',
+        });
+    const clientId = state.multiplayerP2pLockStep?.multiplayerController.getClientId();
     const totalScore = Object.values(runState.scoreBySlot).reduce((sum, score) => sum + score, 0);
     const prestigeStars = getStarsFromPoints(runState.prestigePoints);
     const notice = runState.prestigeNotice;
@@ -204,11 +247,13 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         notice && runState.elapsedMs - notice.atMs < progressionConfig.noticeMs
             ? notice
             : undefined;
+    const playerCount = getPlayerCount(runState);
     // Saves the finished run exactly once (UI side), before `records` is read below.
     const newBest = saveFinishedRun(runState, {
         score: totalScore,
         stars: prestigeStars,
         wavesReached: getWavesReached(runState),
+        playerCount,
     });
 
     return {
@@ -220,6 +265,39 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
         records: getRecords(),
         newBest: newBest ?? false,
         paused: runState.paused,
+        pausedByName:
+            runState.paused && runState.pausedBySlot != undefined && isCoopRun(runState)
+                ? (runState.slotNames[runState.pausedBySlot] ??
+                  `Player ${runState.pausedBySlot + 1}`)
+                : undefined,
+        isCoop: isCoopRun(runState),
+        lobbyPlayers: Object.keys(runState.slotNames)
+            .map(Number)
+            .sort((first, second) => first - second)
+            .map((slot) => {
+                return {
+                    slot,
+                    name: runState.slotNames[slot] ?? `Player ${slot + 1}`,
+                    color: getSlotColor(slot),
+                    connected: runState.connected[slot] !== false,
+                    isYou: !!clientId && runState.slotByClientId[clientId] === slot,
+                };
+            }),
+        isSpectator:
+            !!state.ui?.session.roomName &&
+            Object.keys(runState.slotByClientId).length > 0 &&
+            !!clientId &&
+            !(clientId in runState.slotByClientId),
+        session: {
+            ...session,
+            rooms: session.rooms?.map((room) => {
+                return {
+                    ...room,
+                };
+            }),
+        },
+        isHost: getSlotForClient(runState, clientId) === 0,
+        simSpeedPercent: undefined,
         speed: runState.speed,
         resetSpeedOnIncome: runState.resetSpeedOnIncome,
         satisfaction: runState.satisfaction,
@@ -240,6 +318,8 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                 };
             }),
         totalScore,
+        playerCount,
+        contributions: rankSlots(runState),
         potatoesServed: runState.potatoesServed,
         waveNumber: runState.waveIndex + 1,
         waveCount: runState.mode === 'endless' ? 0 : waveConfig.waves.length,

@@ -1,6 +1,12 @@
 import {assertWrap} from '@augment-vir/assert';
-import {economyConfig, orderConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
-import {defaultLevel} from '../level/levels.js';
+import {
+    coopConfig,
+    economyConfig,
+    orderConfig,
+    satisfactionConfig,
+    waveConfig,
+} from '../config/game-config.js';
+import {defaultLevel, getLevel} from '../level/levels.js';
 import {type Dish} from '../order/dish.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -110,6 +116,8 @@ export type RunState = {
     status: RunStatus;
     /** Freezes the whole simulation while `Playing`. Toggled by `TogglePause`. */
     paused: boolean;
+    /** The slot that paused the run, so only it (or slot 0) can resume. `undefined` when not paused. */
+    pausedBySlot: number | undefined;
     /** Fast-forward: simulation steps per frame (1, 1.5, 2 or 3). Set by `SetSpeed`. */
     speed: number;
     /** When true, the next income sets `speed` back to 1 (see `addCoins`). */
@@ -124,8 +132,19 @@ export type RunState = {
     /** The latest coin events, oldest first. */
     coinEvents: CoinEvent[];
     nextCoinEventId: number;
-    /** Score earned per player slot. Singleplayer only uses slot 0. */
+    /** Score earned per player slot. Has an entry for every slot the level defines. */
     scoreBySlot: Record<number, number>;
+    /** Perfect servings per player slot, for the co-op contribution ranking. */
+    perfectBySlot: Record<number, number>;
+    /**
+     * Which player slot each client id owns. Lives in synced state because client ids are random
+     * per page load. Empty in singleplayer, where every command resolves to slot 0.
+     */
+    slotByClientId: Record<string, number>;
+    /** Display name per slot. */
+    slotNames: Record<number, string>;
+    /** Whether each slot's player is currently in the room. Disconnected slots can be reclaimed. */
+    connected: Record<number, boolean>;
     potatoesSpawned: number;
     /** Potatoes that reached the restaurant. */
     potatoesServed: number;
@@ -180,6 +199,41 @@ export type RunState = {
     lastBossSpawnAtMs: number;
 };
 
+/** One zero score for every slot that owns a path in the level (at least slot 0). */
+function createInitialScoreBySlot(levelId: string): Record<number, number> {
+    const scoreBySlot: Record<number, number> = {
+        0: 0,
+    };
+
+    for (const path of getLevel(levelId).paths) {
+        scoreBySlot[path.ownerSlot] = 0;
+    }
+
+    return scoreBySlot;
+}
+
+/** The slot a client owns. Unknown clients (and singleplayer) are slot 0. */
+export function getSlotForClient(
+    runState: Readonly<Pick<RunState, 'slotByClientId'>> | undefined,
+    clientId: string | undefined,
+): number {
+    if (!runState || clientId == undefined) {
+        return 0;
+    }
+
+    return runState.slotByClientId[clientId] ?? 0;
+}
+
+/**
+ * Whether the run is co-op: more than one client holds a slot. `StartRun` always registers the
+ * host, so a lone player (singleplayer or a host nobody has joined yet) is not co-op.
+ */
+export function isCoopRun(
+    runState: Readonly<Pick<RunState, 'slotByClientId'>> | undefined,
+): boolean {
+    return !!runState && Object.keys(runState.slotByClientId).length > 1;
+}
+
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
 
 export function createInitialRunState(
@@ -191,17 +245,22 @@ export function createInitialRunState(
         mode,
         status: RunStatus.Playing,
         paused: false,
+        pausedBySlot: undefined,
         speed: 1,
         resetSpeedOnIncome: false,
         speedAccumulator: 0,
         satisfaction: satisfactionConfig.starting,
-        coins: economyConfig.startingCoins,
+        coins:
+            economyConfig.startingCoins +
+            (getLevel(levelId).minPlayers - 1) * coopConfig.extraStartingCoinsPerPlayer,
         coinsEarned: 0,
         coinEvents: [],
         nextCoinEventId: 1,
-        scoreBySlot: {
-            0: 0,
-        },
+        scoreBySlot: createInitialScoreBySlot(levelId),
+        perfectBySlot: {},
+        slotByClientId: {},
+        slotNames: {},
+        connected: {},
         potatoesSpawned: 0,
         potatoesServed: 0,
         servingCounts: {

@@ -21,6 +21,7 @@ import {type PotatoToppings} from '../order/topping.js';
 import {getPotatoToppings} from '../order/toppings.js';
 import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
+import {getPlayerCount, getSlotColor} from '../run/slot-ranking.js';
 import {type TowerType} from '../tower/tower-type.js';
 import {getHitDamage, getHitMultiplier} from './mash.js';
 import {getPotatoMotion, getSteamPhase, isBlinking} from './potato-motion.js';
@@ -121,6 +122,14 @@ export class PotatoEntity extends defineEntity({
             height: radius * 0.9,
             offsetY: radius * 0.8,
         });
+        if (getPlayerCount(this.state.runState) > 1) {
+            const path = getPath(this.state.level, this.params.pathId);
+            const marker = new Graphics();
+            marker.ellipse(0, radius * 0.8, radius * 1.1, radius * 0.4).fill({
+                color: getSlotColor(path.ownerSlot),
+            });
+            view.addChildAt(marker, 0);
+        }
         const shadow = new Graphics({
             label: shadowLabel,
         });

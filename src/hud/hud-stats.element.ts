@@ -131,6 +131,29 @@ export const HudStats = defineElement<{
             white-space: nowrap;
         }
 
+        .players {
+            border-top: 3px solid var(--hud-sand);
+            display: flex;
+            flex-direction: column;
+            font-size: 26px;
+            gap: 2px;
+            margin-top: 4px;
+            padding-top: 6px;
+        }
+
+        .player {
+            align-items: center;
+            border-left: 10px solid var(--slot-color);
+            display: flex;
+            gap: 12px;
+            padding-left: 10px;
+        }
+
+        .player .name {
+            flex: 1;
+            font-weight: 600;
+        }
+
         .wave {
             font-size: 30px;
             font-weight: 700;
@@ -218,6 +241,20 @@ export const HudStats = defineElement<{
                     </div>
                     <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
                 </div>
+                ${snapshot.playerCount > 1
+                    ? html`
+                          <div class="players">
+                              ${snapshot.contributions.map((entry) => {
+                                  return html`
+                                      <div class="player" style="--slot-color: ${entry.color}">
+                                          <span class="name">${entry.name}</span>
+                                          <span>${entry.points.toLocaleString('en-US')}</span>
+                                      </div>
+                                  `;
+                              })}
+                          </div>
+                      `
+                    : nothing}
                 <div class="prestige">
                     Prestige ${starRow(snapshot.prestigeStars)}
                     <span class="points">${snapshot.prestigePoints}</span>

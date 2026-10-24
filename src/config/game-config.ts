@@ -202,6 +202,11 @@ export const seagullConfig = {
 export const towerConfig = {
     /** Towers are circles of this radius. Used for drawing and for overlap checks. */
     radius: 30,
+    /**
+     * In a multi-slot (co-op) level, a player may only build within this distance of a path they
+     * own.
+     */
+    buildRadiusNearOwnPathPx: 300,
 } as const;
 
 /** How the Cozy tower art is drawn and animated (render-only). */
@@ -402,6 +407,15 @@ export const economyConfig = {
 } as const;
 
 /**
+ * Co-op difficulty scaling by player count. Potatoes already scale with path count (one per path
+ * per spawn) and coins are shared, so income scales with players on its own; each extra player only
+ * adds starting coins, because every path needs its own set of towers.
+ */
+export const coopConfig = {
+    extraStartingCoinsPerPlayer: 100,
+} as const;
+
+/**
  * Customer orders (issue: orders and hand-applied toppings). `byWave` is indexed like
  * `waveConfig.waves`; `dishes` lists the `Dish` string values that wave may order (equal odds).
  * Learning curve comes from fewer, slower, simpler orders early.
@@ -489,4 +503,24 @@ export const speedConfig = {
     ],
     /** The speed "fast until income" jumps to when the run is at normal speed. */
     untilIncomeSpeed: 2,
+} as const;
+
+/** One color per player slot (4 slots), for towers, potatoes and the co-op score column. */
+export const slotColors = [
+    '#e0533d',
+    '#4a90c8',
+    '#6aa84f',
+    '#9b59b6',
+];
+
+/** Lockstep frame timing and the host's sim-speed readout. */
+export const frameConfig = {
+    /**
+     * Time between lockstep frames, and the simulated time each frame advances (about 30 per
+     * second). The host waits this long after each frame finishes (#29), so a longer frame means
+     * the per-frame cost is a smaller share of the wait and slow machines fall behind less.
+     */
+    frameMs: 1000 / 30,
+    /** The sim-speed indicator averages over this much real time. */
+    simSpeedWindowMs: 2000,
 } as const;

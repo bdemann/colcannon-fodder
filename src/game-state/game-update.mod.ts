@@ -1,10 +1,12 @@
 import {defineAnthaMod} from '@antha/engine';
-import {loadLevelChoice} from '../level/level-choice.js';
 import {deployEnv, DeployEnv} from './deploy-env.js';
-import {GameCommandType, sendGameCommand} from './game-command.js';
 import {type FullGameState} from './game-state.js';
+import {SessionScreen, startSingleplayer} from './multiplayer-session.js';
 
-/** Starts singleplayer and the first run once the engine is ready. */
+/**
+ * Starts singleplayer and the first run once the engine is ready, unless co-op is available and the
+ * player has to pick Singleplayer or Co-op from the main menu first.
+ */
 export const gameUpdateMod = defineAnthaMod<
     FullGameState & {
         hasStartedInitialGame: boolean;
@@ -28,11 +30,8 @@ export const gameUpdateMod = defineAnthaMod<
             (globalThis as Record<string, unknown>).gameState = state;
         }
 
-        state.multiplayerP2pLockStep.multiplayerController.startSingleplayer();
-        sendGameCommand(state, {
-            type: GameCommandType.StartRun,
-            ready: true,
-            levelId: loadLevelChoice(),
-        });
+        if (state.ui?.session.screen === SessionScreen.Playing) {
+            startSingleplayer(state);
+        }
     },
 });

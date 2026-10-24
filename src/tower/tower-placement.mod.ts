@@ -7,7 +7,7 @@ import {knifeConfig} from '../config/knife-config.js';
 import {GameCommandType, sendGameCommand} from '../game-state/game-command.js';
 import {type FullGameState} from '../game-state/game-state.js';
 import {getStarsFromPoints, isTowerUnlocked} from '../progression/progression.js';
-import {RunStatus} from '../run/run-state.js';
+import {getSlotForClient, RunStatus} from '../run/run-state.js';
 import {getKnifeLine, getPerpendicularKnifeAngle} from './behaviors/knife.js';
 import {drawTower} from './tower-art.js';
 import {canAfford, canPlaceTower} from './tower-placement.js';
@@ -142,6 +142,10 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
             );
         }
 
+        const slot = getSlotForClient(
+            state.runState,
+            state.multiplayerP2pLockStep?.multiplayerController.getClientId(),
+        );
         const builtTowers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
             return {
                 x: tower.params.x,
@@ -176,6 +180,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
                     canPlaceTower({
                         level: state.level,
                         towers: builtTowers,
+                        slot,
                         point: {
                             x,
                             y,
@@ -201,6 +206,7 @@ export const towerPlacementMod = defineAnthaMod<FullGameState>({
         const placement = canPlaceTower({
             level: state.level,
             towers: builtTowers,
+            slot,
             point: {
                 x,
                 y,

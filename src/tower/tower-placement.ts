@@ -16,11 +16,18 @@ export function canPlaceTower({
     level,
     towers,
     point,
+    slot = 0,
 }: Readonly<{
     level: Readonly<LevelDefinition>;
     /** Centers of the towers already built. */
     towers: ReadonlyArray<Readonly<Coords>>;
     point: Readonly<Coords>;
+    /**
+     * The placing player's slot. In a level with several slots, towers must be within
+     * `towerConfig.buildRadiusNearOwnPathPx` of a path this slot owns. Single-slot levels have no
+     * such limit, so singleplayer is unchanged.
+     */
+    slot?: number;
 }>): PlacementCheck {
     const radius = towerConfig.radius;
 
@@ -41,6 +48,22 @@ export function canPlaceTower({
             valid: false,
             reason: 'Too close to the path',
         };
+    }
+
+    if (new Set(level.paths.map((path) => path.ownerSlot)).size > 1) {
+        const nearOwnPath = level.paths.some((path) => {
+            return (
+                path.ownerSlot === slot &&
+                getDistanceToPath(path, point) <= towerConfig.buildRadiusNearOwnPathPx
+            );
+        });
+
+        if (!nearOwnPath) {
+            return {
+                valid: false,
+                reason: 'Too far from your path',
+            };
+        }
     }
 
     const {restaurant} = level;

@@ -101,6 +101,10 @@ export const inputMod = defineAnthaMod<
             },
         );
         globalThis.addEventListener('keydown', (event) => {
+            /** Typing in a HUD text field (room name) must not trigger game hotkeys. */
+            if (event.composedPath()[0] instanceof HTMLInputElement) {
+                return;
+            }
             if (!event.repeat) {
                 buffered.keys.push(event.key);
             }
