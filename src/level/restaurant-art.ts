@@ -3,7 +3,6 @@ import {Container, Text} from 'pixi.js';
 import {
     addSoftShadow,
     cozyPalette,
-    cozyShades,
     cozyStyle,
     drawCozyLine,
     drawCozyShape,
@@ -44,9 +43,9 @@ export function createCozyText({
 }
 
 /**
- * The cottage storefront: cream walls, a Tomato striped awning, a counter window with the heat lamp
- * glow, and a door. Static. Sits under the potatoes; the sign is separate (see
- * `createRestaurantSign`) so it can be drawn above them.
+ * The cottage storefront: cream walls, a Tomato striped awning, a counter window, and a door.
+ * Static. Sits under the potatoes; the sign is separate (see `createRestaurantSign`) so it can be
+ * drawn above them.
  */
 export function createRestaurantBuilding(restaurant: Readonly<RestaurantDefinition>): Container {
     const container = new Container();
@@ -84,7 +83,7 @@ export function createRestaurantBuilding(restaurant: Readonly<RestaurantDefiniti
         outlineScale: 0.8,
     });
 
-    // service window and heat lamp glow
+    // service window
     drawCozyShape(art, {
         path: roundRectPath({
             x: -92,
@@ -96,20 +95,6 @@ export function createRestaurantBuilding(restaurant: Readonly<RestaurantDefiniti
         fill: cozyPalette.walnut,
         outlineScale: 0.9,
     });
-    for (let layer = 0; layer < 5; layer++) {
-        drawCozyShape(art, {
-            path: ellipsePath({
-                x: -33,
-                y: 18,
-                rx: 52 - layer * 9,
-                ry: 26 - layer * 4,
-            }),
-            fill: layer < 3 ? cozyPalette.butter : cozyShades.lamp,
-            alpha: 0.22,
-            outline: false,
-            highlight: false,
-        });
-    }
     // plate of mash on the counter
     drawCozyShape(art, {
         path: ellipsePath({
@@ -251,7 +236,7 @@ export function createRestaurantBuilding(restaurant: Readonly<RestaurantDefiniti
         ]),
         fill: cozyPalette.walnut,
     });
-    // little chimney curl of steam from the lamp
+    // little chimney curl of steam from the plate
     drawCozyLine(art, {
         path(graphics) {
             graphics.moveTo(-40, 8).bezierCurveTo(-36, -2, -30, 2, -33, -10);

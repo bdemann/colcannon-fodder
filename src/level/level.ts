@@ -168,7 +168,20 @@ export function getPathDirectionAt(path: Readonly<PathDefinition>, distancePx: n
 
 /** Shortest distance from a point to any segment of the path's center line. */
 export function getDistanceToPath(path: Readonly<PathDefinition>, point: Readonly<Coords>): number {
+    return getNearestPathPoint(path, point).distance;
+}
+
+/**
+ * The closest point on the path's center line: how far away it is and how far along the path (from
+ * the first waypoint) it lies.
+ */
+export function getNearestPathPoint(
+    path: Readonly<PathDefinition>,
+    point: Readonly<Coords>,
+): {distance: number; alongPx: number} {
     let shortest = Infinity;
+    let alongPx = 0;
+    let walked = 0;
 
     for (const {start, end} of getPathSegments(path)) {
         const segmentX = end.x - start.x;
@@ -187,10 +200,19 @@ export function getDistanceToPath(path: Readonly<PathDefinition>, point: Readonl
         const closestX = start.x + segmentX * progress;
         const closestY = start.y + segmentY * progress;
 
-        shortest = Math.min(shortest, Math.hypot(point.x - closestX, point.y - closestY));
+        const distance = Math.hypot(point.x - closestX, point.y - closestY);
+
+        if (distance < shortest) {
+            shortest = distance;
+            alongPx = walked + Math.sqrt(segmentLengthSquared) * progress;
+        }
+        walked += Math.sqrt(segmentLengthSquared);
     }
 
-    return shortest;
+    return {
+        distance: shortest,
+        alongPx,
+    };
 }
 
 /** Finds a path by id or throws, since a potato on a missing path is a programming error. */

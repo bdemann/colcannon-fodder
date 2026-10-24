@@ -1,10 +1,7 @@
 import {type MultiplayerFramePacket} from '@antha/multiplayer-p2p-lock-step';
 import {SeededRandom, type MaybePromise} from '@augment-vir/common';
-import {doorConfig} from '../config/door-config.js';
 import {economyConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
-import {PassLampEntity} from '../door/pass-lamp.entity.js';
-import {PassEntity} from '../door/pass.entity.js';
 import {BeltEntity} from '../level/belt.entity.js';
 import {ChuteEntity} from '../level/chute.entity.js';
 import {LevelEntity} from '../level/level.entity.js';
@@ -145,10 +142,6 @@ export const gameCommandHandlers: {
             clumpPathId: '',
         });
         await state.entityStore.addEntity(OrderBoardEntity, {});
-        await state.entityStore.addEntity(PassEntity, {
-            msUntilWaiter: doorConfig.waiterIntervalMs,
-        });
-        await state.entityStore.addEntity(PassLampEntity);
     },
     [GameCommandType.BeginRun]({detail, state}) {
         const {runState} = state;

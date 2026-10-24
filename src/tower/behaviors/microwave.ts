@@ -48,11 +48,16 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
         x: tower.params.x,
         y: tower.params.y,
     };
-    const potatoes = [...tower.state.entityStore.getEntities(PotatoEntity)].filter((potato) => {
-        return (
-            !potato.params.served && !potato.params.carriedBySeagull && potato.params.dropInMs <= 0
-        );
-    });
+    const potatoes: PotatoEntity[] = [];
+    for (const potato of tower.state.entityStore.getEntities(PotatoEntity)) {
+        if (
+            !potato.params.served &&
+            !potato.params.carriedBySeagull &&
+            potato.params.dropInMs <= 0
+        ) {
+            potatoes.push(potato);
+        }
+    }
 
     let target: PotatoEntity | undefined;
     for (const potato of potatoes) {

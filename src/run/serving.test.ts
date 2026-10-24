@@ -1,6 +1,5 @@
 import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {doorConfig} from '../config/door-config.js';
 import {
     economyConfig,
     orderConfig,
@@ -135,11 +134,10 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
 
-        assert.strictEquals(result.result, ServingResult.Perfect);
+        assert.strictEquals(result, ServingResult.Perfect);
         assert.strictEquals(runState.scoreBySlot[0], servingConfig.perfect.score);
         assert.strictEquals(runState.satisfaction, 50 + servingConfig.perfect.satisfaction);
         assert.strictEquals(runState.potatoesServed, 1);
@@ -150,7 +148,6 @@ describe(servePotato.name, () => {
             scoreDelta: servingConfig.perfect.score,
             satisfactionDelta: servingConfig.perfect.satisfaction,
             progress: 1,
-            sentBack: false,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);
     });
@@ -162,7 +159,6 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 2,
             quality: 100,
         });
         assert.strictEquals(runState.servingCounts[ServingResult.Incomplete], 1);
@@ -178,7 +174,6 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(runState.satisfaction, satisfactionConfig.max);
@@ -192,7 +187,6 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(runState.satisfaction, 0);
@@ -205,7 +199,6 @@ describe(servePotato.name, () => {
             ownerSlot: 1,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(runState.scoreBySlot[1], servingConfig.perfect.score);
@@ -220,7 +213,6 @@ describe(servePotato.name, () => {
                 ownerSlot: 0,
                 value: 1,
                 toppings: createNoToppings(),
-                timesSentBack: 0,
                 quality: 100,
             });
         }
@@ -232,10 +224,9 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
-        assert.strictEquals(result.result, ServingResult.Perfect);
+        assert.strictEquals(result, ServingResult.Perfect);
         assert.deepEquals(runState, before);
     });
 
@@ -249,7 +240,6 @@ describe(servePotato.name, () => {
                 ownerSlot: 0,
                 value: 1,
                 toppings: createNoToppings(),
-                timesSentBack: 0,
                 quality: 100,
             });
             assert.strictEquals(runState.status, RunStatus.Playing);
@@ -259,10 +249,10 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
-        assert.strictEquals(runState.status, RunStatus.Won);
+        const finalStatus = [runState][0]?.status;
+        assert.strictEquals(finalStatus, RunStatus.Won);
         assert.strictEquals(runState.potatoesServed, runState.potatoesSpawned);
     });
 
@@ -277,7 +267,6 @@ describe(servePotato.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Lost);
@@ -292,7 +281,6 @@ describe('servePotato size value', () => {
             ownerSlot: 0,
             value: potatoSizeConfig.large.value,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(large.scoreBySlot[0], 180);
@@ -305,7 +293,6 @@ describe('servePotato size value', () => {
             ownerSlot: 0,
             value: potatoSizeConfig.small.value,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(small.scoreBySlot[0], 60);
@@ -319,7 +306,6 @@ describe('servePotato size value', () => {
             ownerSlot: 0,
             value: 1.8,
             toppings: createNoToppings(),
-            timesSentBack: 2,
             quality: 100,
         });
         assert.strictEquals(runState.scoreBySlot[0], 0);
@@ -351,7 +337,6 @@ describe('servePotato order filling', () => {
             ownerSlot: 0,
             value: overrides.value ?? 1,
             toppings: butter,
-            timesSentBack: 0,
             quality: 100,
         });
     }
@@ -473,7 +458,6 @@ describe('servePotato coins', () => {
                 ownerSlot: 0,
                 value: 1,
                 toppings: createNoToppings(),
-                timesSentBack: 2,
                 quality: 100,
             });
 
@@ -493,7 +477,6 @@ describe('servePotato coins', () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
 
@@ -502,21 +485,20 @@ describe('servePotato coins', () => {
 });
 
 describe('servePotato coin events', () => {
-    function serve(processing: PotatoProcessing, timesSentBack: number) {
+    function serve(processing: PotatoProcessing) {
         const runState = createInitialRunState();
         servePotato(runState, {
             processing,
             ownerSlot: 0,
             value: 1.8,
             toppings: createNoToppings(),
-            timesSentBack,
             quality: 50,
         });
         return runState;
     }
 
     it('explains a perfect serving', () => {
-        const runState = serve(perfect, 0);
+        const runState = serve(perfect);
 
         assert.strictEquals(
             assertWrap.isDefined(runState.coinEvents[0]).reason,
@@ -525,18 +507,8 @@ describe('servePotato coin events', () => {
         assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).amount, 18);
     });
 
-    it('records a zero-coin event for a send-back', () => {
-        const runState = serve(partial, 0);
-
-        assert.strictEquals(
-            assertWrap.isDefined(runState.coinEvents[0]).reason,
-            'Sent back · no pay',
-        );
-        assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).amount, 0);
-    });
-
-    it('records the eaten-anyway pay once sends run out', () => {
-        const runState = serve(partial, doorConfig.maxSendBacks);
+    it('records the eaten-anyway pay', () => {
+        const runState = serve(partial);
 
         assert.strictEquals(assertWrap.isDefined(runState.coinEvents[0]).reason, 'Eaten anyway');
         assert.strictEquals(
@@ -560,10 +532,10 @@ describe('win check with stolen potatoes', () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
-        assert.strictEquals(runState.status, RunStatus.Won);
+        const finalStatus = [runState][0]?.status;
+        assert.strictEquals(finalStatus, RunStatus.Won);
     });
 
     it('wins when the last potato is stolen', () => {
@@ -575,12 +547,12 @@ describe('win check with stolen potatoes', () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         stealPotato(runState);
         assert.strictEquals(runState.potatoesStolen, 1);
-        assert.strictEquals(runState.status, RunStatus.Won);
+        const finalStatus = [runState][0]?.status;
+        assert.strictEquals(finalStatus, RunStatus.Won);
     });
 });
 
@@ -609,65 +581,34 @@ describe(stealPotato.name, () => {
     });
 });
 
-describe('servePotato send-backs', () => {
-    function serve(runState: ReturnType<typeof createInitialRunState>, timesSentBack: number) {
+describe('servePotato bad potatoes', () => {
+    function serve(runState: ReturnType<typeof createInitialRunState>) {
         return servePotato(runState, {
             processing: raw,
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack,
             quality: 100,
         });
     }
 
-    it('sends a bad potato back without counting it', () => {
+    it('counts a bad potato once, on contact', () => {
         const runState = createInitialRunState();
-        const outcome = serve(runState, 0);
-        assert.strictEquals(outcome.sentBack, true);
-        assert.strictEquals(runState.potatoesServed, 0);
-        assert.strictEquals(runState.sendBackStreak, 1);
-        assert.strictEquals(runState.lastServing?.sentBack, true);
+        const result = serve(runState);
+        assert.strictEquals(result, ServingResult.Raw);
+        assert.strictEquals(runState.potatoesServed, 1);
         assert.strictEquals(
             runState.satisfaction,
             satisfactionConfig.starting + servingConfig.raw.satisfaction,
         );
     });
 
-    it('makes each consecutive penalty worse', () => {
+    it('does not make consecutive penalties worse', () => {
         const runState = createInitialRunState();
-        serve(runState, 0);
+        serve(runState);
         const first = runState.lastServing?.satisfactionDelta ?? 0;
-        serve(runState, 1);
-        assert.strictEquals(runState.lastServing?.satisfactionDelta, first - doorConfig.angerStep);
-    });
-
-    it('eats the potato after the max send-backs, still with the streak penalty', () => {
-        const runState = createInitialRunState();
-        serve(runState, 0);
-        serve(runState, 1);
-        const outcome = serve(runState, doorConfig.maxSendBacks);
-        assert.strictEquals(outcome.sentBack, false);
-        assert.strictEquals(runState.potatoesServed, 1);
-        assert.strictEquals(runState.sendBackStreak, 3);
-        assert.strictEquals(
-            runState.lastServing?.satisfactionDelta,
-            servingConfig.raw.satisfaction - doorConfig.angerStep * 2,
-        );
-    });
-
-    it('resets the streak on a perfect serving', () => {
-        const runState = createInitialRunState();
-        serve(runState, 0);
-        servePotato(runState, {
-            processing: perfect,
-            ownerSlot: 0,
-            value: 1,
-            toppings: createNoToppings(),
-            timesSentBack: 0,
-            quality: 100,
-        });
-        assert.strictEquals(runState.sendBackStreak, 0);
+        serve(runState);
+        assert.strictEquals(runState.lastServing?.satisfactionDelta, first);
     });
 
     it('still wins on served plus stolen', () => {
@@ -675,9 +616,8 @@ describe('servePotato send-backs', () => {
         runState.wavePhase = 'done';
         runState.potatoesSpawned = 2;
         stealPotato(runState);
-        serve(runState, 0);
         assert.strictEquals(runState.status, RunStatus.Playing);
-        serve(runState, doorConfig.maxSendBacks);
+        serve(runState);
         const finalStatus = [runState][0]?.status;
         assert.strictEquals(finalStatus, RunStatus.Won);
     });
@@ -695,7 +635,6 @@ describe('servePotato quality', () => {
             ownerSlot: 0,
             value: 1,
             toppings: butter,
-            timesSentBack: 0,
             quality,
         });
     }
@@ -728,7 +667,6 @@ describe('servePotato quality', () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
 
@@ -762,25 +700,10 @@ describe('servePotato bosses', () => {
             ownerSlot: 0,
             value: potatoSizeConfig.king.value,
             toppings: createNoToppings(),
-            timesSentBack: doorConfig.maxSendBacks,
             quality: 100,
             penaltyMultiplier: 3,
         });
         assert.strictEquals(runState.lastServing?.satisfactionDelta, -45);
-    });
-
-    it('still sends a bad boss back', () => {
-        const runState = createInitialRunState();
-        const {sentBack} = servePotato(runState, {
-            processing: raw,
-            ownerSlot: 0,
-            value: potatoSizeConfig.king.value,
-            toppings: createNoToppings(),
-            timesSentBack: 0,
-            quality: 100,
-            penaltyMultiplier: 3,
-        });
-        assert.isTrue(sentBack);
     });
 
     it('pays a perfect boss by its value', () => {
@@ -790,7 +713,6 @@ describe('servePotato bosses', () => {
             ownerSlot: 0,
             value: potatoSizeConfig.king.value,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
             penaltyMultiplier: 3,
         });
@@ -844,7 +766,6 @@ describe(isRunCleared.name, () => {
             ownerSlot: 0,
             value: 1,
             toppings: createNoToppings(),
-            timesSentBack: 0,
             quality: 100,
         });
         assert.strictEquals(runState.status, RunStatus.Playing);

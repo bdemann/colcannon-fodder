@@ -120,6 +120,11 @@ export const HudRunOver = defineElement<{
         button {
             ${hudPrimaryButtonStyles}
         }
+
+        button.secondary {
+            background: var(--hud-wheat);
+            margin-left: 32px;
+        }
     `,
     render({inputs}) {
         const snapshot = inputs.snapshot;
@@ -223,6 +228,14 @@ export const HudRunOver = defineElement<{
                         }}
                     >
                         Play again (R)
+                    </button>
+                    <button
+                        class="secondary"
+                        @click=${() => {
+                            inputs.actions.goToMainMenu();
+                        }}
+                    >
+                        Main menu
                     </button>
                 </div>
             </div>

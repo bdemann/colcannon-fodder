@@ -145,7 +145,7 @@ export const rules = [
     comboHintText,
     'Every tower mashes. Aim the Knife when you build it (scroll or [ ]) and it chops everything on that line, fast. Pots soften everything in range, so Mashers hit twice as hard.',
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
-    'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
+    'Potatoes are judged the instant they arrive, so get them done done done first. Fully mashed ones make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
     'The Microwave is fast and cheap, but rubbery potatoes hurt your prestige.',
     'Towers wear out with use. Click one and press S to service it.',

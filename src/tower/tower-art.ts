@@ -37,6 +37,11 @@ export type TowerPose = {
     rangePx: number;
     /** Swiper only: the arm's current angle in radians. */
     swiperAngle: number;
+    /**
+     * Leave the ground shadow and dish out: the caller draws them once with `drawTowerBase` on a
+     * layer underneath. Ignored by towers that draw under their base (see `hasSeparateBase`).
+     */
+    skipBase?: boolean;
 };
 
 const tau = Math.PI * 2;
@@ -200,7 +205,10 @@ function scope(g: Graphics, transform: Readonly<Transform>, draw: () => void) {
 }
 
 /** The lab's round tower base: a soft ground shadow and a tinted dish. */
-function base(g: Graphics, color: string) {
+function base(g: Graphics, color: string, pose?: Readonly<TowerPose>) {
+    if (pose?.skipBase && hasSeparateBase(pose.towerType)) {
+        return;
+    }
     for (let layer = 0; layer < 4; layer++) {
         const grow = 1.1 - layer * 0.12;
         g.ellipse(0, 24, 50 * grow, 17 * grow).fill({
@@ -221,7 +229,7 @@ function drawKnife(g: Graphics, pose: Readonly<TowerPose>) {
     // A hit restarts the animation, and the Knife fires every few hundred ms, so skip the lab's slow
     // wind-up: start with the blade already raised.
     const a = pose.attack < 0 ? -1 : 0.5 + pose.attack * 0.5;
-    base(g, cozyPalette.sage);
+    base(g, cozyPalette.sage, pose);
     const impact = a < 0 ? 0 : seg(a, 0.55, 0.64) * (1 - seg(a, 0.64, 0.9));
     let angle;
     if (a < 0) {
@@ -415,7 +423,7 @@ function drawKnife(g: Graphics, pose: Readonly<TowerPose>) {
 
 function drawBoiler(g: Graphics, pose: Readonly<TowerPose>) {
     const {attack: a, timeSec: t} = pose;
-    base(g, cozyPalette.pond);
+    base(g, cozyPalette.pond, pose);
     // The burner and its flames.
     part(g, cozyPalette.sage, ell(0, 24, 32, 11));
     for (let i = -2; i <= 2; i++) {
@@ -547,7 +555,7 @@ function drawMasher(g: Graphics, pose: Readonly<TowerPose>) {
     const {timeSec: t} = pose;
     // Skip the wind-up for the same reason as the Knife: start with the masher raised.
     const a = pose.attack < 0 ? -1 : 0.5 + pose.attack * 0.5;
-    base(g, '#e0a050');
+    base(g, '#e0a050', pose);
     part(g, cozyPalette.sage, ell(0, 20, 34, 14));
     part(g, cozyPalette.cream, ell(0, 17, 28, 9.5), {
         noOutline: true,
@@ -650,7 +658,7 @@ function drawMicrowave(g: Graphics, pose: Readonly<TowerPose>) {
         }
     }
 
-    base(g, cozyPalette.caramel);
+    base(g, cozyPalette.caramel, pose);
     const shake = on ? Math.sin(t * 70) * 1.1 : 0;
     scope(
         g,
@@ -711,7 +719,7 @@ function drawMicrowave(g: Graphics, pose: Readonly<TowerPose>) {
 }
 
 /** A little green cricket (the lab's `cricket`), facing right. */
-function drawCricket(
+export function drawCricket(
     g: Graphics,
     {
         timeSec,
@@ -812,7 +820,7 @@ function drawCricket(
 
 function drawCricketTrap(g: Graphics, pose: Readonly<TowerPose>) {
     const {attack: a, timeSec: t} = pose;
-    base(g, cozyPalette.walnut);
+    base(g, cozyPalette.walnut, pose);
     if (a < 0) {
         // Antennae peeking out of the box.
         for (const side of [
@@ -895,33 +903,9 @@ function drawCricketTrap(g: Graphics, pose: Readonly<TowerPose>) {
     );
 }
 
-/** The cricket in flight toward the gull it was thrown at, in tower-relative world pixels. */
-function drawThrownCricket(g: Graphics, pose: Readonly<TowerPose>) {
-    const {attack: a} = pose;
-    const arcHeightPx = towerArtConfig.cricketArcPx;
-    const spin = a * 3;
-    scope(
-        g,
-        {
-            x: pose.aimX * a,
-            y: pose.aimY * a - arcHeightPx * 4 * a * (1 - a),
-            scaleX: Math.sign(pose.aimX || 1) * towerArtConfig.scale,
-            scaleY: towerArtConfig.scale,
-        },
-        () => {
-            const f = spin % 1;
-            drawCricket(g, {
-                timeSec: pose.timeSec,
-                squash: 1 - 0.15 * Math.sin(f * Math.PI),
-                tilt: -Math.cos(f * Math.PI) * 0.5,
-            });
-        },
-    );
-}
-
 function drawSwiper(g: Graphics, pose: Readonly<TowerPose>) {
     const {attack: a} = pose;
-    base(g, '#6f8b6a');
+    base(g, '#6f8b6a', pose);
     // The arm turns with the real simulation angle, around the hub at the tower's center. The lab's
     // y-squash is dropped because the arm's hit area is a plain circle.
     const armLength = pose.rangePx;
@@ -1006,6 +990,30 @@ function drawSwiper(g: Graphics, pose: Readonly<TowerPose>) {
     );
 }
 
+const baseColors: Record<TowerType, string> = {
+    [TowerType.Knife]: cozyPalette.sage,
+    [TowerType.Boiler]: cozyPalette.pond,
+    [TowerType.Masher]: '#e0a050',
+    [TowerType.Microwave]: cozyPalette.caramel,
+    [TowerType.CricketTrap]: cozyPalette.walnut,
+    [TowerType.Swiper]: '#6f8b6a',
+};
+
+/** The Microwave draws its cone underneath its base, so its base stays in the main drawing. */
+export function hasSeparateBase(towerType: TowerType): boolean {
+    return towerType !== TowerType.Microwave;
+}
+
+/** Clears `g` and draws just the shadow and dish, in the same space as `drawTower`. Static. */
+export function drawTowerBase(g: Graphics, towerType: TowerType): void {
+    g.clear();
+    g.save();
+    g.scaleTransform(towerArtConfig.scale, towerArtConfig.scale);
+    g.translateTransform(0, -labBaseY);
+    base(g, baseColors[towerType]);
+    g.restore();
+}
+
 const towerDrawers: Record<TowerType, (g: Graphics, pose: Readonly<TowerPose>) => void> = {
     [TowerType.Knife]: drawKnife,
     [TowerType.Boiler]: drawBoiler,
@@ -1027,10 +1035,6 @@ export function drawTower(g: Graphics, pose: Readonly<TowerPose>): void {
     // Area effects and the Swiper arm are in world pixels, so they undo the art scale themselves.
     drawWithWorldOverlays(g, pose);
     g.restore();
-
-    if (pose.towerType === TowerType.CricketTrap && pose.attack >= 0) {
-        drawThrownCricket(g, pose);
-    }
 }
 
 /** Draws the lab art, converting world-pixel overlays (rings, the cone) into the scaled space. */

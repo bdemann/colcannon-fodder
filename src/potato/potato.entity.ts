@@ -7,9 +7,8 @@ import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
 import {Text, type Container} from 'pixi.js';
 import {addSoftShadow} from '../art/cozy.js';
 import {bossConfig} from '../config/boss-config.js';
-import {doorConfig} from '../config/door-config.js';
 import {chuteConfig, comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
-import {capQueuedDistance} from '../door/queue.js';
+import {potatoMotionConfig} from '../config/potato-motion-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
 import {getDropScale, tickDropMs} from '../level/chute.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
@@ -19,10 +18,18 @@ import {type PotatoProcessing} from '../run/run-state.js';
 import {servePotato} from '../run/serving.js';
 import {getPlayerCount, getSlotColor} from '../run/slot-ranking.js';
 import {type TowerType} from '../tower/tower-type.js';
-import {getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
-import {getPotatoMotion} from './potato-motion.js';
+import {getHitDamage, getHitMultiplier} from './mash.js';
+import {getPotatoMotion, getSteamPhase, isBlinking} from './potato-motion.js';
 import {PotatoSize} from './potato-size.js';
-import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
+import {
+    defaultMeter,
+    drawEyelids,
+    drawPotato,
+    drawSteam,
+    getPotatoLookKey,
+    getPotatoOverlays,
+} from './potato-view.js';
+import {spawnServeGhost} from './serve-ghost.js';
 
 const shadowLabel = 'chute-shadow';
 
@@ -49,14 +56,10 @@ export class PotatoEntity extends defineEntity({
             served: false,
             /** True while a seagull holds it: it stops moving, can't be served, towers skip it. */
             carriedBySeagull: false,
-            /** 0 to 100. Shortcuts (Microwave) and waiting under the heat lamp lower it. */
+            /** 0 to 100. Shortcuts (Microwave) lower it. */
             quality: 100,
-            /** How many times customers have sent this potato back to the start of the belt. */
-            timesSentBack: 0,
             /** `runState.elapsedMs` of the last Swiper hit, or -1. Used to debounce the Swiper. */
             lastSwipedAtMs: -1,
-            /** Ms spent in the pass zone; the heat lamp only hurts after a grace period. */
-            passWaitMs: 0,
             /** Unique per run (from `runState.nextPotatoId`), so commands can name this potato. */
             potatoId: 0,
             /** Hand-applied toppings. Keys match `Topping` values. */
@@ -86,6 +89,10 @@ export class PotatoEntity extends defineEntity({
 }) {
     /** Which look is currently drawn, so we only redraw when it changes. */
     protected drawnKey = '';
+
+    /** Steam and eyelid overlays, made on first use and toggled or moved each frame (no redraws). */
+    protected steam: Graphics | undefined;
+    protected eyelids: Graphics | undefined;
 
     /** The floating hit number, created on the first hit. */
     protected hitText: Text | undefined;
@@ -251,9 +258,13 @@ export class PotatoEntity extends defineEntity({
     }
 
     protected getLookKey(): string {
-        const progress = getMashProgress(this.getProcessing());
-        const {butter, scallions, cabbage, gravy} = this.params;
-        return `${this.params.cut}${this.params.cooked}${Math.round(progress * 20)}${butter}${scallions}${cabbage}${gravy}${getRubberyStep(this.params.quality)}`;
+        return getPotatoLookKey({
+            processing: this.getProcessing(),
+            toppings: this.getToppings(),
+            quality: this.params.quality,
+            radius: this.getRadius(),
+            crown: this.params.size === PotatoSize.King,
+        });
     }
 
     protected redrawIfChanged() {
@@ -295,36 +306,18 @@ export class PotatoEntity extends defineEntity({
         }
 
         const path = getPath(this.state.level, this.params.pathId);
-        const aheadDistances: number[] = [];
-        for (const other of this.state.entityStore.getEntities(PotatoEntity)) {
-            if (
-                other !== this &&
-                other.params.pathId === this.params.pathId &&
-                !other.params.carriedBySeagull &&
-                !other.params.served &&
-                other.params.dropInMs <= 0 &&
-                other.params.distancePx > this.params.distancePx
-            ) {
-                aheadDistances.push(other.params.distancePx);
-            }
-        }
-        // Potatoes queue behind the one ahead and wait at the counter for the waiter (`PassEntity`).
-        // Never move backwards: a freshly sent-back potato may start closer than the spacing.
-        this.params.distancePx = Math.max(
-            this.params.distancePx,
-            capQueuedDistance({
-                next:
-                    this.params.distancePx +
-                    this.state.runState.beltSpeedPxPerMs * msSinceLastExecute,
-                aheadDistances,
-                spacingPx: doorConfig.queueSpacingPx,
-                endPx: getPathLength(path),
-            }),
+        this.params.distancePx = Math.min(
+            this.params.distancePx + this.state.runState.beltSpeedPxPerMs * msSinceLastExecute,
+            getPathLength(path),
         );
 
         this.moveToDistance();
         this.redrawIfChanged();
         this.applyMotion();
+
+        if (this.params.distancePx >= getPathLength(path)) {
+            this.serveAtRestaurant();
+        }
     }
 
     /** Render-only wobble, bob and hit squash while riding the belt. */
@@ -338,7 +331,42 @@ export class PotatoEntity extends defineEntity({
         });
         this.view.rotation = motion.rotation;
         this.view.scale.set(motion.scaleX, motion.scaleY);
-        this.view.pivot.set(0, -motion.offsetY);
+        this.view.pivot.set(motion.pivotX, motion.pivotY);
+        this.updateOverlays();
+    }
+
+    /** Animates the boiled-steam puff and eye blinks by transform, alpha and visibility only. */
+    protected updateOverlays() {
+        const overlays = getPotatoOverlays(this.getProcessing());
+        const radius = this.getRadius();
+        const clock = {
+            elapsedMs: this.state.runState.elapsedMs,
+            potatoId: this.params.potatoId,
+        };
+        if (overlays.steam) {
+            if (!this.steam) {
+                this.steam = drawSteam(new Graphics(), radius);
+                this.view.addChild(this.steam);
+            }
+            const phase = getSteamPhase(clock);
+            this.steam.visible = true;
+            this.steam.alpha = Math.sin(phase * Math.PI);
+            this.steam.position.set(
+                Math.sin(phase * 6) * radius * 0.08,
+                -phase * radius * potatoMotionConfig.steamRise,
+            );
+        } else if (this.steam) {
+            this.steam.visible = false;
+        }
+        if (overlays.blink && isBlinking(clock)) {
+            if (!this.eyelids) {
+                this.eyelids = drawEyelids(new Graphics(), radius);
+                this.view.addChild(this.eyelids);
+            }
+            this.eyelids.visible = true;
+        } else if (this.eyelids) {
+            this.eyelids.visible = false;
+        }
     }
 
     protected moveToDistance() {
@@ -348,31 +376,40 @@ export class PotatoEntity extends defineEntity({
         this.params.y = position.y;
     }
 
-    /**
-     * The waiter takes this potato to the customers. A bad one may be sent back to the start of the
-     * belt (keeping its processing and toppings); otherwise it is served and removed.
-     */
-    public serveAtCounter() {
+    /** A presentation-only ghost hops toward the restaurant while the real potato is removed. */
+    protected spawnServeHop() {
+        const parent = this.view.parent;
+        if (!parent) {
+            return;
+        }
+        spawnServeGhost({
+            parent,
+            from: {
+                x: this.view.x,
+                y: this.view.y,
+            },
+            radius: this.getRadius(),
+            processing: this.getProcessing(),
+            toppings: this.getToppings(),
+            quality: this.params.quality,
+            seed: this.params.potatoId,
+        });
+    }
+
+    /** Judges this potato the instant it reaches the restaurant, then removes it. */
+    protected serveAtRestaurant() {
         const path = getPath(this.state.level, this.params.pathId);
-        const {sentBack} = servePotato(this.state.runState, {
+        servePotato(this.state.runState, {
             processing: this.getProcessing(),
             ownerSlot: path.ownerSlot,
             value: potatoSizeConfig[this.params.size].value,
             toppings: this.getToppings(),
-            timesSentBack: this.params.timesSentBack,
             quality: this.params.quality,
             penaltyMultiplier:
                 this.params.size === PotatoSize.King ? bossConfig.penaltyMultiplier : 1,
         });
-
-        if (sentBack) {
-            this.params.distancePx = 0;
-            this.params.passWaitMs = 0;
-            this.params.timesSentBack += 1;
-            this.moveToDistance();
-        } else {
-            this.params.served = true;
-            this.destroy();
-        }
+        this.params.served = true;
+        this.spawnServeHop();
+        this.destroy();
     }
 }

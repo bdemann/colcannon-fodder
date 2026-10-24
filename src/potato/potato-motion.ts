@@ -9,7 +9,25 @@ export type PotatoMotion = {
     scaleY: number;
     /** Pixels the drawing is lifted (negative) or dropped. */
     offsetY: number;
+    /** Pivot that squashes and wobbles about the potato's base, with the lift applied. */
+    pivotX: number;
+    pivotY: number;
 };
+
+/** Whether a potato's eyes are shut right now. Each blinks on its own beat. */
+export function isBlinking({elapsedMs, potatoId}: Readonly<{elapsedMs: number; potatoId: number}>) {
+    const offset = (potatoId * 977) % potatoMotionConfig.blinkPeriodMs;
+    return (elapsedMs + offset) % potatoMotionConfig.blinkPeriodMs < potatoMotionConfig.blinkMs;
+}
+
+/** Where a steam puff is in its rise (0 to 1) for the overlay. */
+export function getSteamPhase({
+    elapsedMs,
+    potatoId,
+}: Readonly<{elapsedMs: number; potatoId: number}>) {
+    const cycles = elapsedMs / potatoMotionConfig.steamPeriodMs + potatoId * 0.29;
+    return cycles - Math.floor(cycles);
+}
 
 /**
  * The gentle wobble, bob and hit squash of a potato. Pure: derived from the run clock and the
@@ -45,10 +63,19 @@ export function getPotatoMotion({
         scaleX /= hit;
     }
 
+    const rotation = wobble(elapsedMs, potatoId);
+    const offsetY = lift * radius * cozyStyle.hop;
+    // Pixi draws at position + R * S * (local - pivot). Choose the pivot so the base (0, radius)
+    // stays put under the rotation and scale, which makes the squash sit on the belt.
+    const pivotX = -(radius * Math.sin(rotation)) / scaleX;
+    const pivotY = radius - (radius * Math.cos(rotation)) / scaleY;
+
     return {
-        rotation: wobble(elapsedMs, potatoId),
+        rotation,
         scaleX,
         scaleY,
-        offsetY: lift * radius * cozyStyle.hop,
+        offsetY,
+        pivotX,
+        pivotY: pivotY - offsetY,
     };
 }
