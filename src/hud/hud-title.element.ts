@@ -6,6 +6,13 @@ import {RunStatus} from '../run/run-state.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {
+    hudButtonStyles,
+    hudPanelStyles,
+    hudPrimaryButtonStyles,
+    hudScrimStyles,
+    hudSelectedStyles,
+} from './hud-theme.js';
 
 /** The recipe order, with what each tower does to a potato. */
 const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
@@ -25,7 +32,7 @@ const recipe: ReadonlyArray<{towerType: TowerType; verb: string}> = [
 
 /** The combo explained in one line. Shown in the toolbar hint and the title rules. */
 export const comboHintText =
-    'Combo: Knife cuts (×1.5) → Pot softens (×2 Masher) → Masher SMASH (×3)';
+    'Combo: the Knife cuts (×1.5), the Pot softens (Mashers hit ×2), then the Masher smashes (×3)';
 
 const previewSize = {
     width: 240,
@@ -44,7 +51,7 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
             height=${previewSize.height}
             viewBox="0 0 ${previewSize.width} ${previewSize.height}"
         >
-            ${svg`<rect width="${previewSize.width}" height="${previewSize.height}" fill="#5b8c3a" />`}
+            ${svg`<rect width="${previewSize.width}" height="${previewSize.height}" fill="#7f9040" />`}
             ${level.paths.map((path) => {
                 const points = path.waypoints
                     .map((point) => `${point.x * scale},${point.y * scale}`)
@@ -54,14 +61,14 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
                     <polyline
                         points="${points}"
                         fill="none"
-                        stroke="#4a4a4a"
+                        stroke="#cfc6b0"
                         stroke-width="${path.widthPx * scale}"
                         stroke-linejoin="round"
                     />
                     ${(path.chutes ?? []).map((chute) => {
                         const spot = getPositionAlongPath(path, chute.distancePx);
 
-                        return svg`<circle cx="${spot.x * scale}" cy="${spot.y * scale}" r="6" fill="#ff8c1a" stroke="#111" stroke-width="1.5" />`;
+                        return svg`<circle cx="${spot.x * scale}" cy="${spot.y * scale}" r="6" fill="#e07b3f" stroke="#2b1a12" stroke-width="1.5" />`;
                     })}
                 `;
             })}
@@ -70,8 +77,8 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
                 y="${(level.restaurant.y - level.restaurant.sizePx / 2) * scale}"
                 width="${restaurantSize}"
                 height="${restaurantSize}"
-                fill="#c0392b"
-                stroke="#f5e6c8"
+                fill="#b8472f"
+                stroke="#2b1a12"
                 stroke-width="2"
             />`}
         </svg>
@@ -80,7 +87,7 @@ function renderLevelPreview(level: Readonly<LevelDefinition>) {
 
 export const rules = [
     comboHintText,
-    'Every tower mashes. Knife: set its direction when you build it (scroll or [ ]); it chops everything on that line, fast; pots soften everything in range so mashers hit twice as hard.',
+    'Every tower mashes. Aim the Knife when you build it (scroll or [ ]) and it chops everything on that line, fast. Pots soften everything in range, so Mashers hit twice as hard.',
     'Customers order dishes: top mashed potatoes by hand (Q W E R, then click) to fill them before the ticket runs out.',
     'Fully mashed potatoes make customers happy; the closer to done, the less they complain. Raw ones make them furious.',
     'Seagulls swoop in to steal potatoes. Your towers can knock them out.',
@@ -106,7 +113,7 @@ export const HudTitle = defineElement<{
 
         .layer {
             align-items: center;
-            background: rgba(0, 0, 0, 0.55);
+            ${hudScrimStyles}
             display: flex;
             inset: 0;
             justify-content: center;
@@ -115,19 +122,18 @@ export const HudTitle = defineElement<{
         }
 
         .panel {
-            background: rgba(30, 20, 10, 0.95);
-            border: 6px solid #f5e6c8;
-            border-radius: 24px;
-            box-sizing: border-box;
+            ${hudPanelStyles}
+            border-radius: 28px;
+            border-width: 6px;
             padding: 28px 48px;
             text-align: center;
             width: 1500px;
         }
 
         .title {
-            color: #ffd700;
+            color: var(--hud-oak);
             font-size: 72px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .tagline {
@@ -153,7 +159,7 @@ export const HudTitle = defineElement<{
         }
 
         .swatch {
-            border: 3px solid white;
+            border: 3px solid var(--hud-bark);
             border-radius: 50%;
             box-sizing: border-box;
             height: 36px;
@@ -187,45 +193,35 @@ export const HudTitle = defineElement<{
         }
 
         .mode {
-            background: rgba(255, 255, 255, 0.06);
-            border: 4px solid transparent;
-            border-radius: 12px;
-            color: inherit;
-            cursor: pointer;
-            font: inherit;
+            ${hudButtonStyles}
             font-size: 28px;
-            font-weight: bold;
+            font-weight: 700;
             padding: 8px 32px;
         }
 
         .mode.selected {
-            border-color: #ffd700;
-            color: #ffd700;
+            ${hudSelectedStyles}
         }
 
         .level-card {
-            background: rgba(255, 255, 255, 0.06);
-            border: 5px solid transparent;
-            border-radius: 16px;
-            color: inherit;
-            cursor: pointer;
+            ${hudButtonStyles}
+            border-radius: 18px;
             display: flex;
             flex-direction: column;
-            font: inherit;
-            font-weight: normal;
+            font-weight: 400;
             gap: 8px;
             padding: 12px;
             width: 340px;
         }
 
         .level-card.selected {
-            border-color: #ffd700;
+            ${hudSelectedStyles}
         }
 
         .level-name {
-            color: #ffd700;
+            color: var(--hud-oak);
             font-size: 30px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .level-description {
@@ -241,14 +237,7 @@ export const HudTitle = defineElement<{
         }
 
         .start {
-            background: #ffd700;
-            border: none;
-            border-radius: 12px;
-            color: #1a1a1a;
-            cursor: pointer;
-            font-size: 36px;
-            font-weight: bold;
-            padding: 16px 48px;
+            ${hudPrimaryButtonStyles}
         }
     `,
     render({inputs}) {

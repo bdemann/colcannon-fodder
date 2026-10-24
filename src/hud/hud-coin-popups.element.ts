@@ -1,5 +1,6 @@
 import {css, defineElement, html, keyed} from 'element-vir';
 import {hudConfig} from '../config/game-config.js';
+import {coinIcon} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 
 /** Floating "+coins" text with the reason, shown where each coin event happened. */
@@ -14,32 +15,31 @@ export const HudCoinPopups = defineElement<{
 
         .popup {
             animation: float-up ${hudConfig.coinPopupMs}ms ease-out forwards;
-            font-weight: bold;
+            -webkit-text-stroke: 6px var(--hud-bark);
+            font-weight: 700;
+            paint-order: stroke fill;
             position: absolute;
             text-align: center;
-            text-shadow:
-                0 0 4px black,
-                0 3px 6px black;
             transform: translate(-50%, -100%);
             line-height: 1.1;
             white-space: nowrap;
         }
 
         .amount {
-            color: #ffd700;
+            color: var(--hud-butter);
             font-size: 34px;
         }
 
         .amount.spent {
-            color: #ff5252;
+            color: #ff8f73;
         }
 
         .amount.zero {
-            color: #bdbdbd;
+            color: var(--hud-stone);
         }
 
         .reason {
-            color: white;
+            color: var(--hud-cream);
             font-size: 22px;
         }
 
@@ -76,7 +76,7 @@ export const HudCoinPopups = defineElement<{
                                       ? 'spent'
                                       : 'zero'}"
                             >
-                                ${popup.amount > 0 ? '+' : ''}🪙 ${popup.amount}
+                                ${popup.amount > 0 ? '+' : ''}${coinIcon()} ${popup.amount}
                             </div>
                             <div class="reason">${popup.reason}</div>
                         </div>

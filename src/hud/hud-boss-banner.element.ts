@@ -1,5 +1,6 @@
 import {css, defineElement, html, nothing} from 'element-vir';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudFloatingTextStyles} from './hud-theme.js';
 
 /** Top-center banner (below the pause button) announcing the boss for a few seconds. */
 export const HudBossBanner = defineElement<{
@@ -12,12 +13,10 @@ export const HudBossBanner = defineElement<{
         }
 
         .banner {
-            -webkit-text-stroke: 3px black;
-            color: #ffd700;
+            ${hudFloatingTextStyles}
+            color: var(--hud-butter);
             font-size: 64px;
-            font-weight: bold;
             left: 0;
-            paint-order: stroke fill;
             position: absolute;
             right: 0;
             text-align: center;

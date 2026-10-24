@@ -1,4 +1,4 @@
-import {css, defineElement, html} from 'element-vir';
+import {css, defineElement, html, unsafeCSS} from 'element-vir';
 import {type HudActions} from './hud-actions.js';
 import {HudBossBanner} from './hud-boss-banner.element.js';
 import {HudCoinPopups} from './hud-coin-popups.element.js';
@@ -8,6 +8,7 @@ import {HudPause} from './hud-pause.element.js';
 import {HudRunOver} from './hud-run-over.element.js';
 import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
+import {hudFontFamily, hudThemeVariables} from './hud-theme.js';
 import {HudTitle} from './hud-title.element.js';
 import {HudToppingBar} from './hud-topping-bar.element.js';
 import {HudTowerPanel} from './hud-tower-panel.element.js';
@@ -28,9 +29,10 @@ export const GameHud = defineElement<{
     tagName: 'game-hud',
     styles: css`
         :host {
-            color: white;
+            ${hudThemeVariables}
+            color: var(--hud-walnut);
             display: block;
-            font-family: sans-serif;
+            font-family: ${unsafeCSS(hudFontFamily)};
             inset: 0;
             pointer-events: none;
             position: absolute;

@@ -1,7 +1,9 @@
 import {css, defineElement, html, keyed, nothing} from 'element-vir';
-import {formatStars} from '../quality/quality.js';
+import {cozyPalette} from '../art/cozy.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
+import {coinIcon, starRow} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
 
 const popupContent: Record<
     ServingResult,
@@ -11,7 +13,7 @@ const popupContent: Record<
         getText(popup) {
             return `Perfect mash! +${popup.scoreDelta}`;
         },
-        color: '#7CFC00',
+        color: '#c4e07a',
     },
     [ServingResult.Incomplete]: {
         getText(popup) {
@@ -25,7 +27,7 @@ const popupContent: Record<
 
             return `${popup.sentBack ? 'Sent back! ' : ''}${label}... ${popup.satisfactionDelta}`;
         },
-        color: '#ffc107',
+        color: '#f6cf6a',
     },
     [ServingResult.Raw]: {
         getText(popup) {
@@ -34,17 +36,17 @@ const popupContent: Record<
             }
             return `RAW POTATO! ${popup.satisfactionDelta}`;
         },
-        color: '#ff5252',
+        color: '#ff8f73',
     },
 };
 
 function getBarColor(ratio: number): string {
     if (ratio > 0.6) {
-        return '#4caf50';
+        return cozyPalette.grass;
     } else if (ratio > 0.3) {
-        return '#ffc107';
+        return cozyPalette.butter;
     } else {
-        return '#f44336';
+        return cozyPalette.tomato;
     }
 }
 
@@ -58,45 +60,53 @@ export const HudStats = defineElement<{
             display: block;
             left: 72px;
             position: absolute;
-            text-shadow: 0 3px 6px black;
             top: 16px;
         }
 
+        .panel {
+            ${hudPanelStyles}
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 22px 14px;
+            width: 520px;
+        }
+
         .title {
-            font-size: 32px;
-            font-weight: bold;
+            color: var(--hud-oak);
+            font-size: 30px;
+            font-weight: 700;
         }
 
         .score {
             font-size: 40px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .coins {
-            color: #ffd700;
+            color: var(--hud-caramel);
             font-size: 36px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .prestige {
-            color: #ffd700;
+            color: var(--hud-caramel);
             font-size: 30px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .wave {
             font-size: 30px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         /* The host is at (72, 16), so these offsets put the banner's center at world (960, 200). */
         .banner {
-            color: #ffffff;
+            ${hudFloatingTextStyles}
+            color: var(--hud-cream);
             font-size: 56px;
-            font-weight: bold;
             left: 888px;
             position: absolute;
-            text-shadow: 0 3px 6px black;
             top: 184px;
             transform: translate(-50%, -50%);
             white-space: nowrap;
@@ -114,13 +124,13 @@ export const HudStats = defineElement<{
         }
 
         .bar {
-            background: rgba(0, 0, 0, 0.5);
-            border: 3px solid white;
-            border-radius: 8px;
+            background: var(--hud-sand);
+            border: 3px solid var(--hud-bark);
+            border-radius: 10px;
             box-sizing: border-box;
             height: 30px;
             overflow: hidden;
-            width: 420px;
+            width: 330px;
         }
 
         .bar-fill {
@@ -129,12 +139,11 @@ export const HudStats = defineElement<{
 
         /* The host is at (72, 16), so these offsets put the popup's center at world (960, 380). */
         .popup {
+            ${hudFloatingTextStyles}
             animation: popup-rise 1.2s linear forwards;
             font-size: 44px;
-            font-weight: bold;
             left: 888px;
             position: absolute;
-            text-shadow: 0 3px 6px black;
             top: 364px;
             transform: translate(-50%, -50%);
             white-space: nowrap;
@@ -158,28 +167,30 @@ export const HudStats = defineElement<{
         const popupInfo = popup && popupContent[popup.result];
 
         return html`
-            <div class="title">Colcannon Fodder</div>
-            <div class="score">Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
-            <div class="coins">🪙 ${snapshot.coins}</div>
-            <div class="label">Customer satisfaction</div>
-            <div class="bar-row">
-                <div class="bar">
-                    <div
-                        class="bar-fill"
-                        style="width: ${Math.max(0, Math.min(1, ratio)) *
-                        100}%; background: ${getBarColor(ratio)}"
-                    ></div>
+            <div class="panel">
+                <div class="title">Colcannon Fodder</div>
+                <div class="score">Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
+                <div class="coins">${coinIcon()} ${snapshot.coins}</div>
+                <div class="label">Customer satisfaction</div>
+                <div class="bar-row">
+                    <div class="bar">
+                        <div
+                            class="bar-fill"
+                            style="width: ${Math.max(0, Math.min(1, ratio)) *
+                            100}%; background: ${getBarColor(ratio)}"
+                        ></div>
+                    </div>
+                    <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
                 </div>
-                <span>${snapshot.satisfaction} / ${snapshot.maxSatisfaction}</span>
+                <div class="prestige">Prestige ${starRow(snapshot.prestigeStars)}</div>
+                <div class="wave">
+                    Wave
+                    ${snapshot.waveNumber}${snapshot.mode === 'endless'
+                        ? ''
+                        : ` / ${snapshot.waveCount}`}${snapshot.isBossWave ? ' 👑' : ''}
+                </div>
+                <div class="label">Potatoes served ${snapshot.potatoesServed}</div>
             </div>
-            <div class="prestige">Prestige ${formatStars(snapshot.prestigeStars)}</div>
-            <div class="wave">
-                Wave
-                ${snapshot.waveNumber}${snapshot.mode === 'endless'
-                    ? ''
-                    : ` / ${snapshot.waveCount}`}${snapshot.isBossWave ? ' 👑' : ''}
-            </div>
-            <div class="label">Potatoes served ${snapshot.potatoesServed}</div>
             ${snapshot.wavePhase === 'break' && snapshot.status !== RunStatus.Ready
                 ? html`
                       <div class="banner">
@@ -194,7 +205,7 @@ export const HudStats = defineElement<{
                 ? keyed(
                       snapshot.stealPopup.id,
                       html`
-                          <div class="popup" style="color: #ff5252">
+                          <div class="popup" style="color: #ff8f73">
                               A seagull stole a potato! ${snapshot.stealPopup.satisfactionDelta}
                           </div>
                       `,

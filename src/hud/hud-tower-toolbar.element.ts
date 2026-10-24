@@ -5,7 +5,9 @@ import {getTowerIcon} from '../tower/tower-icons.js';
 import {canAfford} from '../tower/tower-placement.js';
 import {TowerType, towerTypes} from '../tower/tower-type.js';
 import {type HudActions} from './hud-actions.js';
+import {coinIcon} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudButtonStyles, hudPanelStyles, hudSelectedStyles} from './hud-theme.js';
 import {comboHintText} from './hud-title.element.js';
 
 /** Bottom toolbar with one button per tower type. */
@@ -28,8 +30,11 @@ export const HudTowerToolbar = defineElement<{
         }
 
         .hint {
+            ${hudPanelStyles}
+            border-radius: 14px;
             font-size: 26px;
-            text-shadow: 0 2px 4px black;
+            font-weight: 500;
+            padding: 4px 22px;
             white-space: nowrap;
         }
 
@@ -39,19 +44,14 @@ export const HudTowerToolbar = defineElement<{
         }
 
         button {
-            background: rgba(20, 20, 20, 0.85);
-            border: 4px solid rgba(255, 255, 255, 0.25);
+            ${hudButtonStyles}
             border-radius: 16px;
-            box-sizing: border-box;
-            color: white;
-            cursor: pointer;
-            font-family: inherit;
             height: 110px;
-            width: 200px;
+            width: 212px;
         }
 
         button.selected {
-            border: 6px solid #ffffff;
+            ${hudSelectedStyles}
             transform: translateY(-8px);
         }
 
@@ -76,8 +76,8 @@ export const HudTowerToolbar = defineElement<{
         }
 
         .label {
-            font-size: 30px;
-            font-weight: bold;
+            font-size: 26px;
+            font-weight: 700;
             white-space: nowrap;
         }
 
@@ -86,8 +86,9 @@ export const HudTowerToolbar = defineElement<{
         }
 
         .cost {
-            color: #ffd700;
+            color: var(--hud-oak);
             font-size: 24px;
+            font-weight: 700;
         }
 
         .hotkey {
@@ -130,7 +131,7 @@ export const HudTowerToolbar = defineElement<{
                                     <span class="label">${definition.label}</span>
                                     <span class="hotkey">[${definition.hotkey}]</span>
                                     <span class="cost">
-                                        🪙 ${economyConfig.towerCost[towerType]}
+                                        ${coinIcon()} ${economyConfig.towerCost[towerType]}
                                     </span>
                                 </div>
                             </div>

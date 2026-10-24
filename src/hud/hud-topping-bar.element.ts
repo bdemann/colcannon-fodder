@@ -2,6 +2,7 @@ import {css, defineElement, html, listen} from 'element-vir';
 import {Topping, toppingDefinitions} from '../order/topping.js';
 import {type HudActions} from './hud-actions.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudButtonStyles, hudPanelStyles, hudSelectedStyles} from './hud-theme.js';
 
 /** Right-edge column with one button per topping (Q/W/E/R). */
 export const HudToppingBar = defineElement<{
@@ -23,26 +24,23 @@ export const HudToppingBar = defineElement<{
         }
 
         .title {
+            ${hudPanelStyles}
+            border-radius: 14px;
             font-size: 24px;
-            font-weight: bold;
+            font-weight: 700;
+            padding: 2px 0;
             text-align: center;
-            text-shadow: 0 2px 4px black;
         }
 
         button {
-            background: rgba(20, 20, 20, 0.85);
-            border: 4px solid rgba(255, 255, 255, 0.25);
+            ${hudButtonStyles}
             border-radius: 16px;
-            box-sizing: border-box;
-            color: white;
-            cursor: pointer;
-            font-family: inherit;
             height: 90px;
             width: 200px;
         }
 
         button.selected {
-            border: 6px solid #ffffff;
+            ${hudSelectedStyles}
             transform: translateX(-8px);
         }
 
@@ -54,7 +52,10 @@ export const HudToppingBar = defineElement<{
         }
 
         .swatch {
+            border: 3px solid var(--hud-bark);
             border-radius: 50%;
+            box-sizing: border-box;
+            flex-shrink: 0;
             height: 40px;
             width: 40px;
         }
@@ -67,7 +68,7 @@ export const HudToppingBar = defineElement<{
 
         .label {
             font-size: 28px;
-            font-weight: bold;
+            font-weight: 700;
             white-space: nowrap;
         }
 

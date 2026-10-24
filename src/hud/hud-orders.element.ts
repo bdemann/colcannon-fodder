@@ -1,7 +1,9 @@
 import {css, defineElement, html, keyed, nothing} from 'element-vir';
+import {cozyPalette} from '../art/cozy.js';
 import {dishDefinitions} from '../order/dish.js';
 import {toppingDefinitions} from '../order/topping.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudFloatingTextStyles, hudPanelStyles} from './hud-theme.js';
 
 /** Time bar color: green, turning red under this fraction of time left. */
 const lowTimeFraction = 0.3;
@@ -24,24 +26,29 @@ export const HudOrders = defineElement<{
         }
 
         .title {
+            ${hudPanelStyles}
+            border-radius: 14px;
             font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 3px 6px black;
+            font-weight: 700;
+            padding: 2px 0;
+            text-align: center;
         }
 
         .ticket {
-            background: #fff8e1;
-            border-left: 6px solid #c0392b;
-            border-radius: 10px;
+            background: var(--hud-cream);
+            border: 3px solid var(--hud-bark);
+            border-left: 10px solid var(--hud-tomato);
+            border-radius: 6px 12px 12px 6px;
+            box-shadow: 0 4px 0 rgba(43, 26, 18, 0.35);
             box-sizing: border-box;
-            color: #3e2723;
+            color: var(--hud-walnut);
             padding: 8px 14px 10px;
             width: 300px;
         }
 
         .dish {
             font-size: 30px;
-            font-weight: bold;
+            font-weight: 700;
             white-space: nowrap;
         }
 
@@ -59,7 +66,7 @@ export const HudOrders = defineElement<{
         }
 
         .swatch {
-            border: 2px solid rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--hud-bark);
             border-radius: 50%;
             box-sizing: border-box;
             height: 24px;
@@ -67,12 +74,14 @@ export const HudOrders = defineElement<{
         }
 
         .time-bar {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-            height: 10px;
+            background: var(--hud-sand);
+            border: 2px solid var(--hud-bark);
+            border-radius: 6px;
+            box-sizing: border-box;
+            height: 14px;
             margin-top: 8px;
             overflow: hidden;
-            width: 260px;
+            width: 100%;
         }
 
         .time-fill {
@@ -82,10 +91,9 @@ export const HudOrders = defineElement<{
         .popup {
             align-self: flex-end;
             animation: order-popup-rise 1.2s linear forwards;
+            ${hudFloatingTextStyles}
             font-size: 34px;
-            font-weight: bold;
             text-align: right;
-            text-shadow: 0 3px 6px black;
             white-space: nowrap;
         }
 
@@ -131,8 +139,8 @@ export const HudOrders = defineElement<{
                                 class="time-fill"
                                 style="width: ${order.fractionLeft *
                                 100}%; background: ${order.fractionLeft < lowTimeFraction
-                                    ? '#f44336'
-                                    : '#4caf50'}"
+                                    ? cozyPalette.tomato
+                                    : cozyPalette.grass}"
                             ></div>
                         </div>
                     </div>
@@ -145,8 +153,8 @@ export const HudOrders = defineElement<{
                           <div
                               class="popup"
                               style="color: ${orderPopup.kind === 'fulfilled'
-                                  ? '#7CFC00'
-                                  : '#ff5252'}"
+                                  ? '#c4e07a'
+                                  : '#ff8f73'}"
                           >
                               ${orderPopup.kind === 'fulfilled'
                                   ? `${dishDefinitions[orderPopup.dish].label} served! +${orderPopup.scoreDelta}`
