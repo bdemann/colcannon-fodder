@@ -9,7 +9,15 @@ import {upgradeConfig} from '../config/upgrade-config.js';
 import {RunStatus} from '../run/run-state.js';
 import {formatSpeed} from '../run/speed.js';
 import {type HudActions} from './hud-actions.js';
+import {coinIcon} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {
+    hudButtonStyles,
+    hudPanelStyles,
+    hudPrimaryButtonStyles,
+    hudScrimStyles,
+    hudSelectedStyles,
+} from './hud-theme.js';
 import {controlsText, rules} from './hud-title.element.js';
 
 /** The "How you earn" lines, built from the config so they never go stale. */
@@ -46,12 +54,9 @@ export const HudPause = defineElement<{
         }
 
         .pause-button {
-            background: rgba(20, 20, 20, 0.85);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            cursor: pointer;
-            font-size: 36px;
+            ${hudButtonStyles}
+            border-radius: 14px;
+            font-size: 32px;
             height: 64px;
             left: 928px;
             padding: 0;
@@ -62,13 +67,9 @@ export const HudPause = defineElement<{
         }
 
         .speed-button {
-            background: rgba(20, 20, 20, 0.85);
-            border: 4px solid transparent;
-            border-radius: 12px;
-            box-sizing: border-box;
-            color: white;
-            cursor: pointer;
-            font-size: 30px;
+            ${hudButtonStyles}
+            border-radius: 14px;
+            font-size: 28px;
             height: 64px;
             padding: 0 16px;
             pointer-events: auto;
@@ -78,47 +79,46 @@ export const HudPause = defineElement<{
         }
 
         .speed-button.armed {
-            background: #ffd84a;
-            color: #1a1a1a;
+            ${hudSelectedStyles}
         }
 
         .layer {
             align-items: center;
-            background: rgba(0, 0, 0, 0.55);
+            ${hudScrimStyles}
             display: flex;
             inset: 0;
             justify-content: center;
             pointer-events: auto;
             position: absolute;
+            z-index: 1;
         }
 
         .panel {
-            background: rgba(30, 20, 10, 0.95);
-            border: 6px solid #f5e6c8;
-            border-radius: 24px;
-            box-sizing: border-box;
-            padding: 48px;
+            ${hudPanelStyles}
+            border-radius: 28px;
+            border-width: 6px;
+            padding: 24px 48px 28px;
             text-align: center;
             width: 1500px;
         }
 
         .title {
-            color: #ffd700;
-            font-size: 72px;
-            font-weight: bold;
-            margin-bottom: 24px;
+            color: var(--hud-oak);
+            font-size: 60px;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
 
         .rules {
-            font-size: 28px;
-            line-height: 1.5;
-            margin-bottom: 32px;
+            font-size: 24px;
+            line-height: 1.3;
+            margin-bottom: 16px;
         }
 
         .earn-title {
-            color: #ffd700;
+            color: var(--hud-oak);
             font-size: 30px;
-            font-weight: bold;
+            font-weight: 700;
             margin-bottom: 8px;
         }
 
@@ -126,24 +126,24 @@ export const HudPause = defineElement<{
             display: flex;
             flex-wrap: wrap;
             font-size: 22px;
-            gap: 4px 32px;
+            gap: 2px 32px;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 14px;
         }
 
         .controls {
-            font-size: 24px;
-            margin-bottom: 40px;
+            font-size: 20px;
+            margin-bottom: 16px;
             opacity: 0.8;
         }
 
         .volume {
             align-items: center;
             display: flex;
-            font-size: 28px;
+            font-size: 26px;
             gap: 24px;
             justify-content: center;
-            margin-bottom: 16px;
+            margin-bottom: 4px;
         }
 
         .volume label {
@@ -162,21 +162,23 @@ export const HudPause = defineElement<{
         }
 
         .buttons {
-            margin-top: 24px;
+            margin-top: 14px;
             display: flex;
             gap: 32px;
             justify-content: center;
         }
 
         .buttons button {
-            background: #ffd700;
-            border: none;
-            border-radius: 12px;
-            color: #1a1a1a;
-            cursor: pointer;
-            font-size: 36px;
-            font-weight: bold;
-            padding: 16px 48px;
+            ${hudPrimaryButtonStyles}
+            padding: 8px 40px;
+        }
+
+        .buttons button.secondary {
+            background: var(--hud-wheat);
+        }
+
+        .volume input {
+            accent-color: var(--hud-pumpkin);
         }
     `,
     render({inputs}) {
@@ -201,7 +203,7 @@ export const HudPause = defineElement<{
                                       `;
                                   })}
                               </div>
-                              <div class="earn-title">How you earn 🪙</div>
+                              <div class="earn-title">How you earn ${coinIcon()}</div>
                               <div class="earn">
                                   ${getEarnLines().map((line) => {
                                       return html`
@@ -260,6 +262,7 @@ export const HudPause = defineElement<{
                                       Resume (P)
                                   </button>
                                   <button
+                                      class="secondary"
                                       @click=${() => {
                                           inputs.actions.restartRun();
                                       }}
@@ -297,7 +300,7 @@ export const HudPause = defineElement<{
                     inputs.actions.speedUntilIncome();
                 }}
             >
-                ⏩ until 🪙
+                ⏩ until ${coinIcon()}
             </button>
         `;
     },

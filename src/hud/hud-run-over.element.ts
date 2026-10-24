@@ -1,9 +1,10 @@
 import {css, defineElement, html, nothing} from 'element-vir';
 import {qualityConfig} from '../config/quality-config.js';
-import {formatStars} from '../quality/quality.js';
 import {RunStatus, ServingResult} from '../run/run-state.js';
 import {type HudActions} from './hud-actions.js';
+import {starRow} from './hud-icons.js';
 import {type HudSnapshot} from './hud-snapshot.js';
+import {hudPanelStyles, hudPrimaryButtonStyles, hudScrimStyles} from './hud-theme.js';
 
 /** Full-screen win/lose panel with the run summary and a restart button. */
 export const HudRunOver = defineElement<{
@@ -18,7 +19,7 @@ export const HudRunOver = defineElement<{
 
         .layer {
             align-items: center;
-            background: rgba(0, 0, 0, 0.55);
+            ${hudScrimStyles}
             display: flex;
             inset: 0;
             justify-content: center;
@@ -27,10 +28,9 @@ export const HudRunOver = defineElement<{
         }
 
         .panel {
-            background: rgba(30, 20, 10, 0.95);
-            border: 6px solid #f5e6c8;
-            border-radius: 24px;
-            box-sizing: border-box;
+            ${hudPanelStyles}
+            border-radius: 28px;
+            border-width: 6px;
             padding: 48px;
             text-align: center;
             width: 900px;
@@ -42,7 +42,7 @@ export const HudRunOver = defineElement<{
 
         .title {
             font-size: 72px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .subtitle {
@@ -51,9 +51,9 @@ export const HudRunOver = defineElement<{
         }
 
         .stars {
-            color: #ffd700;
+            color: var(--hud-caramel);
             font-size: 40px;
-            font-weight: bold;
+            font-weight: 700;
             margin-bottom: 24px;
         }
 
@@ -63,14 +63,7 @@ export const HudRunOver = defineElement<{
         }
 
         button {
-            background: #ffd700;
-            border: none;
-            border-radius: 12px;
-            color: #1a1a1a;
-            cursor: pointer;
-            font-size: 36px;
-            font-weight: bold;
-            padding: 16px 48px;
+            ${hudPrimaryButtonStyles}
         }
     `,
     render({inputs}) {
@@ -98,10 +91,10 @@ export const HudRunOver = defineElement<{
                     <div
                         class="title"
                         style="color: ${champ
-                            ? '#ffd700'
+                            ? 'var(--hud-caramel)'
                             : survived
-                              ? '#ffc107'
-                              : '#ff5252'}; ${survived ? 'font-size: 64px' : ''}"
+                              ? 'var(--hud-pumpkin)'
+                              : 'var(--hud-tomato)'}; ${survived ? 'font-size: 64px' : ''}"
                     >
                         ${champ ? 'MASH CHAMP!' : survived ? 'Survived!' : 'Restaurant Closed'}
                     </div>
@@ -119,7 +112,7 @@ export const HudRunOver = defineElement<{
                               <div class="subtitle">Best: ${snapshot.endlessBest} waves</div>
                           `
                         : nothing}
-                    <div class="stars">Prestige ${formatStars(snapshot.prestigeStars)}</div>
+                    <div class="stars">Prestige ${starRow(snapshot.prestigeStars)}</div>
                     <div class="summary">
                         <div>Score ${snapshot.totalScore.toLocaleString('en-US')}</div>
                         <div>Coins earned ${snapshot.coinsEarned}</div>
