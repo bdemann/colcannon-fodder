@@ -14,8 +14,10 @@ import {createNoToppings} from '../order/topping.js';
 import {getWaveSettings} from '../run/endless.js';
 import {getClumpExtraCount, shouldSpawnExtra} from '../run/spawn-variety.js';
 import {advanceWaves, getSeagullIntervalMs} from '../run/waves.js';
+import {refreshGullGrid} from '../seagull/gull-grid.js';
 import {pickSeagullEntry} from '../seagull/seagull-logic.js';
 import {SeagullEntity, seagullPhases} from '../seagull/seagull.entity.js';
+import {TowerEntity} from '../tower/tower.entity.js';
 import {pickPotatoSize, PotatoSize, type PotatoSizeWeights} from './potato-size.js';
 import {PotatoEntity} from './potato.entity.js';
 
@@ -38,6 +40,16 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
 }) {
     public override async update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
         const {runState, level} = this.state;
+
+        refreshGullGrid({
+            level,
+            towers: [...this.state.entityStore.getEntities(TowerEntity)].map((tower) => {
+                return {
+                    x: tower.params.x,
+                    y: tower.params.y,
+                };
+            }),
+        });
 
         // Read before advancing: the last spawn of a wave moves the phase on.
         const spawningIndex = runState.waveIndex;
@@ -248,6 +260,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             escapeX: 0,
             escapeY: 0,
             fed: false,
+            onBelt: false,
         });
         runState.seagullsSpawnedInWave++;
         runState.msUntilNextSeagull = getSeagullIntervalMs(wave);
