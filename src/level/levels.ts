@@ -164,11 +164,83 @@ export const longHaulLevel = createLevel({
     chuteFractions: [0.5],
 });
 
+const forkRestaurant: RestaurantDefinition = {
+    x: 1300,
+    y: 560,
+    sizePx: restaurantSizePx,
+};
+
+/** Branching map: both roads share their first waypoints, then split and enter top and bottom. */
+export const theForkLevel: LevelDefinition = {
+    levelId: 'the-fork',
+    name: 'The Fork',
+    description: 'Potatoes split at the junction. Cover both roads.',
+    spawnMode: 'pick-one',
+    paths: [
+        {
+            pathId: 'north',
+            ownerSlot: 0,
+            waypoints: [
+                {
+                    x: 0,
+                    y: 560,
+                },
+                {
+                    x: 500,
+                    y: 560,
+                },
+                {
+                    x: 500,
+                    y: 400,
+                },
+                {
+                    x: 1300,
+                    y: 400,
+                },
+                {
+                    x: 1300,
+                    y: 450,
+                },
+            ],
+            widthPx: beltWidthPx,
+        },
+        {
+            pathId: 'south',
+            ownerSlot: 0,
+            waypoints: [
+                {
+                    x: 0,
+                    y: 560,
+                },
+                {
+                    x: 500,
+                    y: 560,
+                },
+                {
+                    x: 500,
+                    y: 760,
+                },
+                {
+                    x: 1300,
+                    y: 760,
+                },
+                {
+                    x: 1300,
+                    y: 670,
+                },
+            ],
+            widthPx: beltWidthPx,
+        },
+    ],
+    restaurant: forkRestaurant,
+};
+
 /** Every level, in title-screen order. */
 export const levels: ReadonlyArray<LevelDefinition> = [
     windingWayLevel,
     doubleBackLevel,
     longHaulLevel,
+    theForkLevel,
 ];
 
 export const defaultLevel = windingWayLevel;
