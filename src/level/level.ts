@@ -101,6 +101,25 @@ export function getPositionAlongPath(path: Readonly<PathDefinition>, distancePx:
 }
 
 /**
+ * Like `getPositionAlongPath`, shifted sideways by `offsetPx` along the left-hand normal of the
+ * segment at `distancePx` (left of the walking direction on screen). At a corner the offset follows
+ * the current segment, so the position may jump a little.
+ */
+export function getPositionAlongPathWithOffset({
+    path,
+    distancePx,
+    offsetPx,
+}: Readonly<{path: Readonly<PathDefinition>; distancePx: number; offsetPx: number}>): Coords {
+    const center = getPositionAlongPath(path, distancePx);
+    const direction = getPathDirectionAt(path, distancePx);
+
+    return {
+        x: center.x + direction.y * offsetPx,
+        y: center.y - direction.x * offsetPx,
+    };
+}
+
+/**
  * Unit vector of the path segment at `distancePx`. Distances outside the path use the first or last
  * segment. Zero-length segments are skipped.
  */

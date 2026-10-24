@@ -5,6 +5,7 @@ import {
     getPathDirectionAt,
     getPathLength,
     getPositionAlongPath,
+    getPositionAlongPathWithOffset,
     type PathDefinition,
 } from './level.js';
 import {defaultLevel} from './levels.js';
@@ -107,6 +108,41 @@ describe(getDistanceToPath.name, () => {
                 y: 25,
             }),
             30,
+        );
+    });
+});
+
+describe(getPositionAlongPathWithOffset.name, () => {
+    it('shifts to the left of travel on a straight segment', () => {
+        const position = getPositionAlongPathWithOffset({
+            path: lPath,
+            distancePx: 40,
+            offsetPx: 6,
+        });
+
+        assert.strictEquals(position.x, 40);
+        assert.strictEquals(position.y, -6);
+    });
+
+    it('uses the current segment normal after a corner', () => {
+        const position = getPositionAlongPathWithOffset({
+            path: lPath,
+            distancePx: 120,
+            offsetPx: 6,
+        });
+
+        assert.strictEquals(position.x, 106);
+        assert.strictEquals(position.y, 20);
+    });
+
+    it('matches the center line for a zero offset', () => {
+        assert.deepEquals(
+            getPositionAlongPathWithOffset({
+                path: lPath,
+                distancePx: 120,
+                offsetPx: 0,
+            }),
+            getPositionAlongPath(lPath, 120),
         );
     });
 });

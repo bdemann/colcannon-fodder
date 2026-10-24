@@ -3,9 +3,10 @@ import {defineShape} from 'object-shape-tester';
 import {chuteConfig, potatoSizeConfig, seagullConfig} from '../config/game-config.js';
 import {spawnConfig} from '../config/spawn-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
+import {getLaneOffset, getMaxLaneOffset} from '../level/belt-lane.js';
 import {pickChute} from '../level/chute.js';
 import {
-    getPositionAlongPath,
+    getPositionAlongPathWithOffset,
     pickSpawnPaths,
     type LevelDefinition,
     type PathDefinition,
@@ -36,6 +37,10 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         clumpWaveIndex: 0,
         /** The one path a queued clump rides on a pick-one level; '' means every path. */
         clumpPathId: '',
+        /** Potatoes in the queued clump, so they can be spread evenly across the belt. */
+        clumpLaneCount: 0,
+        /** How many of the queued clump are already released. */
+        clumpLaneIndex: 0,
     }),
 }) {
     public override async update({msSinceLastExecute}: Readonly<ModExecuteParams>) {
@@ -85,6 +90,11 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                     if (this.params.pendingClumpSpawns === 0) {
                         this.params.msUntilClumpSpawn = spawnConfig.clumpGapMs;
                     }
+                    if (this.params.pendingClumpSpawns === 0) {
+                        this.params.clumpLaneCount = 0;
+                        this.params.clumpLaneIndex = 0;
+                    }
+                    this.params.clumpLaneCount += extra;
                     this.params.pendingClumpSpawns += extra;
                     this.params.clumpWaveIndex = spawningIndex;
                     this.params.clumpPathId =
@@ -131,19 +141,26 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 ? level.paths.filter((path) => path.pathId === this.params.clumpPathId)
                 : level.paths;
 
+            const laneRoll = (this.params.clumpLaneIndex + 0.5) / this.params.clumpLaneCount;
             for (const path of clumpPaths) {
-                await this.spawnPotato(path, wave);
+                await this.spawnPotato(path, wave, laneRoll);
             }
+            this.params.clumpLaneIndex++;
             this.params.pendingClumpSpawns--;
             runState.potatoesPending -= clumpPaths.length;
             this.params.msUntilClumpSpawn += spawnConfig.clumpGapMs;
         }
     }
 
-    /** Spawns one regular potato at the start of `path`, or at one of its chutes. */
+    /**
+     * Spawns one regular potato at the start of `path`, or at one of its chutes. `laneRoll` (0 to
+     *
+     * 1. Picks its lane across the belt; omitted, it is rolled from the seeded random.
+     */
     protected async spawnPotato(
         path: Readonly<PathDefinition>,
         spawn: Readonly<{sizeWeights: PotatoSizeWeights; chuteShare: number}>,
+        laneRoll?: number,
     ) {
         const {runState} = this.state;
         const start = path.waypoints[0];
@@ -163,13 +180,27 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
               })
             : undefined;
         const spawnDistancePx = chute?.distancePx ?? 0;
-        const spawnPosition = getPositionAlongPath(path, spawnDistancePx);
+        // Always drawn (one roll per potato), even when a clump supplies its own lane.
+        const rolledLane = this.state.seededRandom.next();
+        const laneOffsetPx = getLaneOffset({
+            roll: laneRoll ?? rolledLane,
+            maxOffset: getMaxLaneOffset({
+                beltWidthPx: path.widthPx,
+                potatoRadius: potatoSizeConfig[size].radius,
+            }),
+        });
+        const spawnPosition = getPositionAlongPathWithOffset({
+            path,
+            distancePx: spawnDistancePx,
+            offsetPx: laneOffsetPx,
+        });
 
         await this.addEntity(PotatoEntity, {
             x: spawnPosition.x,
             y: spawnPosition.y,
             pathId: path.pathId,
             distancePx: spawnDistancePx,
+            laneOffsetPx,
             dropInMs: chute ? chuteConfig.dropMs : 0,
             size,
             cut: false,
@@ -204,6 +235,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             y: start.y,
             pathId: path.pathId,
             distancePx: 0,
+            laneOffsetPx: 0,
             dropInMs: 0,
             size: PotatoSize.King,
             cut: false,

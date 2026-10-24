@@ -1,6 +1,6 @@
 import {potatoSizeConfig} from '../../config/game-config.js';
 import {swiperConfig} from '../../config/swiper-config.js';
-import {getPath, getPositionAlongPath} from '../../level/level.js';
+import {getPath, getPositionAlongPathWithOffset} from '../../level/level.js';
 import {PotatoSize} from '../../potato/potato-size.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
 import {getTowerStats} from '../tower-type.js';
@@ -126,10 +126,11 @@ export function updateSwiper(tower: TowerEntity, msSinceLastExecute: number): vo
             0,
             params.distancePx - swiperConfig.pushBackPx * getWearMultiplier(tower.params.wear),
         );
-        const position = getPositionAlongPath(
-            getPath(tower.state.level, params.pathId),
-            params.distancePx,
-        );
+        const position = getPositionAlongPathWithOffset({
+            path: getPath(tower.state.level, params.pathId),
+            distancePx: params.distancePx,
+            offsetPx: params.laneOffsetPx,
+        });
         params.x = position.x;
         params.y = position.y;
         params.lastSwipedAtMs = elapsedMs;
