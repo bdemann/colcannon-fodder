@@ -179,6 +179,30 @@ export const HudTitle = defineElement<{
             margin-bottom: 20px;
         }
 
+        .modes {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .mode {
+            background: rgba(255, 255, 255, 0.06);
+            border: 4px solid transparent;
+            border-radius: 12px;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+            font-size: 28px;
+            font-weight: bold;
+            padding: 8px 32px;
+        }
+
+        .mode.selected {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+
         .level-card {
             background: rgba(255, 255, 255, 0.06);
             border: 5px solid transparent;
@@ -264,6 +288,25 @@ export const HudTitle = defineElement<{
                         })}
                     </div>
                     <div class="controls">${controlsText}</div>
+                    <div class="modes">
+                        ${(
+                            [
+                                'campaign',
+                                'endless',
+                            ] as const
+                        ).map((mode) => {
+                            return html`
+                                <button
+                                    class="mode ${mode === inputs.snapshot.mode ? 'selected' : ''}"
+                                    @click=${() => {
+                                        inputs.actions.selectMode(mode);
+                                    }}
+                                >
+                                    ${mode === 'campaign' ? 'Campaign' : 'Endless'}
+                                </button>
+                            `;
+                        })}
+                    </div>
                     <div class="levels">
                         ${levels.map((level) => {
                             return html`

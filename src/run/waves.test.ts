@@ -1,5 +1,6 @@
 import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
+import {getBossHp} from '../config/boss-config.js';
 import {orderConfig, waveConfig} from '../config/game-config.js';
 import {createInitialRunState, type RunState} from './run-state.js';
 import {advanceWaves, getSeagullIntervalMs} from './waves.js';
@@ -96,6 +97,7 @@ describe(advanceWaves.name, () => {
         assert.deepEquals(advanceWaves(runState, timer, 16), [
             {
                 sizeWeights: wave1.sizeWeights,
+                bossHp: getBossHp(0),
                 bossCount: 0,
                 chuteShare: wave1.chuteShare,
             },

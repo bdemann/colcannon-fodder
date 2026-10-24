@@ -1,12 +1,12 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
-import {getBossHp} from '../config/boss-config.js';
-import {chuteConfig, potatoSizeConfig, seagullConfig, waveConfig} from '../config/game-config.js';
+import {chuteConfig, potatoSizeConfig, seagullConfig} from '../config/game-config.js';
 import {spawnConfig} from '../config/spawn-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
 import {pickChute} from '../level/chute.js';
 import {getPositionAlongPath, type PathDefinition} from '../level/level.js';
 import {createNoToppings} from '../order/topping.js';
+import {getWaveSettings} from '../run/endless.js';
 import {getClumpExtraCount, shouldSpawnExtra} from '../run/spawn-variety.js';
 import {advanceWaves, getSeagullIntervalMs} from '../run/waves.js';
 import {pickSeagullEntry} from '../seagull/seagull-logic.js';
@@ -33,8 +33,11 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
         const {runState, level} = this.state;
 
         // Read before advancing: the last spawn of a wave moves the phase on.
+        const spawningIndex = runState.waveIndex;
         const spawningWave =
-            runState.wavePhase === 'spawning' ? waveConfig.waves[runState.waveIndex] : undefined;
+            runState.wavePhase === 'spawning'
+                ? getWaveSettings(runState, spawningIndex)
+                : undefined;
 
         const spawns = advanceWaves(runState, this.params, msSinceLastExecute);
 
@@ -43,7 +46,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 await this.spawnPotato(path, spawn);
 
                 for (let bossIndex = 0; bossIndex < spawn.bossCount; bossIndex++) {
-                    await this.spawnBoss(path, getBossHp(bossIndex));
+                    await this.spawnBoss(path, spawn.bossHp);
                 }
             }
 
@@ -62,7 +65,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                         this.params.msUntilClumpSpawn = spawnConfig.clumpGapMs;
                     }
                     this.params.pendingClumpSpawns += extra;
-                    this.params.clumpWaveIndex = waveConfig.waves.indexOf(spawningWave);
+                    this.params.clumpWaveIndex = spawningIndex;
                     runState.potatoesPending += extra * level.paths.length;
                 }
             }
@@ -89,7 +92,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
     /** Releases queued clump potatoes, one per path every `clumpGapMs`. */
     protected async releaseClumpSpawns(msSinceLastExecute: number) {
         const {runState, level} = this.state;
-        const wave = waveConfig.waves[this.params.clumpWaveIndex];
+        const wave = getWaveSettings(runState, this.params.clumpWaveIndex);
         if (this.params.pendingClumpSpawns <= 0 || !wave) {
             return;
         }
@@ -197,7 +200,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
     /** Releases the current wave's gulls, spread evenly through the wave. */
     protected async spawnSeagulls(msSinceLastExecute: number) {
         const {runState} = this.state;
-        const wave = waveConfig.waves[runState.waveIndex];
+        const wave = getWaveSettings(runState, runState.waveIndex);
         if (runState.wavePhase !== 'spawning' || !wave) {
             return;
         }

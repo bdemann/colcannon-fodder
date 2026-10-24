@@ -5,6 +5,7 @@ import {type FullGameState} from '../game-state/game-state.js';
 import {saveLevelChoice} from '../level/level-choice.js';
 import {defaultLevel} from '../level/levels.js';
 import {type Topping} from '../order/topping.js';
+import {type RunMode} from '../run/run-state.js';
 import {getNextSpeed} from '../run/speed.js';
 import {type TowerType} from '../tower/tower-type.js';
 
@@ -29,6 +30,8 @@ export type HudActions = {
     restartRun(): void;
     /** Picks a level on the title screen: restarts on the title with that level and remembers it. */
     selectLevel(levelId: string): void;
+    /** Picks campaign or endless on the title screen (restarts the ready run). */
+    selectMode(mode: RunMode): void;
     /** Leaves the title screen and starts the run. */
     beginRun(): void;
     /** Pauses or resumes the run. */
@@ -127,12 +130,22 @@ export function getHudActions(state: Partial<FullGameState>): HudActions {
                 type: GameCommandType.StartRun,
                 ready: true,
                 levelId,
+                mode: state.runState?.mode,
+            });
+        },
+        selectMode(mode) {
+            sendGameCommand(state, {
+                type: GameCommandType.StartRun,
+                ready: true,
+                levelId: state.runState?.levelId ?? defaultLevel.levelId,
+                mode,
             });
         },
         restartRun() {
             sendGameCommand(state, {
                 type: GameCommandType.StartRun,
                 levelId: state.runState?.levelId ?? defaultLevel.levelId,
+                mode: state.runState?.mode,
             });
         },
     };
