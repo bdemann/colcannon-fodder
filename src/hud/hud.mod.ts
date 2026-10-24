@@ -18,9 +18,9 @@ const servingSfx: Record<ServingResult, Sfx> = {
 let lastSeenServedAtMs: number | undefined;
 let lastSeenTowerCount: number | undefined;
 /**
- * Whether a tower or topping was selected at the end of the previous tick. The placement and
- * topping mods run before the HUD and already clear selections on Escape, so this is how Escape
- * knows whether it should pause instead.
+ * Whether a tower, built tower or topping was selected at the end of the previous tick. The
+ * placement and topping mods run before the HUD and already clear selections on Escape, so this is
+ * how Escape knows whether it should pause instead.
  */
 let hadSelectionLastTick = false;
 let lastSeenStealAtMs: number | undefined;
@@ -70,7 +70,11 @@ export const hudMod = defineAnthaMod<FullGameState>({
                 getHudActions(state).togglePause();
             }
         }
-        hadSelectionLastTick = !!(state.ui?.selectedTowerType || state.ui?.selectedTopping);
+        hadSelectionLastTick = !!(
+            state.ui?.selectedTowerType ||
+            state.ui?.selectedTopping ||
+            state.ui?.selectedTowerId != undefined
+        );
 
         if (state.runState?.status === RunStatus.Ready && state.ui?.keys.includes(' ')) {
             getHudActions(state).beginRun();

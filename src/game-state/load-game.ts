@@ -70,6 +70,7 @@ export async function bootstrapGame({
     state.ui = {
         selectedTowerType: undefined,
         selectedTopping: undefined,
+        selectedTowerId: undefined,
         pointerWorld: undefined,
         clicks: [],
         keys: [],

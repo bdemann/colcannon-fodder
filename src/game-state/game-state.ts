@@ -23,6 +23,8 @@ export type UiState = {
     selectedTowerType: TowerType | undefined;
     /** The topping being applied by hand. Mutually exclusive with `selectedTowerType`. */
     selectedTopping: Topping | undefined;
+    /** The built tower selected for upgrade or sale (its `towerId` param). */
+    selectedTowerId: number | undefined;
     /** Mouse position in game-world coordinates, or `undefined` when outside the canvas. */
     pointerWorld: Coords | undefined;
     /** Canvas clicks since the previous tick. Replaced every tick by `inputMod`; read, don't clear. */

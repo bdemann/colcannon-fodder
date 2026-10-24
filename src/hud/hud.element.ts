@@ -8,6 +8,7 @@ import {type HudSnapshot} from './hud-snapshot.js';
 import {HudStats} from './hud-stats.element.js';
 import {HudTitle} from './hud-title.element.js';
 import {HudToppingBar} from './hud-topping-bar.element.js';
+import {HudTowerPanel} from './hud-tower-panel.element.js';
 import {HudTowerToolbar} from './hud-tower-toolbar.element.js';
 
 /**
@@ -42,6 +43,10 @@ export const GameHud = defineElement<{
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,
             })}></${HudTowerToolbar}>
+            <${HudTowerPanel.assign({
+                snapshot: inputs.snapshot,
+                actions: inputs.actions,
+            })}></${HudTowerPanel}>
             <${HudToppingBar.assign({
                 snapshot: inputs.snapshot,
                 actions: inputs.actions,

@@ -1,6 +1,6 @@
 import {qualityConfig} from '../../config/quality-config.js';
 import {PotatoEntity} from '../../potato/potato.entity.js';
-import {getTowerStats} from '../tower-type.js';
+import {getDamageScale, getTowerStats} from '../tower-type.js';
 import {type TowerEntity} from '../tower.entity.js';
 
 /**
@@ -41,6 +41,7 @@ export function isInCone({
  */
 export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number): void {
     const {rangePx} = getTowerStats(tower.params.towerType, tower.params.level);
+    const damageScale = getDamageScale(tower.params.level);
     const origin = {
         x: tower.params.x,
         y: tower.params.y,
@@ -82,7 +83,7 @@ export function updateMicrowave(tower: TowerEntity, msSinceLastExecute: number):
         }
         potato.params.mashHp = Math.max(
             0,
-            potato.params.mashHp - qualityConfig.microwaveDamagePerSecond * seconds,
+            potato.params.mashHp - qualityConfig.microwaveDamagePerSecond * damageScale * seconds,
         );
         potato.params.quality = Math.max(
             0,
