@@ -187,6 +187,11 @@ export const seagullConfig = {
 export const towerConfig = {
     /** Towers are circles of this radius. Used for drawing and for overlap checks. */
     radius: 30,
+    /**
+     * In a multi-slot (co-op) level, a player may only build within this distance of a path they
+     * own.
+     */
+    buildRadiusNearOwnPathPx: 300,
 } as const;
 
 /** How the Cozy tower art is drawn and animated (render-only). */

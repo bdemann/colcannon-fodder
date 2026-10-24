@@ -11,7 +11,7 @@ import {
 import {RunStatus, type RunState} from '../run/run-state.js';
 import {stepsForFrame} from '../run/speed.js';
 import {gameCommandHandlers, syncLevelWithRunState} from './game-command-handlers.js';
-import {type GameCommand} from './game-command.js';
+import {GameCommandType, type GameCommand} from './game-command.js';
 import {gameEntities} from './game-entities.js';
 import {type FullGameState} from './game-state.js';
 
@@ -140,6 +140,13 @@ export const gameLockstepMod = createAnthaMultiplayerP2pLockStepMod<
             );
         }
     },
-    handleClientStatus() {},
+    handleClientStatus({event, multiplayerController}) {
+        if (multiplayerController.isHost() && 'lostMember' in event.detail) {
+            multiplayerController.act({
+                type: GameCommandType.LeaveRun,
+                clientId: event.detail.lostMember,
+            });
+        }
+    },
     runFrameUpdate: runGameFrameUpdate,
 });
