@@ -16,7 +16,7 @@ import {canApplyTopping} from '../order/toppings.js';
 import {PotatoSpawnerEntity} from '../potato/potato-spawner.entity.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
-import {createInitialRunState, RunStatus} from '../run/run-state.js';
+import {createInitialRunState, getSlotForClient, RunStatus} from '../run/run-state.js';
 import {isAllowedSpeed} from '../run/speed.js';
 import {canAfford, canPlaceTower} from '../tower/tower-placement.js';
 import {getSellValue, getUpgradeCost, towerTypes} from '../tower/tower-type.js';
@@ -32,11 +32,18 @@ export type GameCommandHandlerParams<Type extends GameCommandType> = Readonly<{
 }>;
 
 /**
- * The player slot that sent a command. Singleplayer is always slot 0. Co-op will take the command's
- * `detail.sourceClientId` and map it to that client's slot.
+ * The player slot that sent a command, from the synced `slotByClientId` map. Singleplayer (empty
+ * map) and unknown clients are slot 0.
  */
-export function getCommandSlot(): number {
-    return 0;
+export function getCommandSlot(
+    state: Partial<FullGameState>,
+    sourceClientId: string | undefined,
+): number {
+    return getSlotForClient(state.runState, sourceClientId);
+}
+
+function getDefaultSlotName(slot: number): string {
+    return `Player ${slot + 1}`;
 }
 
 /** Restores `state.level` from `state.runState.levelId`, e.g. after a state sync. */
@@ -64,6 +71,10 @@ export const gameCommandHandlers: {
         state.level = level;
         state.seededRandom = SeededRandom.fromSeed(detail.packet.seed);
         state.runState = createInitialRunState(level.levelId, detail.packet.mode);
+        /** The host's own client starts the run and always owns slot 0. */
+        state.runState.slotByClientId[detail.sourceClientId] = 0;
+        state.runState.slotNames[0] = getDefaultSlotName(0);
+        state.runState.connected[0] = true;
 
         if (detail.packet.ready) {
             state.runState.status = RunStatus.Ready;
@@ -112,6 +123,7 @@ export const gameCommandHandlers: {
             return;
         }
 
+        const slot = getCommandSlot(state, detail.sourceClientId);
         const towers = [...state.entityStore.getEntities(TowerEntity)].map((tower) => {
             return {
                 x: tower.params.x,
@@ -124,6 +136,7 @@ export const gameCommandHandlers: {
             !canPlaceTower({
                 level: state.level,
                 towers,
+                slot,
                 point: {
                     x: packet.x,
                     y: packet.y,
@@ -142,7 +155,7 @@ export const gameCommandHandlers: {
             towerId: state.runState.nextTowerId,
             level: 1,
             builtAtMs: state.runState.elapsedMs,
-            ownerSlot: getCommandSlot(),
+            ownerSlot: slot,
             cooldownRemainingMs: 0,
             lastProcessedAtMs: -1,
             lastTargetX: 0,
@@ -151,6 +164,55 @@ export const gameCommandHandlers: {
             wear: 0,
         });
         state.runState.nextTowerId++;
+    },
+    [GameCommandType.JoinRun]({detail, state}) {
+        const {runState} = state;
+
+        if (!runState) {
+            return;
+        }
+
+        const existingSlot = runState.slotByClientId[detail.sourceClientId];
+
+        if (existingSlot != undefined) {
+            runState.connected[existingSlot] = true;
+            return;
+        }
+
+        const takenSlots = new Set(Object.values(runState.slotByClientId));
+        /** Reclaiming: the lowest disconnected slot comes before any brand new slot. */
+        const reclaimedSlot = [...takenSlots]
+            .filter((slot) => runState.connected[slot] === false)
+            .sort((a, b) => a - b)[0];
+        let slot = reclaimedSlot;
+
+        if (slot == undefined) {
+            slot = 0;
+            while (takenSlots.has(slot)) {
+                slot++;
+            }
+        } else {
+            for (const [
+                clientId,
+                clientSlot,
+            ] of Object.entries(runState.slotByClientId)) {
+                if (clientSlot === slot) {
+                    delete runState.slotByClientId[clientId];
+                }
+            }
+        }
+
+        runState.slotByClientId[detail.sourceClientId] = slot;
+        runState.slotNames[slot] = detail.packet.name || getDefaultSlotName(slot);
+        runState.connected[slot] = true;
+        runState.scoreBySlot[slot] ??= 0;
+    },
+    [GameCommandType.LeaveRun]({detail, state}) {
+        const slot = state.runState?.slotByClientId[detail.packet.clientId];
+
+        if (state.runState && slot != undefined) {
+            state.runState.connected[slot] = false;
+        }
     },
     [GameCommandType.UpgradeTower]({detail, state}) {
         if (
