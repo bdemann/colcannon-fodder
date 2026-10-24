@@ -184,6 +184,7 @@ export class SeagullEntity extends defineEntity({
                 potato.params.served ||
                 potato.params.carriedBySeagull ||
                 claimed.has(potato.params.potatoId) ||
+                potato.params.dropInMs > 0 ||
                 potato.params.size === PotatoSize.King
             ) {
                 continue;
@@ -261,7 +262,12 @@ export class SeagullEntity extends defineEntity({
 
         if (this.params.phase === seagullPhases.approach) {
             let target = this.findPotato(this.params.targetPotatoId);
-            if (!target || target.params.served || target.params.carriedBySeagull) {
+            if (
+                !target ||
+                target.params.served ||
+                target.params.carriedBySeagull ||
+                target.params.dropInMs > 0
+            ) {
                 target = this.pickNewTarget();
                 this.params.targetPotatoId = target?.params.potatoId ?? 0;
             }

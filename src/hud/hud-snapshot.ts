@@ -20,6 +20,8 @@ import {getServiceCost} from '../tower/wear.js';
  */
 export type HudSnapshot = {
     status: RunStatus;
+    /** The current level's `levelId`, to highlight its card on the title. */
+    levelId: string;
     /** Whether the run is paused. */
     paused: boolean;
     satisfaction: number;
@@ -140,6 +142,7 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
 
     return {
         status: runState.status,
+        levelId: runState.levelId,
         paused: runState.paused,
         satisfaction: runState.satisfaction,
         maxSatisfaction: satisfactionConfig.max,

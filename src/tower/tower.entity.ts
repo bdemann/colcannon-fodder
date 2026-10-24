@@ -284,9 +284,13 @@ export class TowerEntity extends defineEntity({
             return;
         }
 
-        const potatoes = [...this.state.entityStore.getEntities(PotatoEntity)].filter(
-            (potato) => !potato.params.served && !potato.params.carriedBySeagull,
-        );
+        const potatoes = [...this.state.entityStore.getEntities(PotatoEntity)].filter((potato) => {
+            return (
+                !potato.params.served &&
+                !potato.params.carriedBySeagull &&
+                potato.params.dropInMs <= 0
+            );
+        });
         const potatoCandidates = potatoes.map((potato) => {
             return {
                 x: potato.params.x,

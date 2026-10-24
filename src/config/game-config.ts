@@ -65,9 +65,14 @@ export const waveConfig = {
      */
     breakMs: 10_000,
     /** Early waves are sparse and slow; later ones get closer together AND faster (playtest 3). */
+    /**
+     * `chuteShare` is the fraction of spawns on a path with drop chutes that drop in at a chute
+     * instead of entering at the start.
+     */
     waves: [
         {
             potatoCount: 8,
+            chuteShare: 0,
             seagullCount: 0,
             bossCount: 0,
             spawnIntervalMs: 3500,
@@ -80,6 +85,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 10,
+            chuteShare: 0,
             seagullCount: 1,
             bossCount: 0,
             spawnIntervalMs: 2800,
@@ -92,6 +98,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 14,
+            chuteShare: 0.15,
             seagullCount: 2,
             bossCount: 0,
             spawnIntervalMs: 2200,
@@ -104,6 +111,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 18,
+            chuteShare: 0.2,
             seagullCount: 3,
             bossCount: 0,
             spawnIntervalMs: 1700,
@@ -116,6 +124,7 @@ export const waveConfig = {
         },
         {
             potatoCount: 24,
+            chuteShare: 0.25,
             seagullCount: 4,
             bossCount: 1,
             spawnIntervalMs: 1300,
@@ -127,6 +136,14 @@ export const waveConfig = {
             },
         },
     ],
+} as const;
+
+/** Drop chutes: potatoes that fall onto the belt mid-path. */
+export const chuteConfig = {
+    /** How long a chute potato falls before it lands and starts moving. */
+    dropMs: 1500,
+    /** Potato scale at the moment it leaves the chute; it shrinks to 1 on landing. */
+    startScale: 2,
 } as const;
 
 /** Seagulls: potato thieves. Some fly, some walk. */

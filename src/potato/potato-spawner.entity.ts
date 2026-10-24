@@ -1,9 +1,10 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
 import {getBossHp} from '../config/boss-config.js';
-import {potatoSizeConfig, seagullConfig, waveConfig} from '../config/game-config.js';
+import {chuteConfig, potatoSizeConfig, seagullConfig, waveConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
-import {type PathDefinition} from '../level/level.js';
+import {pickChute} from '../level/chute.js';
+import {getPositionAlongPath, type PathDefinition} from '../level/level.js';
 import {createNoToppings} from '../order/topping.js';
 import {advanceWaves, getSeagullIntervalMs} from '../run/waves.js';
 import {pickSeagullEntry} from '../seagull/seagull-logic.js';
@@ -36,12 +37,23 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
 
                 const size = pickPotatoSize(spawn.sizeWeights, this.state.seededRandom.next());
                 const mashHp = potatoSizeConfig[size].mashHp;
+                // Only roll on paths with chutes, so other levels keep their random sequence.
+                const chute = path.chutes?.length
+                    ? pickChute({
+                          chutes: path.chutes,
+                          chuteShare: spawn.chuteShare,
+                          roll: this.state.seededRandom.next(),
+                      })
+                    : undefined;
+                const spawnDistancePx = chute?.distancePx ?? 0;
+                const spawnPosition = getPositionAlongPath(path, spawnDistancePx);
 
                 await this.addEntity(PotatoEntity, {
-                    x: start.x,
-                    y: start.y,
+                    x: spawnPosition.x,
+                    y: spawnPosition.y,
                     pathId: path.pathId,
-                    distancePx: 0,
+                    distancePx: spawnDistancePx,
+                    dropInMs: chute ? chuteConfig.dropMs : 0,
                     size,
                     cut: false,
                     cooked: false,
@@ -89,6 +101,7 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
             y: start.y,
             pathId: path.pathId,
             distancePx: 0,
+            dropInMs: 0,
             size: PotatoSize.King,
             cut: false,
             cooked: false,

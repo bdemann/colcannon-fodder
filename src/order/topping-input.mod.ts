@@ -72,6 +72,9 @@ export const toppingInputMod = defineAnthaMod<FullGameState>({
             let closestDistance = Infinity;
 
             for (const potato of state.entityStore.getEntities(PotatoEntity)) {
+                if (potato.params.dropInMs > 0) {
+                    continue;
+                }
                 const distance = Math.hypot(potato.params.x - click.x, potato.params.y - click.y);
                 if (
                     distance <=

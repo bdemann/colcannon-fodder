@@ -1,13 +1,13 @@
 import {assert, assertWrap} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {
-    defaultLevel,
     getDistanceToPath,
     getPathDirectionAt,
     getPathLength,
     getPositionAlongPath,
     type PathDefinition,
 } from './level.js';
+import {defaultLevel} from './levels.js';
 
 const lPath: PathDefinition = {
     pathId: 'test',

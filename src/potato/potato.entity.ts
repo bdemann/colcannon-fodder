@@ -4,12 +4,13 @@ import {Graphics} from '@antha/graphics-2d';
 import {assertWrap} from '@augment-vir/assert';
 import {Circle} from 'detect-collisions';
 import {defineShape, enumShape, intersectShape} from 'object-shape-tester';
-import {Text} from 'pixi.js';
+import {Text, type Container} from 'pixi.js';
 import {bossConfig} from '../config/boss-config.js';
 import {doorConfig} from '../config/door-config.js';
-import {comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
+import {chuteConfig, comboDisplayConfig, potatoSizeConfig} from '../config/game-config.js';
 import {capQueuedDistance} from '../door/queue.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
+import {getDropScale, tickDropMs} from '../level/chute.js';
 import {getPath, getPathLength, getPositionAlongPath} from '../level/level.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {getPotatoToppings} from '../order/toppings.js';
@@ -20,6 +21,8 @@ import {getHitDamage, getHitMultiplier, getMashProgress} from './mash.js';
 import {PotatoSize} from './potato-size.js';
 import {defaultMeter, drawPotato, getRubberyStep} from './potato-view.js';
 
+const shadowLabel = 'chute-shadow';
+
 /** A potato walking along a path toward the restaurant. Served (and removed) when it arrives. */
 export class PotatoEntity extends defineEntity({
     key: 'PotatoEntity',
@@ -29,6 +32,11 @@ export class PotatoEntity extends defineEntity({
             pathId: '',
             /** How far along the path it is. */
             distancePx: 0,
+            /**
+             * Ms left falling from a drop chute. While above 0 the potato sits at its chute, can't
+             * be targeted, topped or stolen, and doesn't move along the belt.
+             */
+            dropInMs: 0,
             size: enumShape(PotatoSize),
             cut: false,
             cooked: false,
@@ -81,6 +89,27 @@ export class PotatoEntity extends defineEntity({
 
     public override createView(): ViewCreation2d {
         this.drawnKey = this.getLookKey();
+        const radius = this.getRadius();
+        const view = drawPotato({
+            graphics: new Graphics(),
+            processing: this.getProcessing(),
+            radius,
+            toppings: this.getToppings(),
+            quality: this.params.quality,
+            meter: this.getMeter(),
+            crown: this.params.size === PotatoSize.King,
+        });
+        const shadow = new Graphics({
+            label: shadowLabel,
+        });
+        shadow.ellipse(0, radius * 0.5, radius * 1.1, radius * 0.5).fill({
+            color: '#000000',
+        });
+        shadow.visible = this.params.dropInMs > 0;
+        view.addChildAt(shadow, 0);
+        if (this.params.dropInMs > 0) {
+            this.drawFalling(view);
+        }
 
         return {
             hitbox: new Circle(
@@ -90,15 +119,7 @@ export class PotatoEntity extends defineEntity({
                 },
                 this.getRadius(),
             ),
-            view: drawPotato({
-                graphics: new Graphics(),
-                processing: this.getProcessing(),
-                radius: this.getRadius(),
-                toppings: this.getToppings(),
-                quality: this.params.quality,
-                meter: this.getMeter(),
-                crown: this.params.size === PotatoSize.King,
-            }),
+            view,
         };
     }
 
@@ -175,6 +196,23 @@ export class PotatoEntity extends defineEntity({
         text.scale.set(tier.pop ? 1 + 0.5 * Math.max(0, 1 - progress * 5) : 1);
     }
 
+    /** Scales the potato down from the chute and fades its shadow in as it lands. */
+    protected drawFalling(view: Container) {
+        const {dropInMs} = this.params;
+        const scale = getDropScale({
+            dropInMs,
+            dropMs: chuteConfig.dropMs,
+            startScale: chuteConfig.startScale,
+        });
+        const shadow = view.getChildByLabel(shadowLabel);
+        view.scale.set(scale);
+        if (shadow) {
+            shadow.scale.set(1 / scale);
+            shadow.visible = dropInMs > 0;
+            shadow.alpha = 0.6 * (1 - (scale - 1) / (chuteConfig.startScale - 1));
+        }
+    }
+
     protected getRadius(): number {
         return potatoSizeConfig[this.params.size].radius;
     }
@@ -229,6 +267,13 @@ export class PotatoEntity extends defineEntity({
         // dropped potato snaps back to its belt spot.
         if (this.params.served || this.params.carriedBySeagull) {
             return;
+        } else if (this.params.dropInMs > 0) {
+            this.params.dropInMs = tickDropMs({
+                dropInMs: this.params.dropInMs,
+                msSinceLastExecute,
+            });
+            this.drawFalling(this.view);
+            return;
         }
 
         const path = getPath(this.state.level, this.params.pathId);
@@ -239,6 +284,7 @@ export class PotatoEntity extends defineEntity({
                 other.params.pathId === this.params.pathId &&
                 !other.params.carriedBySeagull &&
                 !other.params.served &&
+                other.params.dropInMs <= 0 &&
                 other.params.distancePx > this.params.distancePx
             ) {
                 aheadDistances.push(other.params.distancePx);

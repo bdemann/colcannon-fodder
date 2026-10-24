@@ -7,7 +7,7 @@ import {
     servingConfig,
 } from '../config/game-config.js';
 import {qualityConfig} from '../config/quality-config.js';
-import {defaultLevel} from '../level/level.js';
+import {getLevel} from '../level/levels.js';
 import {dishDefinitions} from '../order/dish.js';
 import {type PotatoToppings} from '../order/topping.js';
 import {matchDish} from '../order/toppings.js';
@@ -16,11 +16,15 @@ import {pushRecentQuality} from '../quality/quality.js';
 import {addCoins, getPerfectReason} from './coins.js';
 import {type PotatoProcessing, type RunState, RunStatus, ServingResult} from './run-state.js';
 
-/** Where serving and order coin popups appear. */
-const restaurantSpot = {
-    x: defaultLevel.restaurant.x,
-    y: defaultLevel.restaurant.y,
-};
+/** Where serving and order coin popups appear: the restaurant of the run's level. */
+function getRestaurantSpot(runState: Readonly<RunState>) {
+    const {restaurant} = getLevel(runState.levelId);
+
+    return {
+        x: restaurant.x,
+        y: restaurant.y,
+    };
+}
 
 /** Which result a potato earns: fully mashed is Perfect, untouched is Raw, anything else Incomplete. */
 export function evaluatePotato(processing: Readonly<PotatoProcessing>): ServingResult {
@@ -78,7 +82,7 @@ function fillOrder(
     addCoins(runState, {
         amount: coins,
         reason: `Order: ${dishDefinitions[dish].label}`,
-        ...restaurantSpot,
+        ...getRestaurantSpot(runState),
     });
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
@@ -194,7 +198,7 @@ export function servePotato(
             : isPerfect
               ? getPerfectReason(serving)
               : 'Eaten anyway',
-        ...restaurantSpot,
+        ...getRestaurantSpot(runState),
     });
     const newSatisfaction = Math.min(
         satisfactionConfig.max,
