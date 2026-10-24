@@ -35,6 +35,10 @@ const potatoColors = {
     sliceLine: '#5a3d1e',
     steam: '#ffffff',
     rubbery: '#9e9e9e',
+    crown: {
+        fill: '#ffd700',
+        stroke: '#b8860b',
+    },
 } as const;
 
 /** Eye dot positions, relative to the potato's center. */
@@ -53,12 +57,13 @@ const eyePositions = [
     },
 ] as const;
 
-const meter = {
+export const defaultMeter = {
     width: 40,
     height: 7,
-    /** Gap between the top of the potato and the bar. */
-    gap: 14,
 } as const;
+
+/** Gap between the top of the potato and the mash meter. */
+const meterGapPx = 14;
 
 /**
  * Clears `graphics` and draws a potato centered on (0, 0). The look follows the mash progress: a
@@ -73,6 +78,8 @@ export function drawPotato({
     radius,
     toppings,
     quality = 100,
+    meter = defaultMeter,
+    crown = false,
 }: Readonly<{
     graphics: Graphics;
     processing: Readonly<PotatoProcessing>;
@@ -80,16 +87,20 @@ export function drawPotato({
     toppings: Readonly<PotatoToppings>;
     /** 0 to 100. */
     quality?: number;
+    /** Mash meter size. Bosses use a bigger one. */
+    meter?: Readonly<{width: number; height: number}>;
+    /** Draws the Russet King's gold crown. */
+    crown?: boolean;
 }>): Graphics {
     const progress = getMashProgress(processing);
     graphics.clear();
 
     if (progress > 0 && progress < 1) {
-        graphics.rect(-meter.width / 2, -radius - meter.gap, meter.width, meter.height).fill({
+        graphics.rect(-meter.width / 2, -radius - meterGapPx, meter.width, meter.height).fill({
             color: potatoColors.meterBackground,
         });
         graphics
-            .rect(-meter.width / 2, -radius - meter.gap, meter.width * progress, meter.height)
+            .rect(-meter.width / 2, -radius - meterGapPx, meter.width * progress, meter.height)
             .fill({
                 color: potatoColors.meterFill,
             });
@@ -143,6 +154,9 @@ export function drawPotato({
             blob: true,
         });
         drawToppings(graphics, radius, toppings);
+        if (crown) {
+            drawCrown(graphics, radius);
+        }
 
         return graphics;
     }
@@ -197,8 +211,40 @@ export function drawPotato({
         blob: false,
     });
     drawToppings(graphics, radius, toppings);
+    if (crown) {
+        drawCrown(graphics, radius);
+    }
 
     return graphics;
+}
+
+/** A gold 5-point zigzag crown on top of the potato (the Russet King). */
+function drawCrown(graphics: Graphics, radius: number) {
+    const halfWidth = radius * 0.6;
+    const baseY = -radius * 0.75;
+    const peakHeight = radius * 0.6;
+    const valleyHeight = radius * 0.25;
+    const points: number[] = [
+        -halfWidth,
+        baseY,
+        -halfWidth,
+        baseY - peakHeight,
+    ];
+    // Five peaks with four valleys between them.
+    for (let peak = 1; peak < 5; peak++) {
+        const x = -halfWidth + (peak * 2 * halfWidth) / 4;
+        points.push(x - halfWidth / 4, baseY - valleyHeight, x, baseY - peakHeight);
+    }
+    points.push(halfWidth, baseY);
+    graphics
+        .poly(points)
+        .fill({
+            color: potatoColors.crown.fill,
+        })
+        .stroke({
+            color: potatoColors.crown.stroke,
+            width: 3,
+        });
 }
 
 /** Draws the hand-applied toppings on the potato. Gravy goes first so the rest sit on top. */

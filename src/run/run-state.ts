@@ -150,6 +150,8 @@ export type RunState = {
     sendBackStreak: number;
     /** Quality of the most recent Perfect servings, most recent last (see `prestigeWindow`). */
     recentQualities: number[];
+    /** `runState.elapsedMs` when a boss last spawned, or -1. Drives the HUD banner. */
+    lastBossSpawnAtMs: number;
 };
 
 const firstWave = assertWrap.isDefined(waveConfig.waves[0]);
@@ -194,5 +196,6 @@ export function createInitialRunState(): RunState {
         lastSteal: undefined,
         sendBackStreak: 0,
         recentQualities: [],
+        lastBossSpawnAtMs: -1,
     };
 }

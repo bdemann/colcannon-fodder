@@ -21,6 +21,12 @@ export const potatoSizeConfig = {
         mashHp: 340,
         value: 1.8,
     },
+    /** The Russet King boss (see `boss-config.ts`). Waves never roll it. */
+    king: {
+        radius: 46,
+        mashHp: 1200,
+        value: 6,
+    },
 } as const;
 
 /** The conveyor belt look. */
@@ -63,6 +69,7 @@ export const waveConfig = {
         {
             potatoCount: 8,
             seagullCount: 0,
+            bossCount: 0,
             spawnIntervalMs: 3500,
             speedPxPerMs: 0.07,
             sizeWeights: {
@@ -74,6 +81,7 @@ export const waveConfig = {
         {
             potatoCount: 10,
             seagullCount: 1,
+            bossCount: 0,
             spawnIntervalMs: 2800,
             speedPxPerMs: 0.08,
             sizeWeights: {
@@ -85,6 +93,7 @@ export const waveConfig = {
         {
             potatoCount: 14,
             seagullCount: 2,
+            bossCount: 0,
             spawnIntervalMs: 2200,
             speedPxPerMs: 0.09,
             sizeWeights: {
@@ -96,6 +105,7 @@ export const waveConfig = {
         {
             potatoCount: 18,
             seagullCount: 3,
+            bossCount: 0,
             spawnIntervalMs: 1700,
             speedPxPerMs: 0.1,
             sizeWeights: {
@@ -107,6 +117,7 @@ export const waveConfig = {
         {
             potatoCount: 24,
             seagullCount: 4,
+            bossCount: 1,
             spawnIntervalMs: 1300,
             speedPxPerMs: 0.11,
             sizeWeights: {
@@ -133,9 +144,15 @@ export const seagullConfig = {
     flyChance: 0.5,
 } as const;
 
-/** Total potatoes in a run (every path spawns one per spawn). Used for the win check. */
+/**
+ * Total potatoes in a run (every path spawns one per spawn, plus the bosses). Used for the win
+ * check.
+ */
 export function getPotatoesPerRun(pathCount: number): number {
-    return waveConfig.waves.reduce((sum, wave) => sum + wave.potatoCount, 0) * pathCount;
+    return (
+        waveConfig.waves.reduce((sum, wave) => sum + wave.potatoCount + wave.bossCount, 0) *
+        pathCount
+    );
 }
 
 /** Tower placement rules shared by every tower type. */

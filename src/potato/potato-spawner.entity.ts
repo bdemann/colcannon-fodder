@@ -1,12 +1,14 @@
 import {type ModExecuteParams} from '@antha/engine';
 import {defineShape} from 'object-shape-tester';
+import {getBossHp} from '../config/boss-config.js';
 import {potatoSizeConfig, seagullConfig, waveConfig} from '../config/game-config.js';
 import {defineLogicEntity} from '../game-state/game-entity.mod.js';
+import {type PathDefinition} from '../level/level.js';
 import {createNoToppings} from '../order/topping.js';
 import {advanceWaves, getSeagullIntervalMs} from '../run/waves.js';
 import {pickSeagullEntry} from '../seagull/seagull-logic.js';
 import {SeagullEntity, seagullPhases} from '../seagull/seagull.entity.js';
-import {pickPotatoSize} from './potato-size.js';
+import {pickPotatoSize, PotatoSize} from './potato-size.js';
 import {PotatoEntity} from './potato.entity.js';
 
 /**
@@ -56,10 +58,49 @@ export class PotatoSpawnerEntity extends defineLogicEntity({
                 });
                 runState.nextPotatoId++;
                 runState.potatoesSpawned++;
+
+                for (let bossIndex = 0; bossIndex < spawn.bossCount; bossIndex++) {
+                    await this.spawnBoss(path, getBossHp(bossIndex));
+                }
+            }
+
+            if (spawn.bossCount > 0) {
+                runState.lastBossSpawnAtMs = runState.elapsedMs;
             }
         }
 
         await this.spawnSeagulls(msSinceLastExecute);
+    }
+
+    /** Spawns the Russet King at the start of `path`. */
+    protected async spawnBoss(path: Readonly<PathDefinition>, mashHp: number) {
+        const {runState} = this.state;
+        const start = path.waypoints[0];
+        if (!start) {
+            return;
+        }
+
+        await this.addEntity(PotatoEntity, {
+            x: start.x,
+            y: start.y,
+            pathId: path.pathId,
+            distancePx: 0,
+            size: PotatoSize.King,
+            cut: false,
+            cooked: false,
+            mashHp,
+            maxMashHp: mashHp,
+            served: false,
+            carriedBySeagull: false,
+            quality: 100,
+            timesSentBack: 0,
+            lastSwipedAtMs: -1,
+            passWaitMs: 0,
+            potatoId: runState.nextPotatoId,
+            ...createNoToppings(),
+        });
+        runState.nextPotatoId++;
+        runState.potatoesSpawned++;
     }
 
     /** Releases the current wave's gulls, spread evenly through the wave. */

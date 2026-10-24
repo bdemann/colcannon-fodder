@@ -1,5 +1,6 @@
 import {isMuted} from '../audio/sfx.js';
 import {getVolumes} from '../audio/volume-settings.js';
+import {bossConfig} from '../config/boss-config.js';
 import {hudConfig, satisfactionConfig, waveConfig} from '../config/game-config.js';
 import {upgradeConfig} from '../config/upgrade-config.js';
 import {type FullGameState} from '../game-state/game-state.js';
@@ -88,6 +89,8 @@ export type HudSnapshot = {
               id: number;
           }
         | undefined;
+    /** True while the boss banner shows; `id` is when the boss spawned, so each boss restarts it. */
+    bossBanner: {id: number} | undefined;
     /** Restaurant prestige, 0 to 5 in half steps. */
     prestigeStars: number;
     /** Whether sound effects are muted. */
@@ -203,6 +206,13 @@ export function createHudSnapshot(state: Partial<FullGameState>): HudSnapshot {
                       scoreDelta: lastOrderEvent.scoreDelta,
                       satisfactionDelta: lastOrderEvent.satisfactionDelta,
                       id: lastOrderEvent.atMs,
+                  }
+                : undefined,
+        bossBanner:
+            runState.lastBossSpawnAtMs >= 0 &&
+            runState.elapsedMs - runState.lastBossSpawnAtMs < bossConfig.bannerMs
+                ? {
+                      id: runState.lastBossSpawnAtMs,
                   }
                 : undefined,
         prestigeStars: getPrestigeStars(runState.recentQualities),

@@ -6,6 +6,7 @@ import {Container} from 'pixi.js';
 import {playSfx, Sfx} from '../audio/sfx.js';
 import {seagullConfig} from '../config/game-config.js';
 import {defineEntity} from '../game-state/game-entity.mod.js';
+import {PotatoSize} from '../potato/potato-size.js';
 import {PotatoEntity} from '../potato/potato.entity.js';
 import {addCoins} from '../run/coins.js';
 import {RunStatus} from '../run/run-state.js';
@@ -182,7 +183,8 @@ export class SeagullEntity extends defineEntity({
             if (
                 potato.params.served ||
                 potato.params.carriedBySeagull ||
-                claimed.has(potato.params.potatoId)
+                claimed.has(potato.params.potatoId) ||
+                potato.params.size === PotatoSize.King
             ) {
                 continue;
             }

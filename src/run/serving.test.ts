@@ -740,3 +740,47 @@ describe('servePotato quality', () => {
         assert.strictEquals(ok.orders.length, 0);
     });
 });
+
+describe('servePotato bosses', () => {
+    it('multiplies the raw penalty by the boss multiplier', () => {
+        const runState = createInitialRunState();
+        servePotato(runState, {
+            processing: raw,
+            ownerSlot: 0,
+            value: potatoSizeConfig.king.value,
+            toppings: createNoToppings(),
+            timesSentBack: doorConfig.maxSendBacks,
+            quality: 100,
+            penaltyMultiplier: 3,
+        });
+        assert.strictEquals(runState.lastServing?.satisfactionDelta, -45);
+    });
+
+    it('still sends a bad boss back', () => {
+        const runState = createInitialRunState();
+        const {sentBack} = servePotato(runState, {
+            processing: raw,
+            ownerSlot: 0,
+            value: potatoSizeConfig.king.value,
+            toppings: createNoToppings(),
+            timesSentBack: 0,
+            quality: 100,
+            penaltyMultiplier: 3,
+        });
+        assert.isTrue(sentBack);
+    });
+
+    it('pays a perfect boss by its value', () => {
+        const runState = createInitialRunState();
+        servePotato(runState, {
+            processing: perfect,
+            ownerSlot: 0,
+            value: potatoSizeConfig.king.value,
+            toppings: createNoToppings(),
+            timesSentBack: 0,
+            quality: 100,
+            penaltyMultiplier: 3,
+        });
+        assert.strictEquals(runState.scoreBySlot[0], 600);
+    });
+});
